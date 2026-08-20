@@ -1,0 +1,32 @@
+id: elemental_balance_smallyeast
+pair: raven
+description: Elemental balance of every reaction in RAVEN's smallYeast tutorial model.
+
+# A deliberate choice for the first scenario: no solver, no random seed, no tolerance
+# games --- pure stoichiometry and chemical formulae, so the two implementations must
+# agree exactly. Anything that differs here is a real disagreement about formula parsing
+# or about what "unknown" means, not numerical noise.
+#
+# It also exercises the YAML readers on both sides for free: the same file is parsed by
+# raven_toolbox.io.read_yaml_model and by RAVEN's readYAMLmodel, so a divergence in I/O
+# shows up as a divergence in the balance.
+
+entries:
+  - getElementalBalance
+
+# Both sides read the same file out of the RAVEN checkout rather than a vendored copy,
+# so the fixture cannot drift between the two.
+inputs:
+  model: "{matlab_repo}/tutorial/smallYeast.yml"
+
+  # What counts as a non-zero element residual. MATLAB's matrix arithmetic leaves ~1e-15
+  # dust on elements that cancel exactly, so without a shared, declared epsilon the two
+  # sides disagree about which elements are even *present* in an imbalance. Declared here
+  # rather than hard-coded on either side, so both use the same number.
+  zero_tolerance: 1.0e-9
+
+# Not zero: the two toolboxes sum the same coefficients in a different order, so the last
+# bits of a float legitimately differ. Tight enough that a real disagreement cannot hide.
+tolerance:
+  rel: 1.0e-9
+  abs: 1.0e-12

@@ -1,0 +1,38 @@
+#!/bin/sh
+# parity: before pushing a branch, report what the other implementation owes.
+#
+# This is the checkpoint that matters --- the last moment before the work becomes a PR.
+# It prints, it does not block: set PARITY_STRICT=1 to make it refuse a push that touches
+# a function declared at parity without you having looked at the other side.
+
+set -e
+
+if ! command -v parity >/dev/null 2>&1; then
+    exit 0
+fi
+
+# Compare against the upstream branch when there is one, so the report covers the whole
+# branch rather than the last commit.
+upstream=$(git rev-parse --abbrev-ref --symbolic-full-name '@{upstream}' 2>/dev/null || echo "")
+if [ -n "$upstream" ]; then
+    range="$upstream..HEAD"
+else
+    default=$(git symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null || echo "origin/develop")
+    range="$default..HEAD"
+fi
+
+config_args=""
+if [ -n "$PARITY_CONFIG" ]; then
+    config_args="-c $PARITY_CONFIG"
+fi
+
+if [ "$PARITY_STRICT" = "1" ]; then
+    parity $config_args mirror --since "$range" --fail-on-parity || {
+        echo ""
+        echo "parity: push refused --- this branch touches functions declared at parity."
+        echo "        Mirror them, record a divergence, or push with PARITY_STRICT=0."
+        exit 1
+    }
+else
+    parity $config_args mirror --since "$range" 2>/dev/null || true
+fi

@@ -1,0 +1,36 @@
+# Where the four repos live and how to scan them.
+#
+# Paths are resolved relative to this file. Override them for your machine in
+# `parity.local.toml` (same structure, gitignored) rather than editing this file:
+#
+#   [pairs.raven.matlab]
+#   path = "D:/checkouts/RAVEN"
+
+[pairs.raven]
+ledger = "ledgers/raven.yml"
+
+[pairs.raven.matlab]
+repo = "SysBioChalmers/RAVEN"
+path = "../RAVEN"
+# Directories that hold no public API: vendored code, tests, tutorials, installers, docs.
+exclude = ["software", "testing", "tutorial", "installation", "doc", "docs", "external"]
+
+[pairs.raven.python]
+repo = "SysBioChalmers/raven-toolbox"
+path = "../raven-toolbox"
+package = "raven_toolbox"
+src = "src"
+
+[pairs.gecko]
+ledger = "ledgers/gecko.yml"
+
+[pairs.gecko.matlab]
+repo = "SysBioChalmers/GECKO"
+path = "../GECKO"
+exclude = ["test", "tutorials", "doc", "docs"]
+
+[pairs.gecko.python]
+repo = "SysBioChalmers/geckopy"
+path = "../geckopy"
+package = "geckopy"
+src = "src"

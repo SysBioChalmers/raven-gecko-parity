@@ -1,0 +1,70 @@
+name: ci
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+  # The ledgers describe two other repos, so they can go stale without anything
+  # happening here. A nightly run is what catches that.
+  schedule:
+    - cron: "0 4 * * *"
+  workflow_dispatch:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[dev]"
+      - run: pytest -q
+
+  parity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # All four repos, at their default branches: the ledgers are only meaningful
+      # against a specific pair of revisions.
+      - uses: actions/checkout@v4
+        with: { repository: SysBioChalmers/RAVEN, path: repos/RAVEN }
+      - uses: actions/checkout@v4
+        with: { repository: SysBioChalmers/raven-toolbox, path: repos/raven-toolbox }
+      - uses: actions/checkout@v4
+        with: { repository: SysBioChalmers/GECKO, path: repos/GECKO }
+      - uses: actions/checkout@v4
+        with: { repository: SysBioChalmers/geckopy, path: repos/geckopy }
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e .
+
+      - name: Point parity at the checked-out repos
+        run: |
+          cat > parity.local.toml <<'EOF'
+          [pairs.raven.matlab]
+          path = "repos/RAVEN"
+          [pairs.raven.python]
+          path = "repos/raven-toolbox"
+          [pairs.gecko.matlab]
+          path = "repos/GECKO"
+          [pairs.gecko.python]
+          path = "repos/geckopy"
+          EOF
+
+      # Fails when a public function on either side has no ledger entry, when a row
+      # names something that no longer exists, or when a row contradicts itself.
+      # Add --strict once the unreviewed count reaches zero.
+      - name: Check the ledgers
+        run: parity check
+
+      - name: Render the parity reports
+        run: parity report -o build/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: parity-reports
+          path: build/

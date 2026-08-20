@@ -1,0 +1,483 @@
+# Parity ledger --- gecko
+#
+# One row per public function on either side. `parity check` fails if a public
+# function is missing here, or if a row names something that no longer exists.
+#
+# status:
+#   parity          Both sides implement this and are intended to behave the same.
+#   python-pending  MATLAB has it; a Python port is queued.
+#   matlab-pending  Python has it; a MATLAB back-port is queued.
+#   matlab-only     Deliberately MATLAB-only --- not coming to Python.
+#   python-only     Deliberately Python-only --- not going to MATLAB.
+#   internal        Not part of the cross-implementation API (glue, installers, helpers).
+#   unreviewed      Not yet triaged. Drive this count to zero.
+#
+# Regenerate the human-readable view with: parity report --pair gecko
+
+version: 1
+pair: gecko
+matlab: SysBioChalmers/GECKO
+python: SysBioChalmers/geckopy
+
+entries:
+  - matlab: abc_max
+    status: unreviewed
+    notes: no obvious Python counterpart; decide whether one is needed
+  - matlab: adapterTemplate
+    status: unreviewed
+    notes: no obvious Python counterpart; decide whether one is needed
+  - matlab: addCarbonNum
+    status: unreviewed
+    notes: no obvious Python counterpart; decide whether one is needed
+  - matlab: addNewRxnsToEC
+    python: geckopy.add_new_rxns_to_ec
+    status: unreviewed
+    notes: auto-paired (exact name match); confirm the behaviour actually matches
+  - matlab: applyComplexData
+    python: geckopy.apply_complex_data
+    status: unreviewed
+    notes: auto-paired (exact name match); confirm the behaviour actually matches
+  - matlab: applyCustomKcats
+    python: geckopy.apply_custom_kcats
+    status: unreviewed
+    notes: auto-paired (exact name match); confirm the behaviour actually matches
+  - matlab: applyKcatConstraints
+    python: geckopy.apply_kcat_constraints
+    status: unreviewed
+    notes: auto-paired (exact name match); confirm the behaviour actually matches
+  - matlab: bayesianSensitivityTuning
+    status: unreviewed
+    notes: 'no confident pairing; closest Python exports: sensitivity_tuning'
+  - matlab: calculateFfactor
+    python: geckopy.calculate_f_factor
+    status: unreviewed
+    notes: auto-paired (exact name match); confirm the behaviour actually matches
+  - matlab: calculateMW
+    python: geckopy.calculate_mw
+    status: unreviewed
+    notes: auto-paired (exact name match); confirm the behaviour actually matches
+  - matlab: constrainEnzConcs
+    python: geckopy.constrain_enz_concs
+    status: unreviewed
+    notes: auto-paired (exact name match); confirm the behaviour actually matches
+  - matlab: constrainFluxData
+    python: geckopy.constrain_flux_data
+    status: unreviewed
+    notes: auto-paired (exact name match); confirm the behaviour actually matches
+  - matlab: copyECtoGEM
+    python: geckopy.copy_ec_to_gem
+    status: unreviewed
+    notes: auto-paired (exact name match); confirm the behaviour actually matches
+  - matlab: ecFSEOF
+    python: geckopy.ec_fseof
+    status: unreviewed
+    notes: auto-paired (exact name match); confirm the behaviour actually matches
+  - matlab: ecFVA
+    python: geckopy.ec_fva
+    status: unreviewed
+    notes: auto-paired (exact name match); confirm the behaviour actually matches
+  - matlab: enzymeUsage
+    python: geckopy.enzyme_usage
+    status: unreviewed
+    notes: auto-paired (exact name match); confirm the behaviour actually matches
+  - matlab: fillEnzConcs
+    python: geckopy.fill_enz_concs
+    status: unreviewed
+    notes: auto-paired (exact name match); confirm the behaviour actually matches
+  - matlab: findECInDB
+    python: geckopy.find_ec_in_db
+    status: unreviewed
+    notes: auto-paired (exact name match); confirm the behaviour actually matches
+  - matlab: findGECKOroot
+    status: unreviewed
+    notes: no obvious Python counterpart; decide whether one is needed
+  - matlab: findMaxValue
+    python: geckopy.find_max_value
+    status: unreviewed
+    notes: auto-paired (exact name match); confirm the behaviour actually matches
+  - matlab: findMetSmiles
+    python: geckopy.find_met_smiles
+    status: unreviewed
+    notes: auto-paired (exact name match); confirm the behaviour actually matches
+  - matlab: flexibilizeEnzConcs
+    python: geckopy.flexibilize_enz_concs
+    status: unreviewed
+    notes: auto-paired (exact name match); confirm the behaviour actually matches
+  - matlab: fuzzyKcatMatching
+    python: geckopy.fuzzy_kcat_matching
+    status: unreviewed
+    notes: auto-paired (exact name match); confirm the behaviour actually matches
+  - matlab: GECKOInstaller
+    status: unreviewed
+    notes: no obvious Python counterpart; decide whether one is needed
+  - matlab: getComplexData
+    python: geckopy.get_complex_data
+    status: unreviewed
+    notes: auto-paired (exact name match); confirm the behaviour actually matches
+  - matlab: getConcControlCoeffs
+    python: geckopy.get_conc_control_coeffs
+    status: unreviewed
+    notes: auto-paired (exact name match); confirm the behaviour actually matches
+  - matlab: getECfromDatabase
+    python: geckopy.get_ec_from_database
+    status: unreviewed
+    notes: auto-paired (exact name match); confirm the behaviour actually matches
+  - matlab: getECfromGEM
+    python: geckopy.get_ec_from_gem
+    status: unreviewed
+    notes: auto-paired (exact name match); confirm the behaviour actually matches
+  - matlab: getECstring
+    status: unreviewed
+    notes: no obvious Python counterpart; decide whether one is needed
+  - matlab: getKcatAcrossIsozymes
+    python: geckopy.get_kcat_across_isozymes
+    status: unreviewed
+    notes: auto-paired (exact name match); confirm the behaviour actually matches
+  - matlab: getReactionsFromEnzyme
+    python: geckopy.get_reactions_from_enzyme
+    status: unreviewed
+    notes: auto-paired (exact name match); confirm the behaviour actually matches
+  - matlab: getrSample
+    status: unreviewed
+    notes: no obvious Python counterpart; decide whether one is needed
+  - matlab: getStandardKcat
+    python: geckopy.get_standard_kcat
+    status: unreviewed
+    notes: auto-paired (exact name match); confirm the behaviour actually matches
+  - matlab: getSubsetEcModel
+    python: geckopy.get_subset_ec_model
+    status: unreviewed
+    notes: auto-paired (exact name match); confirm the behaviour actually matches
+  - matlab: loadBayesianData
+    status: unreviewed
+    notes: no obvious Python counterpart; decide whether one is needed
+  - matlab: loadBRENDAdata
+    python: geckopy.load_brenda_data
+    status: unreviewed
+    notes: auto-paired (exact name match); confirm the behaviour actually matches
+  - matlab: loadConventionalGEM
+    python: geckopy.load_conventional_gem
+    status: unreviewed
+    notes: auto-paired (exact name match); confirm the behaviour actually matches
+  - matlab: loadDatabases
+    status: unreviewed
+    notes: no obvious Python counterpart; decide whether one is needed
+  - matlab: loadEcModel
+    python: geckopy.load_ec_model
+    status: unreviewed
+    notes: auto-paired (exact name match); confirm the behaviour actually matches
+  - matlab: loadFluxData
+    python: geckopy.load_flux_data
+    status: unreviewed
+    notes: auto-paired (exact name match); confirm the behaviour actually matches
+  - matlab: loadProtData
+    python: geckopy.load_prot_data
+    status: unreviewed
+    notes: auto-paired (exact name match); confirm the behaviour actually matches
+  - matlab: makeEcModel
+    python: geckopy.make_ec_model
+    status: unreviewed
+    notes: auto-paired (exact name match); confirm the behaviour actually matches
+  - matlab: mapRxnsToConv
+    python: geckopy.map_rxns_to_conv
+    status: unreviewed
+    notes: auto-paired (exact name match); confirm the behaviour actually matches
+  - matlab: mergeDLKcatAndFuzzyKcats
+    python: geckopy.merge_dlkcat_and_fuzzy_kcats
+    status: unreviewed
+    notes: auto-paired (exact name match); confirm the behaviour actually matches
+  - matlab: ModelAdapter
+    python: geckopy.ModelAdapter
+    status: unreviewed
+    notes: auto-paired (exact name match); confirm the behaviour actually matches
+  - matlab: ModelAdapterManager
+    status: unreviewed
+    notes: no obvious Python counterpart; decide whether one is needed
+  - matlab: mse
+    status: unreviewed
+    notes: no obvious Python counterpart; decide whether one is needed
+  - matlab: parseGECKOargs
+    status: unreviewed
+    notes: no obvious Python counterpart; decide whether one is needed
+  - matlab: plotEcFVA
+    status: unreviewed
+    notes: no obvious Python counterpart; decide whether one is needed
+  - matlab: readDLKcatOutput
+    python: geckopy.read_dlkcat_output
+    status: unreviewed
+    notes: auto-paired (exact name match); confirm the behaviour actually matches
+  - matlab: readOpenKineticsPredictorOutput
+    status: unreviewed
+    notes: 'no confident pairing; closest Python exports: fetch_open_kinetics_predictor, submit_open_kinetics_predictor'
+  - matlab: removeStandardKcat
+    python: geckopy.remove_standard_kcat
+    status: unreviewed
+    notes: auto-paired (exact name match); confirm the behaviour actually matches
+  - matlab: reportEnzymeUsage
+    python: geckopy.report_enzyme_usage
+    status: unreviewed
+    notes: auto-paired (exact name match); confirm the behaviour actually matches
+  - matlab: runDLKcat
+    python: geckopy.run_dlkcat
+    status: unreviewed
+    notes: auto-paired (exact name match); confirm the behaviour actually matches
+  - matlab: saveEcModel
+    python: geckopy.save_ec_model
+    status: unreviewed
+    notes: auto-paired (exact name match); confirm the behaviour actually matches
+  - matlab: selectKcatValue
+    python: geckopy.select_kcat_value
+    status: unreviewed
+    notes: auto-paired (exact name match); confirm the behaviour actually matches
+  - matlab: sensitivityTuning
+    python: geckopy.sensitivity_tuning
+    status: unreviewed
+    notes: auto-paired (exact name match); confirm the behaviour actually matches
+  - matlab: setKcatForReactions
+    python: geckopy.set_kcat_for_reactions
+    status: unreviewed
+    notes: auto-paired (exact name match); confirm the behaviour actually matches
+  - matlab: setProtPoolSize
+    python: geckopy.set_prot_pool_size
+    status: unreviewed
+    notes: auto-paired (exact name match); confirm the behaviour actually matches
+  - matlab: sigmaFitter
+    python: geckopy.sigma_fitter
+    status: unreviewed
+    notes: auto-paired (exact name match); confirm the behaviour actually matches
+  - matlab: startGECKOproject
+    status: unreviewed
+    notes: no obvious Python counterpart; decide whether one is needed
+  - matlab: truncateValues
+    python: geckopy.truncate_values
+    status: unreviewed
+    notes: auto-paired (exact name match); confirm the behaviour actually matches
+  - matlab: updateGECKOdoc
+    status: unreviewed
+    notes: no obvious Python counterpart; decide whether one is needed
+  - matlab: updateprior
+    status: unreviewed
+    notes: no obvious Python counterpart; decide whether one is needed
+  - matlab: updateProtPool
+    status: unreviewed
+    notes: no obvious Python counterpart; decide whether one is needed
+  - matlab: writeDLKcatInput
+    python: geckopy.write_dlkcat_input
+    status: unreviewed
+    notes: auto-paired (exact name match); confirm the behaviour actually matches
+  - matlab: writeOpenKineticsPredictorInput
+    status: unreviewed
+    notes: 'no confident pairing; closest Python exports: submit_open_kinetics_predictor, fetch_open_kinetics_predictor'
+  - python: geckopy.adapter.ComplexParams
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.adapter.KeggParams
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.adapter.resolve_adapter
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.adapter.resolve_param
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.adapter.UniprotParams
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.AddNewRxnsResult
+    status: unreviewed
+    notes: 'no confident pairing; closest MATLAB functions: addNewRxnsToEC'
+  - python: geckopy.apply_flux_data_constraints
+    status: unreviewed
+    notes: 'no confident pairing; closest MATLAB functions: applyKcatConstraints'
+  - python: geckopy.apply_kcat_list
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.assign_standard_kcat
+    status: unreviewed
+    notes: 'no confident pairing; closest MATLAB functions: getStandardKcat'
+  - python: geckopy.BrendaData
+    status: unreviewed
+    notes: 'no confident pairing; closest MATLAB functions: loadBRENDAdata'
+  - python: geckopy.ComplexPortalEntry
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.databases.brenda.aggregate_and_write
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.databases.brenda.parse_brenda_json
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.databases.brenda.Row
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.databases.download_kegg
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.databases.download_uniprot
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.databases.KeggDB
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.databases.load_kegg_tsv
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.DLKcatIgnoreLists
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.ec_model.pipeline.add_protein_pool_exchange_reaction
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.ec_model.pipeline.add_protein_pool_pseudometabolite
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.ec_model.pipeline.add_protein_pseudometabolites
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.ec_model.pipeline.add_protein_usage_reactions
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.ec_model.pipeline.allocate_ec_and_coupling_light
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.ec_model.pipeline.allocate_ec_for_catalyzed_reactions
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.ec_model.pipeline.build_rxn_enzyme_coupling
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.ec_model.pipeline.convert_to_irreversible
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.ec_model.pipeline.expand_model
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.ec_model.pipeline.invert_backwards_only_reactions
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.ec_model.pipeline.populate_enzyme_data
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.ec_model.pipeline.remove_pseudoreaction_gprs
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.ec_model.pipeline.split_light_rxn_id
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.EcData
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.EcModel
+    status: unreviewed
+    notes: 'no confident pairing; closest MATLAB functions: saveEcModel, makeEcModel, loadEcModel'
+  - python: geckopy.Enzyme
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.EnzymeUsageReport
+    status: unreviewed
+    notes: 'no confident pairing; closest MATLAB functions: enzymeUsage'
+  - python: geckopy.EnzymeUsageResult
+    status: unreviewed
+    notes: 'no confident pairing; closest MATLAB functions: enzymeUsage'
+  - python: geckopy.fetch_open_kinetics_predictor
+    status: unreviewed
+    notes: 'no confident pairing; closest MATLAB functions: writeOpenKineticsPredictorInput, readOpenKineticsPredictorOutput'
+  - python: geckopy.fill_eccodes_from_database
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.fill_eccodes_from_gem
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.fill_kcats_from_isozymes
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.fit_sigma
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.FlexEnzResult
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.FluxData
+    status: unreviewed
+    notes: 'no confident pairing; closest MATLAB functions: loadFluxData'
+  - python: geckopy.gather_kcats.extract_enzyme_substrate_pairs
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.gather_kcats.format_kcat_source
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.gather_kcats.normalize_source
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.gather_kcats.OKPClient
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.gather_kcats.OKPError
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.gather_kcats.open_kinetics_predictor.build_okp_input_csv
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.gather_kcats.open_kinetics_predictor.parse_okp_output
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.get_enzyme_bottlenecks
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.GreedyRelaxResult
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.load_complex_portal_json
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.load_dlkcat_ignore_lists
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.load_pax_db
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.load_phyl_dist
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.load_uniprot_tsv
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.MapRxnsResult
+    status: unreviewed
+    notes: 'no confident pairing; closest MATLAB functions: mapRxnsToConv'
+  - python: geckopy.merge_kcats
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.ModelParameters
+    status: unreviewed
+    notes: 'no confident pairing; closest MATLAB functions: ModelAdapter'
+  - python: geckopy.NewEnzyme
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.pfba_enzymes
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.PhylDist
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.ProtData
+    status: unreviewed
+    notes: 'no confident pairing; closest MATLAB functions: loadProtData'
+  - python: geckopy.relax_proteomics_greedy
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.RelaxationStep
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.SigmaFitterResult
+    status: unreviewed
+    notes: 'no confident pairing; closest MATLAB functions: sigmaFitter'
+  - python: geckopy.submit_open_kinetics_predictor
+    status: unreviewed
+    notes: 'no confident pairing; closest MATLAB functions: writeOpenKineticsPredictorInput, readOpenKineticsPredictorOutput'
+  - python: geckopy.TunedKcatsResult
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed
+  - python: geckopy.UniprotDB
+    status: unreviewed
+    notes: no obvious MATLAB counterpart; decide whether one is needed

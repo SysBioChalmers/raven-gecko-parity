@@ -1,0 +1,13 @@
+#!/bin/sh
+# parity: after each commit, say what the other implementation now owes.
+#
+# Advisory only --- it never blocks a commit. Install it into any of the four repos with
+# `python hooks/install.py`, which points PARITY_CONFIG at this checkout.
+
+set -e
+
+if ! command -v parity >/dev/null 2>&1; then
+    exit 0
+fi
+
+parity ${PARITY_CONFIG:+-c "$PARITY_CONFIG"} mirror --since HEAD~1 --brief 2>/dev/null || true
