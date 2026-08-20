@@ -78,6 +78,11 @@ PAIR: dict[str, tuple[str, str | None]] = {
     "scaleBiomassFraction": (f"{P}.biomass.scale_biomass", "Rescale one component class to a target fraction."),
     "scaleBiomassPseudoreaction": (f"{P}.biomass.rescale_pseudoreaction", "Rescale the pseudoreaction coefficients."),
     "curateModelFromTables": (f"{P}.curation.batch_curate_from_tsv", "Table-driven batch curation."),
+    # The implementations were always in manipulation/compartments.py; only the package
+    # exports were missing. This triage surfaced that as two pending rows, and raven-toolbox
+    # commit "manipulation: export merge_compartments and copy_to_compartment" fixed it.
+    "copyToComps": (f"{P}.manipulation.copy_to_compartment", "Duplicate reactions into a target compartment."),
+    "mergeCompartments": (f"{P}.manipulation.merge_compartments", "Collapse a multi-compartment model into one."),
 }
 
 # migration.md paired `is_dnf` with standardizeGrRules' lint half. `is_dnf` is the direct
@@ -258,17 +263,6 @@ PYTHON_PENDING: dict[str, str] = {
     "processProteinFastaFile": "Normalises a proteome FASTA before homology search. " + PYTHON_PENDING_NOTE,
     "renameModelGenes": "Renames genes across GPRs and the gene list. " + PYTHON_PENDING_NOTE,
     "guessComposition": "Infers biomass composition from a related organism. " + PYTHON_PENDING_NOTE,
-    # These two are a hair's breadth from parity: the code is there, the export is not.
-    "copyToComps": (
-        "raven-toolbox HAS this --- manipulation/compartments.py:138 copy_to_compartment --- but it "
-        "is missing from manipulation.__all__, so it is not public API. migration.md documents it "
-        "as ported and links to it. Add the export and this row becomes parity."
-    ),
-    "mergeCompartments": (
-        "raven-toolbox HAS this --- manipulation/compartments.py:20 merge_compartments --- but it is "
-        "missing from manipulation.__all__, so it is not public API. migration.md documents it as "
-        "ported and links to it. Add the export and this row becomes parity."
-    ),
 }
 
 # --------------------------------------------------------------------------------------

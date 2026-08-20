@@ -146,7 +146,7 @@ pairs and every public function on all four sides carries a declared status.
 
 | | rows | parity | queued | one-sided | not API |
 |---|---:|---:|---:|---:|---:|
-| raven | 301 | 71 | 34 | 158 | 38 |
+| raven | 301 | 73 | 32 | 158 | 38 |
 | gecko | 138 | 47 | 6 | 61 | 24 |
 
 What remains between here and `parity check --strict` is tracking issues: the queued rows

@@ -157,10 +157,9 @@ entries:
     status: parity
     notes: from migration.md. Splits reversible non-exchange reactions into forward + _REV. Adopted from geckopy.
   - matlab: copyToComps
-    status: python-pending
-    notes: raven-toolbox HAS this --- manipulation/compartments.py:138 copy_to_compartment --- but it is missing
-      from manipulation.__all__, so it is not public API. migration.md documents it as ported and links to
-      it. Add the export and this row becomes parity.
+    python: raven_toolbox.manipulation.copy_to_compartment
+    status: parity
+    notes: Duplicate reactions into a target compartment.
   - matlab: curateModelFromTables
     python: raven_toolbox.curation.batch_curate_from_tsv
     status: parity
@@ -464,10 +463,9 @@ entries:
     reason: Overlaps with comparison.compare_models on the reaction-id intersection.
     notes: 'no confident pairing; closest Python exports: load_compartments'
   - matlab: mergeCompartments
-    status: python-pending
-    notes: raven-toolbox HAS this --- manipulation/compartments.py:20 merge_compartments --- but it is missing
-      from manipulation.__all__, so it is not public API. migration.md documents it as ported and links to
-      it. Add the export and this row becomes parity.
+    python: raven_toolbox.manipulation.merge_compartments
+    status: parity
+    notes: Collapse a multi-compartment model into one.
   - matlab: mergeLinear
     python: raven_toolbox.init.merge_linear
     status: parity
