@@ -62,9 +62,19 @@ def test_two_rows_cannot_claim_the_same_function(fake_pair):
         Entry(status="matlab-only", matlab="addRxns", python="fakepy.add_reactions", reason="r"),
         Entry(status="matlab-only", matlab="addRxns"),
         Entry(status="python-pending", matlab="addRxns", python="fakepy.add_reactions"),
+        Entry(status="subsumed", matlab="addRxns", python="fakepy.add_reactions", reason="r"),
+        Entry(status="subsumed", matlab="addRxns"),
         Entry(status="invented-status", matlab="addRxns"),
     ],
-    ids=["parity-needs-both", "one-sided-cannot-pair", "needs-a-reason", "pending-means-absent", "unknown-status"],
+    ids=[
+        "parity-needs-both",
+        "one-sided-cannot-pair",
+        "needs-a-reason",
+        "pending-means-absent",
+        "subsumed-cannot-pair",
+        "subsumed-needs-a-reason",
+        "unknown-status",
+    ],
 )
 def test_contradictory_rows_are_rejected(fake_pair, entry):
     result = run_check(fake_pair, ledger=ledger_of(entry))

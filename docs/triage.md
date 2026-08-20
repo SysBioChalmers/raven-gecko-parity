@@ -26,6 +26,10 @@ For a one-sided row, pick the reason it is one-sided:
 * the other side genuinely needs it → `python-pending` / `matlab-pending`, with an `issue`;
 * cobrapy or the COBRA Toolbox already covers it → `via-dependency`, with the replacement
   named in `reason`;
+* the other side has the capability but folded into another function → `subsumed`, naming
+  the function it lives inside. This is common in the RAVEN pair: MATLAB allows one public
+  function per file, so an algorithm RAVEN spreads over four files is one Python entry point.
+  `subsumed` says "the capability is there"; `internal` says "there is nothing to port";
 * it is a deliberate omission → `matlab-only` / `python-only`, with the rationale in `reason`;
 * it is not really public API --- an installer, a path helper, internal glue → `internal`.
 

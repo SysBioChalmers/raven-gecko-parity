@@ -10,6 +10,7 @@
 #   matlab-only     Deliberately MATLAB-only --- not coming to Python.
 #   python-only     Deliberately Python-only --- not going to MATLAB.
 #   via-dependency  The other side gets this from a dependency (cobrapy, COBRA Toolbox) instead.
+#   subsumed        The other side has the capability inside another function, not as its own entry point.
 #   internal        Not part of the cross-implementation API (glue, installers, helpers).
 #   unreviewed      Not yet triaged. Drive this count to zero.
 #
@@ -26,9 +27,9 @@ entries:
     reason: Helper of bayesianSensitivityTuning, not a standalone entry point. It will be absorbed into the
       Python port rather than getting a counterpart of its own.
   - matlab: adapterTemplate
-    status: internal
-    reason: Adapter skeleton generator. The Python counterpart is the `geckopy init` CLI plus templates/model_adapter.toml,
-      not a library function.
+    status: subsumed
+    reason: Adapter skeleton generation lives in the `geckopy init` CLI and templates/model_adapter.toml rather
+      than in a library function.
   - matlab: addCarbonNum
     status: internal
     reason: Helper of bayesianSensitivityTuning, not a standalone entry point. It will be absorbed into the
@@ -130,8 +131,8 @@ entries:
     python: geckopy.fill_eccodes_from_gem
     status: parity
   - matlab: getECstring
-    status: internal
-    reason: Internal helper, inlined on the Python side inside fill_eccodes_from_database / fill_eccodes_from_gem.
+    status: subsumed
+    reason: EC-string formatting, inlined on the Python side inside fill_eccodes_from_database and fill_eccodes_from_gem.
       geckopy docs/migrating_from_gecko_matlab.md §5.
   - matlab: getKcatAcrossIsozymes
     python: geckopy.fill_kcats_from_isozymes
@@ -164,9 +165,9 @@ entries:
     status: parity
     notes: Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5.
   - matlab: loadDatabases
-    status: internal
+    status: subsumed
     reason: geckopy loads databases implicitly at point of use rather than through one entry point. The download
-      halves it performs inline (urlwrite for UniProt, a local downloadKEGG subfunction) are exposed separately
+      halves MATLAB performs inline (urlwrite for UniProt, a local downloadKEGG subfunction) are exposed separately
       in Python as geckopy.databases.download_kegg / download_uniprot.
   - matlab: loadEcModel
     python: geckopy.load_ec_model
@@ -256,9 +257,9 @@ entries:
     python: geckopy.fit_sigma
     status: parity
   - matlab: startGECKOproject
-    status: internal
-    reason: Project skeleton generator. The Python counterpart is `geckopy init my_project` on the CLI, not
-      a library function.
+    status: subsumed
+    reason: Project skeleton generation lives in `geckopy init my_project` on the CLI rather than in a library
+      function.
   - matlab: truncateValues
     python: geckopy.truncate_values
     status: parity

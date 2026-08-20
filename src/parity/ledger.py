@@ -16,15 +16,16 @@ STATUSES: dict[str, str] = {
     "matlab-only": "Deliberately MATLAB-only --- not coming to Python.",
     "python-only": "Deliberately Python-only --- not going to MATLAB.",
     "via-dependency": "The other side gets this from a dependency (cobrapy, COBRA Toolbox) instead.",
+    "subsumed": "The other side has the capability inside another function, not as its own entry point.",
     "internal": "Not part of the cross-implementation API (glue, installers, helpers).",
     "unreviewed": "Not yet triaged. Drive this count to zero.",
 }
 
 #: Statuses that must justify themselves in prose.
-REASON_REQUIRED = frozenset({"matlab-only", "python-only", "via-dependency", "internal"})
+REASON_REQUIRED = frozenset({"matlab-only", "python-only", "via-dependency", "subsumed", "internal"})
 
 #: Statuses that describe a settled one-sided decision rather than queued work.
-ONE_SIDED = frozenset({"matlab-only", "python-only", "via-dependency"})
+ONE_SIDED = frozenset({"matlab-only", "python-only", "via-dependency", "subsumed"})
 
 #: Statuses that represent queued work rather than a settled decision.
 PENDING = frozenset({"python-pending", "matlab-pending"})

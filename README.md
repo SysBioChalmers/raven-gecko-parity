@@ -60,6 +60,7 @@ One row per public function on either side, each carrying a status:
 | `matlab-only` | Deliberately MATLAB-only. Needs a `reason`. |
 | `python-only` | Deliberately Python-only. Needs a `reason`. |
 | `via-dependency` | The other side gets this from cobrapy or the COBRA Toolbox. Needs a `reason`. |
+| `subsumed` | The other side has the capability inside another function, not as its own entry point. Needs a `reason`. |
 | `internal` | Not part of the cross-implementation API --- glue, installers, helpers. Needs a `reason`. |
 | `unreviewed` | Not yet triaged. Drive this to zero. |
 
@@ -80,8 +81,8 @@ One row per public function on either side, each carrying a status:
 ```
 
 The `matlab-pending` and `python-pending` rows *are* the back-port queue. The `matlab-only`,
-`python-only` and `via-dependency` rows *are* the divergence register. Neither needs to be
-maintained separately, and `parity report` renders both.
+`python-only`, `via-dependency` and `subsumed` rows *are* the divergence register. Neither
+needs to be maintained separately, and `parity report` renders both.
 
 ## Local mirroring
 
@@ -138,9 +139,16 @@ that avoid false differences.
 `scenarios.yml` runs the behaviour tests weekly and on demand, using
 `matlab-actions/setup-matlab`, which is licence-free for public repositories.
 
-## Adoption
+## Status
 
-The ledgers start with most rows `unreviewed`, which passes `parity check` but fails
-`parity check --strict`. Triage them a few at a time; when the count reaches zero, add
-`--strict` to CI and the ledger becomes a hard invariant. See
-[docs/triage.md](docs/triage.md).
+Both ledgers are fully triaged --- no `unreviewed` rows --- so `parity check` passes on both
+pairs and every public function on all four sides carries a declared status.
+
+| | rows | parity | queued | one-sided | not API |
+|---|---:|---:|---:|---:|---:|
+| raven | 301 | 71 | 34 | 158 | 38 |
+| gecko | 138 | 47 | 6 | 61 | 24 |
+
+What remains between here and `parity check --strict` is tracking issues: the queued rows
+warn until each carries an `issue`. See [docs/triage.md](docs/triage.md) for how the
+decisions were made and how to keep new rows honest.

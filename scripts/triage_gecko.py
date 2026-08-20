@@ -123,17 +123,31 @@ BAYESIAN_HELPER = (
     "into the Python port rather than getting a counterpart of its own."
 )
 
+# The capability exists on the Python side, just not as its own exported function.
+SUBSUMED: dict[str, str] = {
+    "adapterTemplate": (
+        "Adapter skeleton generation lives in the `geckopy init` CLI and "
+        "templates/model_adapter.toml rather than in a library function."
+    ),
+    "startGECKOproject": (
+        "Project skeleton generation lives in `geckopy init my_project` on the CLI rather "
+        "than in a library function."
+    ),
+    "getECstring": (
+        "EC-string formatting, inlined on the Python side inside fill_eccodes_from_database "
+        f"and fill_eccodes_from_gem. {DOC}."
+    ),
+    "loadDatabases": (
+        "geckopy loads databases implicitly at point of use rather than through one entry "
+        "point. The download halves MATLAB performs inline (urlwrite for UniProt, a local "
+        "downloadKEGG subfunction) are exposed separately in Python as "
+        "geckopy.databases.download_kegg / download_uniprot."
+    ),
+}
+
 INTERNAL: dict[str, str] = {
     # MATLAB glue.
     "GECKOInstaller": "Installer. Python installs with pip.",
-    "adapterTemplate": (
-        "Adapter skeleton generator. The Python counterpart is the `geckopy init` CLI plus "
-        "templates/model_adapter.toml, not a library function."
-    ),
-    "startGECKOproject": (
-        "Project skeleton generator. The Python counterpart is `geckopy init my_project` on "
-        "the CLI, not a library function."
-    ),
     "findGECKOroot": "Path helper. pathlib.Path(__file__) covers it; nothing to port.",
     "updateGECKOdoc": (
         "Regenerates MATLAB Toolbox doc metadata. Python docs are docstring-driven, so there "
@@ -141,16 +155,6 @@ INTERNAL: dict[str, str] = {
     ),
     "parseGECKOargs": (
         "MATLAB varargin parsing glue. Python uses ordinary keyword arguments."
-    ),
-    "getECstring": (
-        "Internal helper, inlined on the Python side inside fill_eccodes_from_database / "
-        f"fill_eccodes_from_gem. {DOC}."
-    ),
-    "loadDatabases": (
-        "geckopy loads databases implicitly at point of use rather than through one entry "
-        "point. The download halves it performs inline (urlwrite for UniProt, a local "
-        "downloadKEGG subfunction) are exposed separately in Python as "
-        "geckopy.databases.download_kegg / download_uniprot."
     ),
     # Bayesian helpers.
     "abc_max": BAYESIAN_HELPER,
@@ -404,6 +408,8 @@ def main() -> int:
         decide(name, status="matlab-only", python=None, reason=reason, notes=None)
     for name, reason in INTERNAL.items():
         decide(name, status="internal", reason=reason, notes=None)
+    for name, reason in SUBSUMED.items():
+        decide(name, status="subsumed", python=None, reason=reason, notes=None)
     for name, reason in PYTHON_ONLY.items():
         decide(name, status="python-only", matlab=None, reason=reason, notes=None)
     for name, reason in VIA_DEPENDENCY.items():

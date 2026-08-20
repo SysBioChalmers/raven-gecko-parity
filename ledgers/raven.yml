@@ -10,6 +10,7 @@
 #   matlab-only     Deliberately MATLAB-only --- not coming to Python.
 #   python-only     Deliberately Python-only --- not going to MATLAB.
 #   via-dependency  The other side gets this from a dependency (cobrapy, COBRA Toolbox) instead.
+#   subsumed        The other side has the capability inside another function, not as its own entry point.
 #   internal        Not part of the cross-implementation API (glue, installers, helpers).
 #   unreviewed      Not yet triaged. Drive this count to zero.
 #
@@ -22,17 +23,18 @@ python: SysBioChalmers/raven-toolbox
 
 entries:
   - matlab: addExchangeRxns
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: via-dependency
+    reason: 'cobrapy covers this: model.add_boundary(metabolite, type=''exchange'').'
   - matlab: addGenesRaven
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: via-dependency
+    reason: 'cobrapy covers this: genes are created automatically from a reaction''s GPR.'
   - matlab: addIdentifierPrefix
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: python-pending
+    notes: Adds an SBML-safe prefix to model identifiers. No port decision is recorded either way. Left in
+      the queue rather than declared a divergence, so the choice stays visible.
   - matlab: addMets
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: via-dependency
+    reason: 'cobrapy covers this: model.add_metabolites([cobra.Metabolite(...)]).'
   - matlab: addRxns
     python: raven_toolbox.manipulation.add_reactions_from_equations
     status: parity
@@ -49,11 +51,12 @@ entries:
     notes: from migration.md. Transport across compartments, matching mets by name, sequential tr_NNNN ids.
       cobra has no transport primitive.
   - matlab: analyzeSampling
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: python-pending
+    notes: Correlates per-reaction expression t-scores with flux samples. No port decision is recorded either
+      way. Left in the queue rather than declared a divergence, so the choice stays visible.
   - matlab: applyCondition
     python: raven_toolbox.conditions.apply_condition
-    status: unreviewed
+    status: parity
     notes: auto-paired (exact name match); confirm the behaviour actually matches
   - matlab: assignCompartments
     python: raven_toolbox.localization.assign_compartments
@@ -63,58 +66,64 @@ entries:
       on feat/assigncompartments-certify and coexists with predictLocalization.m. Needs a scenario before
       this can be called settled.'
   - matlab: assignSBOterms
-    status: unreviewed
-    notes: 'no confident pairing; closest Python exports: add_sbo_terms'
+    python: raven_toolbox.annotation.add_sbo_terms
+    status: parity
+    notes: Confirmed by yaml_format.md, which names both.
   - matlab: buildEquation
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: via-dependency
+    reason: 'cobrapy covers this: reaction.build_reaction_string(use_metabolite_names=...).'
   - matlab: canConsume
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: via-dependency
+    reason: 'cobrapy covers this: analyse_topology plus cobra.flux_analysis.find_blocked_reactions. Confirmed
+      by the gap-analysis row in todo.md.'
   - matlab: canProduce
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: via-dependency
+    reason: 'cobrapy covers this: analyse_topology plus cobra.flux_analysis.find_blocked_reactions. Confirmed
+      by the gap-analysis row in todo.md.'
   - matlab: changeGrRules
-    status: unreviewed
-    notes: 'migration.md says ported, but no matching export found: raven_toolbox.manipulation.change_reaction_equations,
-      raven_toolbox.change_gene_reaction_rules'
+    python: raven_toolbox.manipulation.change_gene_reaction_rules
+    status: parity
+    notes: Confirmed by the protocol table in todo.md.
   - matlab: changeRxns
     python: raven_toolbox.manipulation.change_reaction_equations
     status: parity
     notes: from migration.md. Stoichiometry change in place; batch GPR set/append ((old) or (new)).
   - matlab: checkFileExistence
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: internal
+    reason: File-existence glue with MATLAB dialog prompts.
   - matlab: checkInstallation
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: internal
+    reason: Installation check. Python installs with pip.
   - matlab: checkModelStruct
     python: raven_toolbox.utils.check_model
     status: parity
     notes: from migration.md. Structured curation report. RAVEN's struct/type checks are moot in cobra.
   - matlab: checkProduction
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: via-dependency
+    reason: 'cobrapy covers this: analyse_topology plus cobra.flux_analysis.find_blocked_reactions. Confirmed
+      by the gap-analysis row in todo.md.'
   - matlab: checkRxn
-    status: unreviewed
-    notes: 'no confident pairing; closest Python exports: KeggReaction'
+    status: subsumed
+    reason: Single-reaction feasibility probe, used inside the gap-analysis entry points.
   - matlab: checkSolution
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: via-dependency
+    reason: 'cobrapy covers this: the Solution object carries status, objective_value and fluxes.'
   - matlab: checkTasks
     python: raven_toolbox.tasks.check_tasks
-    status: unreviewed
+    status: parity
     notes: 'migration.md says ported, but no matching export found: raven_toolbox.tasks.parse_task_list, raven_toolbox.check_tasks'
   - matlab: cleanSheet
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: subsumed
+    reason: Excel cell-cleaning helper; inside io.export_to_excel.
   - matlab: closeModel
     python: raven_toolbox.manipulation.close_model
-    status: unreviewed
+    status: parity
     notes: auto-paired (exact name match); confirm the behaviour actually matches
   - matlab: compareFluxes
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: python-pending
+    notes: Diagnostic flux comparison across conditions; cobra_raven_comparison.md calls it a practical tool
+      COBRA lacks. No port decision is recorded either way. Left in the queue rather than declared a divergence,
+      so the choice stays visible.
   - matlab: compareMultipleModels
     python: raven_toolbox.comparison.compare_models
     status: parity
@@ -122,67 +131,76 @@ entries:
       + optional check_tasks pass/fail). Plotting and tSNE/MDS are 🗒️ one-liners in seaborn/scikit-learn;
       intentionally not in the function.
   - matlab: compareRxnsGenesMetsComps
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: subsumed
+    reason: Pairwise entity comparison; comparison.compare_models returns the same information as tidy DataFrames
+      for N models.
   - matlab: constructEquations
     status: matlab-only
     reason: reaction.build_reaction_string(use_metabolite_names=...) already does both id and name equations.
     notes: no obvious Python counterpart; decide whether one is needed
   - matlab: constructS
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: via-dependency
+    reason: 'cobrapy covers this: cobra.util.array.create_stoichiometric_matrix.'
   - matlab: consumeSomething
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: subsumed
+    reason: Consumption probe used inside the gap analysis; not a separate Python entry point.
   - matlab: contractModel
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    python: raven_toolbox.manipulation.remove_duplicate_reactions
+    status: parity
+    notes: todo.md flags these as NOT exactly equivalent --- a behaviour row, so no scenario asserting identity
+      until the difference is characterised.
   - matlab: convertCharArray
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: internal
+    reason: MATLAB argument-validation glue. Python uses ordinary keyword arguments and type hints.
   - matlab: convertToIrrev
     python: raven_toolbox.manipulation.convert_to_irreversible
     status: parity
     notes: from migration.md. Splits reversible non-exchange reactions into forward + _REV. Adopted from geckopy.
   - matlab: copyToComps
-    status: unreviewed
-    notes: 'migration.md says ported, but no matching export found: raven_toolbox.manipulation.copy_to_compartment'
+    status: python-pending
+    notes: raven-toolbox HAS this --- manipulation/compartments.py:138 copy_to_compartment --- but it is missing
+      from manipulation.__all__, so it is not public API. migration.md documents it as ported and links to
+      it. Add the export and this row becomes parity.
   - matlab: curateModelFromTables
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    python: raven_toolbox.curation.batch_curate_from_tsv
+    status: parity
+    notes: Table-driven batch curation.
   - matlab: cycleFreeFlux
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: via-dependency
+    reason: 'cobrapy covers this: cobra.flux_analysis.loopless_solution / add_loopless.'
   - matlab: defaultCompartmentMap
     python: raven_toolbox.localization.DEFAULT_COMPARTMENT_MAP
-    status: unreviewed
+    status: parity
     notes: auto-paired (exact name match); confirm the behaviour actually matches
   - matlab: deleteUnusedGenes
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: via-dependency
+    reason: 'cobrapy covers this: cobra.manipulation.prune_unused_genes. raven_toolbox.manipulation.remove_genes
+      also covers it.'
   - matlab: deltaGCSV
-    status: unreviewed
-    notes: 'no confident pairing; closest Python exports: save_delta_g_csv, load_delta_g_csv'
+    python: raven_toolbox.annotation.load_delta_g_csv
+    status: parity
+    notes: The read half; save_delta_g_csv is the write half.
   - matlab: diffModels
     python: raven_toolbox.comparison.diff_models
-    status: unreviewed
+    status: parity
     notes: auto-paired (exact name match); confirm the behaviour actually matches
   - matlab: downloadGenomeData
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: python-pending
+    notes: Fetches genome/proteome files for a reconstruction. No port decision is recorded either way. Left
+      in the queue rather than declared a divergence, so the choice stays visible.
   - matlab: editMiriam
     status: matlab-only
     reason: 'cobra''s .annotation is already a {namespace: id(s)} dict — read/write it directly.'
     notes: no obvious Python counterpart; decide whether one is needed
   - matlab: emptyOrLogicalScalar
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: internal
+    reason: MATLAB argument-validation glue. Python uses ordinary keyword arguments and type hints.
   - matlab: emptyOrTextOrCellOfText
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: internal
+    reason: MATLAB argument-validation glue. Python uses ordinary keyword arguments and type hints.
   - matlab: emptyOrTextScalar
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: internal
+    reason: MATLAB argument-validation glue. Python uses ordinary keyword arguments and type hints.
   - matlab: expandModel
     python: raven_toolbox.manipulation.expand_model
     status: parity
@@ -192,16 +210,17 @@ entries:
     status: parity
     notes: from migration.md. Standard-GEM repo layout (model/<fmt>/…).
   - matlab: exportModel
-    status: unreviewed
-    notes: 'no confident pairing; closest Python exports: export_model_to_sif, export_to_excel, expand_model'
+    status: via-dependency
+    reason: 'cobrapy covers this: cobra.io.write_sbml_model. Confirmed by the protocol table in todo.md.'
   - matlab: exportToExcelFormat
     python: raven_toolbox.io.export_to_excel
     status: parity
     notes: from migration.md. RAVEN 5-sheet xlsx (RXNS / METS / COMPS / GENES / MODEL). Excel import is intentionally
       excluded.
   - matlab: exportToTabDelimited
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: python-pending
+    notes: Tab-delimited model export. No port decision is recorded either way. Left in the queue rather than
+      declared a divergence, so the choice stays visible.
   - matlab: extractMiriam
     status: matlab-only
     reason: 'cobra''s .annotation is already a {namespace: id(s)} dict — read/write it directly.'
@@ -213,30 +232,34 @@ entries:
       Targeted mode → 🗒️ cobra.gapfill.
   - matlab: findDuplicateRxns
     python: raven_toolbox.manipulation.find_duplicate_reactions
-    status: unreviewed
+    status: parity
     notes: auto-paired (name match after expanding MATLAB abbreviations); confirm the behaviour actually matches
   - matlab: findGeneDeletions
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: via-dependency
+    reason: 'cobrapy covers this: cobra.flux_analysis.single_gene_deletion / double_gene_deletion.'
   - matlab: findLeakMetabolite
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: python-pending
+    notes: Finds metabolites produced from nothing (leaks). No port decision is recorded either way. Left
+      in the queue rather than declared a divergence, so the choice stays visible.
   - matlab: findPotentialErrors
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: subsumed
+    reason: Structural checks folded into utils.check_model's report.
   - matlab: fitParameters
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: python-pending
+    notes: Fits growth-associated maintenance parameters to measured data. No port decision is recorded either
+      way. Left in the queue rather than declared a divergence, so the choice stays visible.
   - matlab: fitTasks
     status: matlab-only
     reason: Niche; tasks are normally consumed via checkTasks / ftINIT's task layer.
     notes: 'no confident pairing; closest Python exports: fill_tasks'
   - matlab: followChanged
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: python-pending
+    notes: Walks reactions whose flux changed between two solutions. No port decision is recorded either way.
+      Left in the queue rather than declared a divergence, so the choice stays visible.
   - matlab: followFluxes
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: python-pending
+    notes: Traces flux through a metabolite's producers and consumers. No port decision is recorded either
+      way. Left in the queue rather than declared a divergence, so the choice stays visible.
   - matlab: FSEOF
     python: raven_toolbox.analysis.fseof
     status: parity
@@ -244,67 +267,75 @@ entries:
       (FS1–FS4 in IMPROVEMENTS).
   - matlab: ftINIT
     python: raven_toolbox.init.ftinit
-    status: unreviewed
+    status: parity
     notes: migration.md maps {ftINIT, prepINITModel, ftINITInternalAlg, getINITSteps} onto {raven_toolbox.init.ftinit,
       raven_toolbox.init.prep_init_model, raven_toolbox.init.run_ftinit, raven_toolbox.init.get_init_steps}
       as a group; pick the right counterpart
   - matlab: ftINITFillGaps
+    status: subsumed
+    reason: Single-task variant. migration.md paired it with fill_tasks, but ftINIT.m actually calls ftINITFillGapsForAllTasks,
+      and fill_tasks takes the whole task list --- so the ForAllTasks row carries the pairing and this one
+      is folded into it.
+  - matlab: ftINITFillGapsForAllTasks
     python: raven_toolbox.init.fill_tasks
     status: parity
-    notes: from migration.md. Task-aware gap-filling within ftINIT; in-place _feasible check + bounded fill
-      MILP (mip_gap, time_limit).
-  - matlab: ftINITFillGapsForAllTasks
-    status: unreviewed
-    notes: 'migration.md says ported, but no matching export found: raven_toolbox.init.fill_tasks'
+    notes: Task-aware gap-filling within ftINIT.
   - matlab: ftINITFillGapsMILP
-    status: unreviewed
-    notes: 'migration.md says ported, but no matching export found: raven_toolbox.init.fill_tasks'
+    status: subsumed
+    reason: The inner MILP of the ftINIT task gap-fill; inside init.fill_tasks.
   - matlab: ftINITInternalAlg
-    status: unreviewed
-    notes: migration.md maps {ftINIT, prepINITModel, ftINITInternalAlg, getINITSteps} onto {raven_toolbox.init.ftinit,
-      raven_toolbox.init.prep_init_model, raven_toolbox.init.run_ftinit, raven_toolbox.init.get_init_steps}
-      as a group; pick the right counterpart
+    python: raven_toolbox.init.run_ftinit
+    status: parity
+    notes: The single-step ftINIT MILP, beneath the full pipeline.
   - matlab: gapFillFastCore
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: subsumed
+    reason: The L1-norm LP subroutine of gapFillFastLP; inside fill_gaps_fast_lp on the Python side.
   - matlab: gapFillFastLP
-    status: unreviewed
-    notes: 'no confident pairing; closest Python exports: fill_gaps_fast_lp'
+    python: raven_toolbox.gapfilling.fill_gaps_fast_lp
+    status: parity
+    notes: Both are 'LP-based gap-filling (fastGapFill / swiftGapFill)'.
   - matlab: gapFillMILP
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    python: raven_toolbox.gapfilling.fill_gaps_kumar_milp
+    status: parity
+    notes: Objective-based gap-filling under a growth floor (Kumar 2007).
   - matlab: gapFillSwiftCore
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: subsumed
+    reason: The SWIFTCORE LP subroutine of swiftGapFill; inside fill_gaps_fast_lp on the Python side.
   - matlab: gapFillTopological
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    python: raven_toolbox.gapfilling.analyse_topology
+    status: parity
+    notes: Both are the BFS metabolite-producibility pre-screen.
   - matlab: gapReport
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: python-pending
+    notes: Summary report over a gap analysis. analyse_topology returns the data; the reporting layer is not
+      ported. No port decision is recorded either way. Left in the queue rather than declared a divergence,
+      so the choice stays visible.
   - matlab: generateNewIds
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: python-pending
+    notes: Generates the next free id in a model's numbering scheme. No port decision is recorded either way.
+      Left in the queue rather than declared a divergence, so the choice stays visible.
   - matlab: getAllowedBounds
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: via-dependency
+    reason: 'cobrapy covers this: cobra.flux_analysis.flux_variability_analysis.'
   - matlab: getAllRxnsFromGenes
-    status: unreviewed
-    notes: 'no confident pairing; closest Python exports: score_reactions_from_genes'
+    status: via-dependency
+    reason: 'cobrapy covers this: gene.reactions.'
   - matlab: getAllSubGraphs
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: via-dependency
+    reason: 'cobrapy covers this: analyse_topology plus cobra.flux_analysis.find_blocked_reactions. Confirmed
+      by the gap-analysis row in todo.md.'
   - matlab: getBiomassFractions
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    python: raven_toolbox.biomass.sum_biomass
+    status: parity
+    notes: Mass fractions per biomass component class.
   - matlab: getBlast
-    status: unreviewed
-    notes: 'migration.md says ported, but no matching export found: raven_toolbox.reconstruction.homology.get_model_from_homology,
-      raven_toolbox.run_blast, raven_toolbox.run_diamond, raven_toolbox.blast_from_table'
+    python: raven_toolbox.reconstruction.homology.run_blast
+    status: parity
+    notes: Confirmed by migration.md and the protocol table.
   - matlab: getDiamond
-    status: unreviewed
-    notes: 'migration.md says ported, but no matching export found: raven_toolbox.reconstruction.homology.get_model_from_homology,
-      raven_toolbox.run_blast, raven_toolbox.run_diamond, raven_toolbox.blast_from_table'
+    python: raven_toolbox.reconstruction.homology.run_diamond
+    status: parity
+    notes: Confirmed by migration.md and the protocol table.
   - matlab: getElementalBalance
     python: raven_toolbox.utils.get_elemental_balance
     status: parity
@@ -314,56 +345,61 @@ entries:
       RAVEN also reports balanceStatus == -2 (unparsable), which the Python side has no equivalent for; the
       scenario keeps it visible rather than folding it into ''unknown''.'
   - matlab: getEssentialRxns
-    status: unreviewed
-    notes: 'no confident pairing; closest Python exports: find_task_essential_reactions, EssentialReactionsResult'
+    status: via-dependency
+    reason: 'cobrapy covers this: cobra.flux_analysis.find_essential_reactions.'
   - matlab: getExchangeRxns
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: via-dependency
+    reason: 'cobrapy covers this: model.exchanges.'
   - matlab: getExprForRxnScore
-    status: unreviewed
-    notes: 'no confident pairing; closest Python exports: group_rxn_scores'
+    status: subsumed
+    reason: Inverse of the reaction-scoring step, folded into the init scoring functions.
   - matlab: getFluxZ
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: python-pending
+    notes: Z-scores fluxes across a sample set. No port decision is recorded either way. Left in the queue
+      rather than declared a divergence, so the choice stays visible.
   - matlab: getGeneData
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: python-pending
+    notes: Retrieves per-gene annotation for curation. No port decision is recorded either way. Left in the
+      queue rather than declared a divergence, so the choice stays visible.
   - matlab: getGenesFromGrRules
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: via-dependency
+    reason: 'cobrapy covers this: GPR.genes on the parsed syntax tree.'
   - matlab: getIndexes
-    status: unreviewed
-    notes: 'migration.md says ported, but no matching export found: raven_toolbox.utils.parse_name_comp'
+    status: via-dependency
+    reason: 'cobrapy covers this: DictList get_by_id / get_by_any / query. IMPROVEMENTS.md: deliberately not
+      ported --- a 1-based index resolver is redundant in an object model. Only the name[comp] sliver was
+      kept, as utils.parse_name_comp.'
   - matlab: getINITModel
     python: raven_toolbox.init.get_init_model
-    status: unreviewed
+    status: parity
     notes: migration.md maps {runINIT, scoreComplexModel, getINITModel} onto {raven_toolbox.init.run_init,
       raven_toolbox.init.get_init_model, raven_toolbox.init.score_reactions_from_genes} as a group; pick the
       right counterpart
   - matlab: getINITSteps
     python: raven_toolbox.init.get_init_steps
-    status: unreviewed
+    status: parity
     notes: migration.md maps {ftINIT, prepINITModel, ftINITInternalAlg, getINITSteps} onto {raven_toolbox.init.ftinit,
       raven_toolbox.init.prep_init_model, raven_toolbox.init.run_ftinit, raven_toolbox.init.get_init_steps}
       as a group; pick the right counterpart
   - matlab: getKEGGModelForOrganism
     python: raven_toolbox.reconstruction.kegg.get_kegg_model_for_organism
-    status: unreviewed
+    status: parity
     notes: auto-paired (exact name match); confirm the behaviour actually matches
   - matlab: getMinimalMedium
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: via-dependency
+    reason: 'cobrapy covers this: cobra.medium.minimal_medium.'
   - matlab: getMinNrFluxes
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: python-pending
+    notes: Minimal-cardinality flux set (a MILP, not cobra's L1 pFBA). No port decision is recorded either
+      way. Left in the queue rather than declared a divergence, so the choice stays visible.
   - matlab: getModelFromHomology
     python: raven_toolbox.reconstruction.homology.get_model_from_homology
     status: parity
     notes: from migration.md. Core homology reconstruction with structured improvements (bidirectional / best-hits-only,
       AST GPR rewrite, complex policy, bitscore best-hits, DataFrame ortholog map).
   - matlab: getModelFromKEGG
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: subsumed
+    reason: Building the model from KO assignments is a stage inside reconstruction.kegg.get_kegg_model_for_organism.
   - matlab: getPhylDist
     python: raven_toolbox.reconstruction.kegg.phyl_dist
     status: parity
@@ -375,55 +411,63 @@ entries:
     reason: One-liners over cobra's reaction.compartments / metabolite.compartment.
     notes: no obvious Python counterpart; decide whether one is needed
   - matlab: getTransportRxns
-    status: unreviewed
-    notes: 'no confident pairing; closest Python exports: add_transport_reactions'
+    status: via-dependency
+    reason: 'cobrapy covers this: a one-liner over reaction.compartments.'
   - matlab: getUniProtScores
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    python: raven_toolbox.localization.fetch_uniprot_localization
+    status: parity
+    notes: Fetches per-gene localisation evidence from UniProtKB.
   - matlab: getWSLpath
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: internal
+    reason: Windows-to-WSL path translation for the external binaries. Python resolves binaries through raven_toolbox.binaries.
   - matlab: groupRxnScores
     python: raven_toolbox.init.group_rxn_scores
-    status: unreviewed
+    status: parity
     notes: auto-paired (exact name match); confirm the behaviour actually matches
   - matlab: grRuleToDNF
-    status: unreviewed
-    notes: 'no confident pairing; closest Python exports: gpr_to_dnf'
+    python: raven_toolbox.manipulation.gpr_to_dnf
+    status: parity
+    notes: Rewrites a GPR into disjunctive normal form.
   - matlab: grRuleToString
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: via-dependency
+    reason: 'cobrapy covers this: GPR.to_string().'
   - matlab: guessComposition
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: python-pending
+    notes: Infers biomass composition from a related organism. No port decision is recorded either way. Left
+      in the queue rather than declared a divergence, so the choice stays visible.
   - matlab: haveFlux
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: via-dependency
+    reason: 'cobrapy covers this: cobra.flux_analysis.find_blocked_reactions. Confirmed by the gap-analysis
+      row in todo.md. Tolerance semantics differ slightly.'
   - matlab: importModel
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: via-dependency
+    reason: 'cobrapy covers this: cobra.io.read_sbml_model. Confirmed by the protocol table in todo.md.'
   - matlab: INITStepDesc
-    status: unreviewed
-    notes: 'no confident pairing; closest Python exports: InitStep'
+    python: raven_toolbox.init.InitStep
+    status: parity
+    notes: Describes one step of the ftINIT schedule.
   - matlab: isDnfGrRule
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    python: raven_toolbox.utils.is_dnf
+    status: parity
+    notes: Direct counterpart; see the standardizeGrRules repair below.
   - matlab: looplessFVA
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: via-dependency
+    reason: 'cobrapy covers this: cobra.flux_analysis.flux_variability_analysis(loopless=True).'
   - matlab: makeFakeBlastStructure
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: internal
+    reason: Fabricates a BLAST result struct for tests and for merging KEGG with homology draft models.
   - matlab: makeSomething
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: subsumed
+    reason: Production probe used inside the gap analysis; not a separate Python entry point.
   - matlab: mapCompartments
     status: matlab-only
     reason: Overlaps with comparison.compare_models on the reaction-id intersection.
     notes: 'no confident pairing; closest Python exports: load_compartments'
   - matlab: mergeCompartments
-    status: unreviewed
-    notes: 'migration.md says ported, but no matching export found: raven_toolbox.manipulation.merge_compartments'
+    status: python-pending
+    notes: raven-toolbox HAS this --- manipulation/compartments.py:20 merge_compartments --- but it is missing
+      from manipulation.__all__, so it is not public API. migration.md documents it as ported and links to
+      it. Add the export and this row becomes parity.
   - matlab: mergeLinear
     python: raven_toolbox.init.merge_linear
     status: parity
@@ -435,20 +479,21 @@ entries:
     notes: from migration.md. N-model merge, unify mets by name[comp] (or id), keep all reactions (id collisions
       renamed). cobra's merge is pairwise / strict-by-id.
   - matlab: modelSummary
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: python-pending
+    notes: Console/struct model summary. No port decision is recorded either way. Left in the queue rather
+      than declared a divergence, so the choice stays visible.
   - matlab: optimizeProb
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: via-dependency
+    reason: 'cobrapy covers this: model.optimize(), with optlang underneath.'
   - matlab: parallelWorkersRAVEN
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: internal
+    reason: MATLAB Parallel Computing Toolbox pool setup.
   - matlab: parseFormulas
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: subsumed
+    reason: Chemical-formula parser; inside utils.get_elemental_balance.
   - matlab: parseGrRule
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: via-dependency
+    reason: 'cobrapy covers this: the GPR parser; assigning gene_reaction_rule parses it.'
   - matlab: parseHPA
     python: raven_toolbox.omics.parse_hpa
     status: parity
@@ -456,15 +501,15 @@ entries:
       source of truth for the GPR walk).
   - matlab: parseHPArna
     python: raven_toolbox.omics.parse_hpa_rna
-    status: unreviewed
+    status: parity
     notes: 'migration.md says ported, but no matching export found: raven_toolbox.omics.parse_hpa, raven_toolbox.parse_hpa_rna,
       raven_toolbox.hpa_gene_scores, raven_toolbox.rna_gene_scores'
   - matlab: parseRAVENargs
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: internal
+    reason: MATLAB argument-validation glue. Python uses ordinary keyword arguments and type hints.
   - matlab: parseRxnEqu
-    status: unreviewed
-    notes: 'no confident pairing; closest Python exports: parse_kegg_reactions'
+    status: subsumed
+    reason: Equation-string parser; inside manipulation.add_reactions_from_equations.
   - matlab: parseScores
     python: raven_toolbox.localization.load_deeploc
     status: parity
@@ -476,11 +521,12 @@ entries:
     notes: from migration.md. check_tasks reuses one model across the task list (no per-task model copy) —
       at genome scale ~12× faster than the copy-per-task implementation it replaced.
   - matlab: parseYAML
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: subsumed
+    reason: The RAVEN YAML tokeniser; inside io.read_yaml_model.
   - matlab: permuteModel
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: matlab-only
+    reason: Row/column permutation of the RAVEN struct's parallel arrays. Meaningless in cobra, where entities
+      are objects rather than array positions.
   - matlab: predictLocalization
     python: raven_toolbox.localization.predict_localization
     status: parity
@@ -490,47 +536,50 @@ entries:
       diff. Real-data validation against curated yeast-GEM in yeast_localization_benchmark.md.'
   - matlab: prepINITModel
     python: raven_toolbox.init.prep_init_model
-    status: unreviewed
+    status: parity
     notes: migration.md maps {ftINIT, prepINITModel, ftINITInternalAlg, getINITSteps} onto {raven_toolbox.init.ftinit,
       raven_toolbox.init.prep_init_model, raven_toolbox.init.run_ftinit, raven_toolbox.init.get_init_steps}
       as a group; pick the right counterpart
   - matlab: printFluxes
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: matlab-only
+    reason: Console formatting of a flux vector. Python users print a pandas Series or DataFrame; listed as
+      MATLAB-only in todo.md.
   - matlab: printModel
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: matlab-only
+    reason: Console model summary. Not ported; cobra's repr and DataFrames cover it.
   - matlab: printModelStats
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: matlab-only
+    reason: Console model statistics. Not ported; compare_models and cobra's repr cover it.
   - matlab: printOrange
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: internal
+    reason: Coloured console output. Python uses the logging module.
   - matlab: processProteinFastaFile
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: python-pending
+    notes: Normalises a proteome FASTA before homology search. No port decision is recorded either way. Left
+      in the queue rather than declared a divergence, so the choice stays visible.
   - matlab: progressReport
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: internal
+    reason: Console progress display. Python uses logging / tqdm.
   - matlab: qMOMA
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: via-dependency
+    reason: 'cobrapy covers this: cobra.flux_analysis.moma(linear=False).'
   - matlab: randomSampling
     python: raven_toolbox.analysis.random_sampling
-    status: unreviewed
+    status: parity
     notes: 'migration.md says ported, but no matching export found: raven_toolbox.analysis.sample'
   - matlab: ravenCobraWrapper
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: matlab-only
+    reason: cobra is the canonical object in raven-toolbox --- there is no parallel RAVEN struct to convert
+      to or from. Recorded in migration.md under 'deliberately not ported'.
   - matlab: ravenList
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: internal
+    reason: MATLAB cell-array helper.
   - matlab: ravenModelFields
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: internal
+    reason: Enumerates the RAVEN struct's field names --- meaningless in an object model.
   - matlab: readFasta
-    status: unreviewed
-    notes: 'no confident pairing; closest Python exports: PreparedFasta, write_fasta'
+    status: via-dependency
+    reason: Biopython's SeqIO covers FASTA parsing; raven-toolbox reads sequences through it.
   - matlab: readYAMLmodel
     python: raven_toolbox.io.read_yaml_model
     status: parity
@@ -538,17 +587,18 @@ entries:
       per-entry keys (inchis/deltaG/metFrom/notes, confidence_score/references/rxnFrom/deltaG, protein) into
       .notes, plus version/metaData/GECKO ec-*. cobra-readable output verified.
   - matlab: removeBadRxns
-    status: unreviewed
-    notes: 'no confident pairing; closest Python exports: remove_dead_end_reactions, remove_no_flux_reactions,
-      remove_duplicate_reactions'
+    status: python-pending
+    notes: Flags reactions with structural problems for review. No port decision is recorded either way. Left
+      in the queue rather than declared a divergence, so the choice stays visible.
   - matlab: removeGenes
     python: raven_toolbox.manipulation.remove_genes
-    status: unreviewed
+    status: parity
     notes: 'migration.md says ported, but no matching export found: raven_toolbox.manipulation.remove_metabolites,
       raven_toolbox.remove_genes'
   - matlab: removeIdentifierPrefix
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: python-pending
+    notes: Strips the SBML-safe identifier prefix. No port decision is recorded either way. Left in the queue
+      rather than declared a divergence, so the choice stays visible.
   - matlab: removeLowScoreGenes
     python: raven_toolbox.init.remove_low_score_genes
     status: parity
@@ -559,86 +609,97 @@ entries:
     notes: from migration.md. Delegate to cobra; add by_name cross-compartment deletion (mets) and a blocked_reactions
       policy (genes). removeReactions itself ⛔ — cobra's remove_reactions covers it.
   - matlab: removeReactions
-    status: unreviewed
-    notes: 'no confident pairing; closest Python exports: remove_no_flux_reactions, relocate_reactions, remove_dead_end_reactions'
+    status: via-dependency
+    reason: 'cobrapy covers this: model.remove_reactions(remove_orphans=...). IMPROVEMENTS.md records the
+      decision: with orphan cleanup kept coupled the wrapper added nothing, so it was removed entirely.'
   - matlab: renameModelGenes
-    status: unreviewed
-    notes: 'no confident pairing; closest Python exports: remove_genes'
+    status: python-pending
+    notes: Renames genes across GPRs and the gene list. No port decision is recorded either way. Left in the
+      queue rather than declared a divergence, so the choice stays visible.
   - matlab: replaceMets
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: python-pending
+    notes: Substitutes one metabolite for another across the model. No port decision is recorded either way.
+      Left in the queue rather than declared a divergence, so the choice stays visible.
   - matlab: reporterMetabolites
     python: raven_toolbox.analysis.reporter_metabolites
     status: parity
     notes: from migration.md. Exact closed-form background replaces RAVEN's Monte-Carlo (RM1 in IMPROVEMENTS).
   - matlab: rescaleModelForINIT
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: subsumed
+    reason: Numerical preconditioning inside the ftINIT preparation, part of prep_init_model.
   - matlab: reverseRxns
-    status: unreviewed
-    notes: 'no confident pairing; closest Python exports: remove_dead_end_reactions, relocate_reactions, constrain_reversible_reactions'
+    status: subsumed
+    reason: Direction-flipping helper used by the INIT preprocessing.
   - matlab: runDynamicFBA
     status: matlab-only
     reason: 'Not ported: maintained Python packages already cover dynamic FBA (dfba, reframed, mewpy).'
     notes: no obvious Python counterpart; decide whether one is needed
   - matlab: runINIT
     python: raven_toolbox.init.run_init
-    status: unreviewed
+    status: parity
     notes: migration.md maps {runINIT, scoreComplexModel, getINITModel} onto {raven_toolbox.init.run_init,
       raven_toolbox.init.get_init_model, raven_toolbox.init.score_reactions_from_genes} as a group; pick the
       right counterpart
   - matlab: runPhenotypePhasePlane
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: via-dependency
+    reason: 'cobrapy covers this: cobra.flux_analysis.production_envelope over two varying reactions.'
   - matlab: runProductionEnvelope
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: via-dependency
+    reason: 'cobrapy covers this: cobra.flux_analysis.production_envelope.'
   - matlab: runRAVENtests
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: internal
+    reason: Test-suite runner. Python uses pytest.
   - matlab: runRobustnessAnalysis
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: via-dependency
+    reason: 'cobrapy covers this: cobra.flux_analysis.production_envelope over one varying reaction.'
   - matlab: runSimpleOptKnock
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: python-pending
+    notes: Reaction-knockout strain design. cobrapy dropped its design module; straindesign and mewpy cover
+      this ground. No port decision is recorded either way. Left in the queue rather than declared a divergence,
+      so the choice stays visible.
   - matlab: sampleACHR
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: via-dependency
+    reason: 'cobrapy covers this: cobra.sampling.ACHRSampler. flux_sampling_algorithms.md section 8: the Python
+      side wraps cobra''s mature ACHR rather than reimplementing it. MATLAB had neither sampler, so it implements
+      both.'
   - matlab: sampleChebyshevCenter
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: subsumed
+    reason: Interior-point start for CHRR; the private _chebyshev_center, over scipy linprog.
   - matlab: sampleCHRR
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: subsumed
+    reason: CHRR is reached through analysis.random_sampling(method='chrr'); the implementation is the private
+      _sample_chrr.
   - matlab: sampleMaxVolEllipse
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    python: raven_toolbox.analysis.max_volume_ellipsoid
+    status: parity
+    notes: The MVE core of CHRR. Per flux_sampling_algorithms.md the Python one is the numerically validated
+      reference the MATLAB mirrors line-for-line --- a strong scenario candidate.
   - matlab: sampleWarmupPoints
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: via-dependency
+    reason: 'cobrapy covers this: ACHRSampler generates its own warmup points internally.'
   - matlab: scaleBiomassFraction
-    status: unreviewed
-    notes: 'no confident pairing; closest Python exports: scale_biomass'
+    python: raven_toolbox.biomass.scale_biomass
+    status: parity
+    notes: Rescale one component class to a target fraction.
   - matlab: scaleBiomassPseudoreaction
-    status: unreviewed
-    notes: 'no confident pairing; closest Python exports: rescale_pseudoreaction'
+    python: raven_toolbox.biomass.rescale_pseudoreaction
+    status: parity
+    notes: Rescale the pseudoreaction coefficients.
   - matlab: scoreComplexModel
-    status: unreviewed
-    notes: migration.md maps {runINIT, scoreComplexModel, getINITModel} onto {raven_toolbox.init.run_init,
-      raven_toolbox.init.get_init_model, raven_toolbox.init.score_reactions_from_genes} as a group; pick the
-      right counterpart
+    python: raven_toolbox.init.score_reactions_from_genes
+    status: parity
+    notes: Gene scores to reaction scores via the GPR.
   - matlab: scoreModel
-    status: unreviewed
-    notes: 'migration.md says ported, but no matching export found: raven_toolbox.omics.parse_hpa, raven_toolbox.parse_hpa_rna,
-      raven_toolbox.hpa_gene_scores, raven_toolbox.rna_gene_scores'
+    python: raven_toolbox.omics.hpa_gene_scores
+    status: parity
+    notes: migration.md maps parseHPA/parseHPArna/scoreModel onto the omics module.
   - matlab: setExchangeBounds
     status: matlab-only
     reason: 'cobra''s model.medium = {ex_id: uptake} covers it.'
     notes: no obvious Python counterpart; decide whether one is needed
   - matlab: setGAM
     python: raven_toolbox.biomass.set_gam
-    status: unreviewed
+    status: parity
     notes: auto-paired (exact name match); confirm the behaviour actually matches
   - matlab: setParam
     python: raven_toolbox.manipulation.set_variance_bounds
@@ -646,456 +707,469 @@ entries:
     notes: 'from migration.md. ±% band around measured values. Other modes (lb/ub/eq/obj/unc): 🗒️ cobra one-liners
       (reaction.bounds, model.objective, Configuration().bounds).'
   - matlab: setRavenProgress
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: internal
+    reason: Toggles the console progress display.
   - matlab: setRavenSolver
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: via-dependency
+    reason: 'cobrapy covers this: model.solver = "gurobi".'
   - matlab: simplifyModel
     python: raven_toolbox.manipulation.remove_dead_end_reactions
     status: parity
     notes: from migration.md. Cobra-covered modes (no-flux→find_blocked_reactions, zero-interval, unconstrained)
       are 🗒️ cheatsheeted. group_linear is lossy (drops genes), per RAVEN.
   - matlab: solveLP
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: via-dependency
+    reason: 'cobrapy covers this: model.optimize().'
   - matlab: sortIdentifiers
     python: raven_toolbox.utils.sort_identifiers
     status: parity
     notes: from migration.md. Model-wide alphabetical sort; also via sort_ids= on write_yaml_model.
   - matlab: sortModel
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: subsumed
+    reason: Field-and-entity sorting; utils.sort_identifiers covers the identifier ordering that matters in
+      cobra.
   - matlab: splitProbForConditioning
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: internal
+    reason: Numerical conditioning of a MATLAB LP before it goes to the solver.
   - matlab: standardizeGrRules
-    python: raven_toolbox.utils.is_dnf
+    python: raven_toolbox.utils.find_non_dnf_grrules
     status: parity
     notes: from migration.md. Lint-only half; cobra auto-normalises GPRs on assignment, so the rewriting half
       isn't ported.
   - matlab: standardizeModelFieldOrder
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: matlab-only
+    reason: RAVEN struct field ordering is moot in an object model; cobra has no field order to standardise.
   - matlab: traceFluxPath
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: python-pending
+    notes: Traces a carbon/flux path between two reactions. No port decision is recorded either way. Left
+      in the queue rather than declared a divergence, so the choice stays visible.
   - matlab: walkFluxes
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: python-pending
+    notes: Graph walk over the flux network. No port decision is recorded either way. Left in the queue rather
+      than declared a divergence, so the choice stays visible.
   - matlab: writeExcel
-    status: unreviewed
-    notes: no obvious Python counterpart; decide whether one is needed
+    status: subsumed
+    reason: Sheet writer; inside io.export_to_excel.
   - matlab: writeFasta
     python: raven_toolbox.localization.write_fasta
-    status: unreviewed
+    status: parity
     notes: auto-paired (exact name match); confirm the behaviour actually matches
   - matlab: writeYAMLmodel
     python: raven_toolbox.io.write_yaml_model
-    status: unreviewed
+    status: parity
     notes: 'migration.md says ported, but no matching export found: raven_toolbox.io.read_yaml_model, raven_toolbox.write_yaml_model'
   - python: raven_toolbox.analysis.find_good_reactions
-    status: unreviewed
-    notes: 'no confident pairing; closest MATLAB functions: addRxns'
+    status: python-only
+    reason: The non-loop flux screen randomSampling performs inline when choosing random objectives.
   - python: raven_toolbox.analysis.FluxSamplingResult
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Result type. RAVEN returns several parallel outputs; raven-toolbox returns one dataclass, so this
+      has no MATLAB counterpart by design.
   - python: raven_toolbox.analysis.FSEOFResult
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
-  - python: raven_toolbox.analysis.max_volume_ellipsoid
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Result type. RAVEN returns several parallel outputs; raven-toolbox returns one dataclass, so this
+      has no MATLAB counterpart by design.
   - python: raven_toolbox.analysis.RandomSamplingResult
-    status: unreviewed
-    notes: 'no confident pairing; closest MATLAB functions: randomSampling'
+    status: python-only
+    reason: Result type. RAVEN returns several parallel outputs; raven-toolbox returns one dataclass, so this
+      has no MATLAB counterpart by design.
   - python: raven_toolbox.analysis.ReporterResult
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
-  - python: raven_toolbox.annotation.add_sbo_terms
-    status: unreviewed
-    notes: 'no confident pairing; closest MATLAB functions: assignSBOterms'
+    status: python-only
+    reason: Result type. RAVEN returns several parallel outputs; raven-toolbox returns one dataclass, so this
+      has no MATLAB counterpart by design.
   - python: raven_toolbox.annotation.DEFAULT_BIOMASS_MET_NAMES
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Default-value constant, exported so callers can inspect and override it. RAVEN hard-codes the
+      equivalent.
   - python: raven_toolbox.annotation.DEFAULT_BIOMASS_RXN_NAME
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Default-value constant, exported so callers can inspect and override it. RAVEN hard-codes the
+      equivalent.
   - python: raven_toolbox.annotation.DEFAULT_NGAM_RXN_NAME
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
-  - python: raven_toolbox.annotation.load_delta_g_csv
-    status: unreviewed
-    notes: 'no confident pairing; closest MATLAB functions: deltaGCSV'
+    status: python-only
+    reason: Default-value constant, exported so callers can inspect and override it. RAVEN hard-codes the
+      equivalent.
   - python: raven_toolbox.annotation.save_delta_g_csv
-    status: unreviewed
-    notes: 'no confident pairing; closest MATLAB functions: deltaGCSV'
+    status: python-only
+    reason: The write half of the deltaG CSV round-trip; RAVEN's deltaGCSV only reads.
   - python: raven_toolbox.biomass.BiomassComponent
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Parsed-data type. RAVEN passes structs and parallel cell arrays instead.
   - python: raven_toolbox.biomass.BiomassConfig
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
-  - python: raven_toolbox.biomass.rescale_pseudoreaction
-    status: unreviewed
-    notes: 'no confident pairing; closest MATLAB functions: scaleBiomassPseudoreaction'
-  - python: raven_toolbox.biomass.scale_biomass
-    status: unreviewed
-    notes: 'no confident pairing; closest MATLAB functions: scaleBiomassFraction'
-  - python: raven_toolbox.biomass.sum_biomass
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Parsed-data type. RAVEN passes structs and parallel cell arrays instead.
   - python: raven_toolbox.comparison.DEFAULT_ANNOTATION_KEYS
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Default-value constant, exported so callers can inspect and override it. RAVEN hard-codes the
+      equivalent.
   - python: raven_toolbox.comparison.DiffReport
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Result type. RAVEN returns several parallel outputs; raven-toolbox returns one dataclass, so this
+      has no MATLAB counterpart by design.
   - python: raven_toolbox.comparison.ModelComparison
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Result type. RAVEN returns several parallel outputs; raven-toolbox returns one dataclass, so this
+      has no MATLAB counterpart by design.
   - python: raven_toolbox.conditions.DEFAULT_RESET_EXCHANGES_UPPER_BOUND
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Default-value constant, exported so callers can inspect and override it. RAVEN hard-codes the
+      equivalent.
   - python: raven_toolbox.conditions.load_condition
-    status: unreviewed
-    notes: 'no confident pairing; closest MATLAB functions: applyCondition'
+    status: python-only
+    reason: Reads a growth-condition table; RAVEN's applyCondition reads the file itself.
   - python: raven_toolbox.conditions.set_reaction_bounds
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Bounds helper behind apply_condition; RAVEN uses setParam.
   - python: raven_toolbox.curation.batch_curate
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
-  - python: raven_toolbox.curation.batch_curate_from_tsv
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: In-memory DataFrame variant of batch_curate_from_tsv, which carries the parity row.
   - python: raven_toolbox.curation.CurationResult
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Result type. RAVEN returns several parallel outputs; raven-toolbox returns one dataclass, so this
+      has no MATLAB counterpart by design.
   - python: raven_toolbox.curation.DEFAULT_CORE_GENE_COLUMNS
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Default-value constant, exported so callers can inspect and override it. RAVEN hard-codes the
+      equivalent.
   - python: raven_toolbox.curation.DEFAULT_CORE_MET_COLUMNS
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Default-value constant, exported so callers can inspect and override it. RAVEN hard-codes the
+      equivalent.
   - python: raven_toolbox.curation.DEFAULT_CORE_RXN_COEFFS_COLUMNS
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Default-value constant, exported so callers can inspect and override it. RAVEN hard-codes the
+      equivalent.
   - python: raven_toolbox.curation.DEFAULT_CORE_RXN_COLUMNS
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
-  - python: raven_toolbox.gapfilling.analyse_topology
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Default-value constant, exported so callers can inspect and override it. RAVEN hard-codes the
+      equivalent.
   - python: raven_toolbox.gapfilling.FastLPResult
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
-  - python: raven_toolbox.gapfilling.fill_gaps_fast_lp
-    status: unreviewed
-    notes: 'no confident pairing; closest MATLAB functions: gapFillFastLP, fillGaps'
-  - python: raven_toolbox.gapfilling.fill_gaps_kumar_milp
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Result type. RAVEN returns several parallel outputs; raven-toolbox returns one dataclass, so this
+      has no MATLAB counterpart by design.
   - python: raven_toolbox.gapfilling.GapFillResult
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Result type. RAVEN returns several parallel outputs; raven-toolbox returns one dataclass, so this
+      has no MATLAB counterpart by design.
   - python: raven_toolbox.gapfilling.KumarGapFillResult
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Result type. RAVEN returns several parallel outputs; raven-toolbox returns one dataclass, so this
+      has no MATLAB counterpart by design.
   - python: raven_toolbox.gapfilling.TopologicalAnalysisResult
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Result type. RAVEN returns several parallel outputs; raven-toolbox returns one dataclass, so this
+      has no MATLAB counterpart by design.
   - python: raven_toolbox.init.classify_reactions
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: The toIgnore classification, split out of prepINITModel so it can be inspected.
   - python: raven_toolbox.init.FtInitResult
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Result type. RAVEN returns several parallel outputs; raven-toolbox returns one dataclass, so this
+      has no MATLAB counterpart by design.
   - python: raven_toolbox.init.gene_scores_from_expression
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: RAVEN's 5*ln(level/reference) scoring, split out of the INIT entry points.
   - python: raven_toolbox.init.InitModelResult
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Result type. RAVEN returns several parallel outputs; raven-toolbox returns one dataclass, so this
+      has no MATLAB counterpart by design.
   - python: raven_toolbox.init.InitResult
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
-  - python: raven_toolbox.init.InitStep
-    status: unreviewed
-    notes: 'no confident pairing; closest MATLAB functions: INITStepDesc, getINITSteps'
+    status: python-only
+    reason: Result type. RAVEN returns several parallel outputs; raven-toolbox returns one dataclass, so this
+      has no MATLAB counterpart by design.
   - python: raven_toolbox.init.PrepData
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: RAVEN's prepData struct, as a type. The data exists in RAVEN; the class does not.
   - python: raven_toolbox.init.ReactionMasks
-    status: unreviewed
-    notes: 'no confident pairing; closest MATLAB functions: addRxns'
-  - python: raven_toolbox.init.run_ftinit
-    status: unreviewed
-    notes: 'no confident pairing; closest MATLAB functions: runINIT, ftINIT'
-  - python: raven_toolbox.init.score_reactions_from_genes
-    status: unreviewed
-    notes: 'no confident pairing; closest MATLAB functions: getAllRxnsFromGenes'
+    status: python-only
+    reason: RAVEN's toIgnore* index sets, as a type.
   - python: raven_toolbox.init.TaskFillResult
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Result type. RAVEN returns several parallel outputs; raven-toolbox returns one dataclass, so this
+      has no MATLAB counterpart by design.
   - python: raven_toolbox.io.EcData
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: The enzyme-constrained payload geckopy writes into the shared YAML schema.
   - python: raven_toolbox.io.export_model_to_sif
-    status: unreviewed
-    notes: 'no confident pairing; closest MATLAB functions: exportModel'
+    status: matlab-pending
+    notes: Cytoscape SIF export (rc / rr / cc graphs). migration.md lists this under I/O as a port of exportModelToSIF,
+      but MATLAB RAVEN has no such function on any branch --- so it is new functionality, not a port.
   - python: raven_toolbox.localization.annotate_proteome
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Runs a predictor over a whole proteome; the loaders carry the parity rows.
   - python: raven_toolbox.localization.annotate_transporters
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: matlab-pending
+    notes: Transport-protein annotation, the entry point of the transport-evidence subsystem. No RAVEN counterpart;
+      todo.md lists it among the Python-only subsystems worth documenting, but it is a capability MATLAB could
+      gain.
   - python: raven_toolbox.localization.apply_assignment
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Materialises an AssignmentProposal; RAVEN's predictLocalization always applies in place.
   - python: raven_toolbox.localization.apply_localization
-    status: unreviewed
-    notes: 'no confident pairing; closest MATLAB functions: predictLocalization'
+    status: python-only
+    reason: Materialises a LocalizationProposal; RAVEN always applies in place.
   - python: raven_toolbox.localization.AssignmentProposal
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Result type. RAVEN returns several parallel outputs; raven-toolbox returns one dataclass, so this
+      has no MATLAB counterpart by design.
   - python: raven_toolbox.localization.combine_scores
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Merges evidence from several predictors, which RAVEN's single-source parseScores never needs.
   - python: raven_toolbox.localization.curation_priority
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: matlab-pending
+    notes: Ranks genes by how much a curation decision would change the placement. No RAVEN counterpart.
   - python: raven_toolbox.localization.DEEPLOC_COMPARTMENT_TRUST
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Default-value constant, exported so callers can inspect and override it. RAVEN hard-codes the
+      equivalent.
   - python: raven_toolbox.localization.default_metabolite_chebi
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Default ChEBI lookup behind the transport-evidence scoring.
   - python: raven_toolbox.localization.default_substrate_of
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Default substrate lookup behind the transport-evidence scoring.
   - python: raven_toolbox.localization.evidence_aware_transport_cost
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: matlab-pending
+    notes: Evidence-weighted transport cost used by assign_compartments. Pairs with annotate_transporters;
+      back-port alongside it.
   - python: raven_toolbox.localization.fetch_protein_sequences
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
-  - python: raven_toolbox.localization.fetch_uniprot_localization
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Fetches model gene sequences from UniProtKB for the predictors.
   - python: raven_toolbox.localization.GrowthCondition
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Parsed-data type. RAVEN passes structs and parallel cell arrays instead.
   - python: raven_toolbox.localization.load_compartments
-    status: unreviewed
-    notes: 'no confident pairing; closest MATLAB functions: mapCompartments, copyToComps, assignCompartments'
+    status: matlab-pending
+    notes: COMPARTMENTS (jensenlab.org) evidence loader --- a source RAVEN has no adapter for. migration.md
+      marks it '(new)'.
   - python: raven_toolbox.localization.load_mulocdeep
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: matlab-pending
+    notes: MULocDeep evidence loader --- a predictor RAVEN's parseScores has no adapter for. migration.md
+      marks it '(new)'.
   - python: raven_toolbox.localization.load_uniprot
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Parses a downloaded UniProtKB TSV export; the fetching half carries the parity row.
   - python: raven_toolbox.localization.LocalizationProposal
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Result type. RAVEN returns several parallel outputs; raven-toolbox returns one dataclass, so this
+      has no MATLAB counterpart by design.
   - python: raven_toolbox.localization.LocalizationResult
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Result type. RAVEN returns several parallel outputs; raven-toolbox returns one dataclass, so this
+      has no MATLAB counterpart by design.
   - python: raven_toolbox.localization.LocalizationScores
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Parsed-data type. RAVEN passes structs and parallel cell arrays instead.
   - python: raven_toolbox.localization.prepare_deeploc_input
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Writes the FASTA to feed DeepLoc; pairs with load_deeploc.
   - python: raven_toolbox.localization.PreparedFasta
-    status: unreviewed
-    notes: 'no confident pairing; closest MATLAB functions: readFasta'
+    status: python-only
+    reason: Result type. RAVEN returns several parallel outputs; raven-toolbox returns one dataclass, so this
+      has no MATLAB counterpart by design.
   - python: raven_toolbox.localization.relocate_reactions
-    status: unreviewed
-    notes: 'no confident pairing; closest MATLAB functions: removeReactions, changeRxns, removeBadRxns'
+    status: matlab-pending
+    notes: Moves reactions between compartments given an accepted proposal. No RAVEN counterpart.
   - python: raven_toolbox.localization.RelocationResult
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Result type. RAVEN returns several parallel outputs; raven-toolbox returns one dataclass, so this
+      has no MATLAB counterpart by design.
   - python: raven_toolbox.localization.ReviewReport
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Result type. RAVEN returns several parallel outputs; raven-toolbox returns one dataclass, so this
+      has no MATLAB counterpart by design.
   - python: raven_toolbox.localization.SubstrateOntology
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Parsed-data type. RAVEN passes structs and parallel cell arrays instead.
   - python: raven_toolbox.localization.TransporterAnnotation
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Parsed-data type. RAVEN passes structs and parallel cell arrays instead.
   - python: raven_toolbox.localization.triage_localization
-    status: unreviewed
-    notes: 'no confident pairing; closest MATLAB functions: predictLocalization'
-  - python: raven_toolbox.manipulation.change_gene_reaction_rules
-    status: unreviewed
-    notes: 'no confident pairing; closest MATLAB functions: changeRxns, changeGrRules'
+    status: matlab-pending
+    notes: Turns a certification report into a reviewable triage list. No RAVEN counterpart.
   - python: raven_toolbox.manipulation.constrain_reversible_reactions
-    status: unreviewed
-    notes: 'no confident pairing; closest MATLAB functions: reverseRxns'
-  - python: raven_toolbox.manipulation.gpr_to_dnf
-    status: unreviewed
-    notes: 'no confident pairing; closest MATLAB functions: grRuleToDNF'
+    status: python-only
+    reason: One mode of RAVEN's simplifyModel, split into its own function. migration.md records that the
+      cobra-covered modes were cheatsheeted rather than wrapped.
   - python: raven_toolbox.manipulation.group_linear_reactions
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
-  - python: raven_toolbox.manipulation.remove_duplicate_reactions
-    status: unreviewed
-    notes: 'no confident pairing; closest MATLAB functions: findDuplicateRxns, removeReactions, removeBadRxns'
+    status: python-only
+    reason: One mode of RAVEN's simplifyModel, split into its own function. migration.md records that the
+      cobra-covered modes were cheatsheeted rather than wrapped.
   - python: raven_toolbox.manipulation.remove_no_flux_reactions
-    status: unreviewed
-    notes: 'no confident pairing; closest MATLAB functions: removeReactions, removeBadRxns'
+    status: python-only
+    reason: One mode of RAVEN's simplifyModel, split into its own function. migration.md records that the
+      cobra-covered modes were cheatsheeted rather than wrapped.
   - python: raven_toolbox.manipulation.remove_zero_interval_reactions
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: One mode of RAVEN's simplifyModel, split into its own function. migration.md records that the
+      cobra-covered modes were cheatsheeted rather than wrapped.
   - python: raven_toolbox.manipulation.simplify_model
-    status: unreviewed
-    notes: displaced from simplifyModel by migration.md; find its real counterpart
-  - python: raven_toolbox.omics.hpa_gene_scores
-    status: unreviewed
-    notes: 'no confident pairing; closest MATLAB functions: parseScores'
+    status: python-only
+    reason: Umbrella entry point over the individual simplify passes, which RAVEN exposes only as simplifyModel
+      modes.
   - python: raven_toolbox.omics.HPA_LEVEL_SCORES
-    status: unreviewed
-    notes: 'no confident pairing; closest MATLAB functions: parseScores'
+    status: python-only
+    reason: Default-value constant, exported so callers can inspect and override it. RAVEN hard-codes the
+      equivalent.
   - python: raven_toolbox.omics.HPAData
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Parsed-data type. RAVEN passes structs and parallel cell arrays instead.
   - python: raven_toolbox.omics.HPARnaData
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Parsed-data type. RAVEN passes structs and parallel cell arrays instead.
   - python: raven_toolbox.omics.rna_gene_scores
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: The RNA-seq half of RAVEN's scoreModel, split from the HPA half.
   - python: raven_toolbox.reconstruction.homology.blast_from_table
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Adapter for a pre-computed hit table; listed under 'new in raven-toolbox' in migration.md.
   - python: raven_toolbox.reconstruction.homology.HIT_COLUMNS
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Default-value constant, exported so callers can inspect and override it. RAVEN hard-codes the
+      equivalent.
   - python: raven_toolbox.reconstruction.homology.HomologyResult
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Result type. RAVEN returns several parallel outputs; raven-toolbox returns one dataclass, so this
+      has no MATLAB counterpart by design.
   - python: raven_toolbox.reconstruction.homology.make_ortholog_hits
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
-  - python: raven_toolbox.reconstruction.homology.run_blast
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
-  - python: raven_toolbox.reconstruction.homology.run_diamond
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Builds the ortholog hit set the homology draft consumes.
   - python: raven_toolbox.reconstruction.homology.validate_hits
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Validates a hit table's shape before use.
   - python: raven_toolbox.reconstruction.kegg.assign_kos
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: One stage of the KEGG reconstruction pipeline, exported separately so the expensive artefact build
+      can be cached and re-run. RAVEN keeps all five stages inside getKEGGModelForOrganism.
   - python: raven_toolbox.reconstruction.kegg.build_hmm_library
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: One stage of the KEGG reconstruction pipeline, exported separately so the expensive artefact build
+      can be cached and re-run. RAVEN keeps all five stages inside getKEGGModelForOrganism.
   - python: raven_toolbox.reconstruction.kegg.build_kegg_tables
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: One stage of the KEGG reconstruction pipeline, exported separately so the expensive artefact build
+      can be cached and re-run. RAVEN keeps all five stages inside getKEGGModelForOrganism.
   - python: raven_toolbox.reconstruction.kegg.build_ko_fastas
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: One stage of the KEGG reconstruction pipeline, exported separately so the expensive artefact build
+      can be cached and re-run. RAVEN keeps all five stages inside getKEGGModelForOrganism.
   - python: raven_toolbox.reconstruction.kegg.build_ko_hmm
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: One stage of the KEGG reconstruction pipeline, exported separately so the expensive artefact build
+      can be cached and re-run. RAVEN keeps all five stages inside getKEGGModelForOrganism.
   - python: raven_toolbox.reconstruction.kegg.build_reference_model
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: One stage of the KEGG reconstruction pipeline, exported separately so the expensive artefact build
+      can be cached and re-run. RAVEN keeps all five stages inside getKEGGModelForOrganism.
   - python: raven_toolbox.reconstruction.kegg.download_kegg_dump
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: One stage of the KEGG reconstruction pipeline, exported separately so the expensive artefact build
+      can be cached and re-run. RAVEN keeps all five stages inside getKEGGModelForOrganism.
   - python: raven_toolbox.reconstruction.kegg.extract_kegg_dump
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: One stage of the KEGG reconstruction pipeline, exported separately so the expensive artefact build
+      can be cached and re-run. RAVEN keeps all five stages inside getKEGGModelForOrganism.
   - python: raven_toolbox.reconstruction.kegg.fetch_kegg_files
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: One stage of the KEGG reconstruction pipeline, exported separately so the expensive artefact build
+      can be cached and re-run. RAVEN keeps all five stages inside getKEGGModelForOrganism.
   - python: raven_toolbox.reconstruction.kegg.get_kegg_model_for_organism_from_artefacts
-    status: unreviewed
-    notes: 'no confident pairing; closest MATLAB functions: getKEGGModelForOrganism'
+    status: python-only
+    reason: One stage of the KEGG reconstruction pipeline, exported separately so the expensive artefact build
+      can be cached and re-run. RAVEN keeps all five stages inside getKEGGModelForOrganism.
   - python: raven_toolbox.reconstruction.kegg.get_kegg_model_from_sequences
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: One stage of the KEGG reconstruction pipeline, exported separately so the expensive artefact build
+      can be cached and re-run. RAVEN keeps all five stages inside getKEGGModelForOrganism.
   - python: raven_toolbox.reconstruction.kegg.get_kegg_model_from_sequences_with_artefacts
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: One stage of the KEGG reconstruction pipeline, exported separately so the expensive artefact build
+      can be cached and re-run. RAVEN keeps all five stages inside getKEGGModelForOrganism.
   - python: raven_toolbox.reconstruction.kegg.KeggCompound
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Parsed-data type. RAVEN passes structs and parallel cell arrays instead.
   - python: raven_toolbox.reconstruction.kegg.KeggKO
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Parsed-data type. RAVEN passes structs and parallel cell arrays instead.
   - python: raven_toolbox.reconstruction.kegg.KeggReaction
-    status: unreviewed
-    notes: 'no confident pairing; closest MATLAB functions: checkRxn'
+    status: python-only
+    reason: Parsed-data type. RAVEN passes structs and parallel cell arrays instead.
   - python: raven_toolbox.reconstruction.kegg.organism_domains
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: One stage of the KEGG reconstruction pipeline, exported separately so the expensive artefact build
+      can be cached and re-run. RAVEN keeps all five stages inside getKEGGModelForOrganism.
   - python: raven_toolbox.reconstruction.kegg.organisms_in_domain
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: One stage of the KEGG reconstruction pipeline, exported separately so the expensive artefact build
+      can be cached and re-run. RAVEN keeps all five stages inside getKEGGModelForOrganism.
   - python: raven_toolbox.reconstruction.kegg.parse_hmmsearch_tblout
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: One stage of the KEGG reconstruction pipeline, exported separately so the expensive artefact build
+      can be cached and re-run. RAVEN keeps all five stages inside getKEGGModelForOrganism.
   - python: raven_toolbox.reconstruction.kegg.parse_kegg_compounds
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: One stage of the KEGG reconstruction pipeline, exported separately so the expensive artefact build
+      can be cached and re-run. RAVEN keeps all five stages inside getKEGGModelForOrganism.
   - python: raven_toolbox.reconstruction.kegg.parse_kegg_dump
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: One stage of the KEGG reconstruction pipeline, exported separately so the expensive artefact build
+      can be cached and re-run. RAVEN keeps all five stages inside getKEGGModelForOrganism.
   - python: raven_toolbox.reconstruction.kegg.parse_kegg_kos
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: One stage of the KEGG reconstruction pipeline, exported separately so the expensive artefact build
+      can be cached and re-run. RAVEN keeps all five stages inside getKEGGModelForOrganism.
   - python: raven_toolbox.reconstruction.kegg.parse_kegg_reactions
-    status: unreviewed
-    notes: 'no confident pairing; closest MATLAB functions: parseRxnEqu, removeReactions'
+    status: python-only
+    reason: One stage of the KEGG reconstruction pipeline, exported separately so the expensive artefact build
+      can be cached and re-run. RAVEN keeps all five stages inside getKEGGModelForOrganism.
   - python: raven_toolbox.reconstruction.kegg.parse_taxonomy
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Lineage parsing behind phyl_dist; RAVEN's getPhylDist does both at once.
   - python: raven_toolbox.reconstruction.kegg.parse_taxonomy_records
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Record-level half of parse_taxonomy.
   - python: raven_toolbox.reconstruction.kegg.PhylDist
-    status: unreviewed
-    notes: 'no confident pairing; closest MATLAB functions: getPhylDist'
+    status: python-only
+    reason: Parsed-data type. RAVEN passes structs and parallel cell arrays instead.
   - python: raven_toolbox.reconstruction.kegg.read_kegg_table
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: One stage of the KEGG reconstruction pipeline, exported separately so the expensive artefact build
+      can be cached and re-run. RAVEN keeps all five stages inside getKEGGModelForOrganism.
   - python: raven_toolbox.reconstruction.kegg.run_hmmsearch
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: One stage of the KEGG reconstruction pipeline, exported separately so the expensive artefact build
+      can be cached and re-run. RAVEN keeps all five stages inside getKEGGModelForOrganism.
   - python: raven_toolbox.reconstruction.kegg.stream_organism_gene_ko
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: One stage of the KEGG reconstruction pipeline, exported separately so the expensive artefact build
+      can be cached and re-run. RAVEN keeps all five stages inside getKEGGModelForOrganism.
   - python: raven_toolbox.reconstruction.kegg.write_kegg_tables
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: One stage of the KEGG reconstruction pipeline, exported separately so the expensive artefact build
+      can be cached and re-run. RAVEN keeps all five stages inside getKEGGModelForOrganism.
   - python: raven_toolbox.tasks.EssentialReactionsResult
-    status: unreviewed
-    notes: 'no confident pairing; closest MATLAB functions: getEssentialRxns'
+    status: python-only
+    reason: Result type. RAVEN returns several parallel outputs; raven-toolbox returns one dataclass, so this
+      has no MATLAB counterpart by design.
   - python: raven_toolbox.tasks.find_task_essential_reactions
-    status: unreviewed
-    notes: 'no confident pairing; closest MATLAB functions: getEssentialRxns'
+    status: python-only
+    reason: The essentialRxns output of RAVEN's checkTasks, as its own entry point.
   - python: raven_toolbox.tasks.Task
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Parsed-data type. RAVEN passes structs and parallel cell arrays instead.
   - python: raven_toolbox.tasks.TaskResult
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Result type. RAVEN returns several parallel outputs; raven-toolbox returns one dataclass, so this
+      has no MATLAB counterpart by design.
   - python: raven_toolbox.utils.ElementalBalance
-    status: unreviewed
-    notes: 'no confident pairing; closest MATLAB functions: getElementalBalance'
-  - python: raven_toolbox.utils.find_non_dnf_grrules
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Result type. RAVEN returns several parallel outputs; raven-toolbox returns one dataclass, so this
+      has no MATLAB counterpart by design.
   - python: raven_toolbox.utils.GPRIssue
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Result type. RAVEN returns several parallel outputs; raven-toolbox returns one dataclass, so this
+      has no MATLAB counterpart by design.
   - python: raven_toolbox.utils.ModelIssue
-    status: unreviewed
-    notes: no obvious MATLAB counterpart; decide whether one is needed
+    status: python-only
+    reason: Result type. RAVEN returns several parallel outputs; raven-toolbox returns one dataclass, so this
+      has no MATLAB counterpart by design.

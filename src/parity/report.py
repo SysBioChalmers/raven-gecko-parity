@@ -16,6 +16,7 @@ _STATUS_TITLES = {
     "matlab-only": "Deliberately MATLAB-only",
     "python-only": "Deliberately Python-only",
     "via-dependency": "Covered by a dependency on the other side",
+    "subsumed": "Folded into another function on the other side",
     "unreviewed": "Awaiting triage",
 }
 

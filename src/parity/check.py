@@ -114,6 +114,16 @@ def _check_entry(entry: Entry, inventory: Inventory) -> list[Finding]:
         findings.append(Finding(ERROR, "invalid", subject, "status 'matlab-only' cannot name a Python export"))
     if entry.status == "python-only" and entry.matlab:
         findings.append(Finding(ERROR, "invalid", subject, "status 'python-only' cannot name a MATLAB function"))
+    if entry.status == "subsumed" and entry.matlab and entry.python:
+        findings.append(
+            Finding(
+                ERROR,
+                "invalid",
+                subject,
+                "status 'subsumed' names the side that has the standalone function; the other "
+                "side folds it into something else, so only one side belongs here",
+            )
+        )
     if entry.status == "via-dependency" and entry.matlab and entry.python:
         findings.append(
             Finding(
