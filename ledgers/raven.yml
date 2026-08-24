@@ -459,8 +459,16 @@ entries:
     status: via-dependency
     reason: 'cobrapy covers this: cobra.flux_analysis.flux_variability_analysis(loopless=True).'
   - matlab: makeFakeBlastStructure
-    status: internal
-    reason: Fabricates a BLAST result struct for tests and for merging KEGG with homology draft models.
+    python: raven_toolbox.reconstruction.homology.make_ortholog_hits
+    status: parity
+    notes: Fabricates a hit set from a known ortholog mapping, for tests and for merging KEGG with
+      homology draft models. Paired after the homology_chain scenario showed the two produce equivalent
+      structures from the same mapping; both fill in evalue 0, identity 100 and alignment length 1000 so
+      every pair clears any reasonable filter. They disagree only on the bitscore they invent -- RAVEN
+      writes 100, raven-toolbox 1000 -- which no filter reads absolutely, but which would matter to a
+      caller ranking hits by score.
+    scenarios:
+      - homology_chain
   - matlab: makeSomething
     status: subsumed
     reason: Production probe used inside the gap analysis; not a separate Python entry point.
@@ -1035,9 +1043,6 @@ entries:
     status: python-only
     reason: Result type. RAVEN returns several parallel outputs; raven-toolbox returns one dataclass, so this
       has no MATLAB counterpart by design.
-  - python: raven_toolbox.reconstruction.homology.make_ortholog_hits
-    status: python-only
-    reason: Builds the ortholog hit set the homology draft consumes.
   - python: raven_toolbox.reconstruction.homology.validate_hits
     status: python-only
     reason: Validates a hit table's shape before use.
