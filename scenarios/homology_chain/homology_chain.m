@@ -23,8 +23,8 @@ end
 
 
 function out = blast_checkpoint(inputs)
-% getBlast hardcodes -evalue 10e-5; the scenario passes the same value to the
-% Python side rather than letting each use its own default.
+% getBlast hardcodes -evalue 10e-5 (1e-4). run_blast now defaults to the same,
+% so each side is left to its own default and a change to either surfaces here.
 blastStructure = getBlast( ...
     inputs.query_id, inputs.query_fasta, ...
     {inputs.ref_id}, {inputs.ref_fasta});

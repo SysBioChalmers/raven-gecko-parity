@@ -18,12 +18,9 @@ inputs:
   query_id: human
   ref_id: yeast
 
-  # getBlast hardcodes -evalue 10e-5, i.e. 1e-4. run_blast defaults to 1e-5,
-  # ten times stricter, so the Python side is told to use RAVEN's value --
-  # otherwise this checkpoint would compare two different searches. The
-  # differing defaults are a real finding, recorded on the ledger row rather
-  # than papered over here.
-  blast_evalue: 1.0e-4
+  # No e-value input: both sides now default to RAVEN's 1e-4, so each running
+  # its own default is the more faithful comparison. Passing a value would hide
+  # a future divergence in either default behind the scenario.
 
   # The draft checkpoint uses a synthetic ortholog mapping instead of the BLAST
   # output above: the galactosidase sequences have no model to transfer from,

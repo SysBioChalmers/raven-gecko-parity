@@ -331,13 +331,19 @@ entries:
     python: raven_toolbox.reconstruction.homology.run_blast
     status: parity
     notes: Confirmed by migration.md and the protocol table. getBlast hardcodes -evalue 10e-5 (i.e. 1e-4);
-      run_blast defaults to 1e-5 and takes the cutoff as an argument. The scenario passes RAVEN's value
-      explicitly, so the differing defaults do not masquerade as a behavioural difference.
+      run_blast defaulted to 1e-5 until raven-toolbox#91 aligned it, and still takes the cutoff as an
+      argument where RAVEN does not. The scenario now lets each side use its own default, so a future
+      change to either surfaces as a difference.
     scenarios:
       - homology_chain
   - matlab: getDiamond
     python: raven_toolbox.reconstruction.homology.run_diamond
     status: parity
+    notes: getDiamond passes no --evalue, so DIAMOND's own default of 1e-3 applies; run_diamond defaulted
+      to 1e-5 until raven-toolbox#91 matched it. Note the aligners disagree with each other on both sides
+      (BLAST 1e-4, DIAMOND 1e-3) because RAVEN's defaults do. Neither homology cutoff has been calibrated
+      against data, unlike the KO-assignment cutoffs, where measurement did justify diverging from RAVEN
+      (see raven-toolbox docs/studies/kegg_hmm_cutoff_calibration.md).
     notes: Confirmed by migration.md and the protocol table.
   - matlab: getElementalBalance
     python: raven_toolbox.utils.get_elemental_balance

@@ -4,7 +4,8 @@ Two checkpoints in one run:
 
 ``blast``
     The bidirectional hit table from the same two FASTA files the MATLAB side
-    searches, with the same binary and the same e-value. Both toolboxes ship
+    searches, with the same binary and each side's own default e-value (1e-4 on
+    both, since raven-toolbox#91). Both toolboxes ship
     BLAST+ 2.17.0 -- RAVEN in ``software/``, raven-toolbox fetched from
     raven-data -- so identical input should give an identical table. If it does
     not, the difference is in how the two parse or filter the output, which is
@@ -38,12 +39,13 @@ def run(ctx):
 
 
 def _blast_checkpoint(inputs):
+    # No evalue argument: both toolboxes default to 1e-4, and letting each use
+    # its own default means a future change to either one shows up here.
     hits = run_blast(
         inputs["query_id"],
         inputs["query_fasta"],
         [inputs["ref_id"]],
         [inputs["ref_fasta"]],
-        evalue=float(inputs["blast_evalue"]),
     )
 
     records = [
