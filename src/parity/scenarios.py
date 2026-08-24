@@ -131,7 +131,15 @@ def _resolve_input(value, scenario_dir: Path, substitutions: dict[str, str]):
     if not candidate.is_absolute():
         candidate = scenario_dir / value
     if candidate.exists():
-        return candidate.resolve().as_posix()
+        # Native separators, not posix. Python accepts either, but RAVEN's
+        # checkFileExistence decides whether a path is absolute with
+        # regexpi(files,'^[a-z]\:\\') --- a drive letter followed by a
+        # *backslash*. Handed "C:/Work/...", it concludes the path is relative
+        # and prefixes the current directory, producing
+        # "C:\somewhere\C:\Work\..." and a file-not-found. Everything else in
+        # MATLAB accepts forward slashes, so this is worth an upstream fix, but
+        # the harness should not depend on one.
+        return str(candidate.resolve())
 
     # Not a path --- a number-as-string, an identifier, a flag.
     return value

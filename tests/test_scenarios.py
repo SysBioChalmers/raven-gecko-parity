@@ -95,8 +95,27 @@ def test_repo_placeholders_are_substituted(tmp_path, fake_pair):
     directory = write_scenario(tmp_path, "id: demo\npair: fake\ninputs:\n  where: '{matlab_repo}/core/addRxns.m'\n")
     context = build_context(load_scenario(directory), tmp_path, fake_pair)
 
-    assert context["inputs"]["where"].endswith("core/addRxns.m")
-    assert Path(context["inputs"]["where"]).is_file(), "an existing path resolves to an absolute one"
+    resolved = Path(context["inputs"]["where"])
+    assert resolved.parts[-2:] == ("core", "addRxns.m")
+    assert resolved.is_file(), "an existing path resolves to an absolute one"
+
+
+def test_resolved_paths_use_native_separators(tmp_path, fake_pair):
+    r"""RAVEN cannot read a Windows path written with forward slashes.
+
+    ``checkFileExistence`` tests absoluteness with ``regexpi(files,'^[a-z]\:\\')``
+    --- a drive letter followed by a *backslash*. Given ``C:/Work/...`` it
+    concludes the path is relative, prefixes the working directory, and fails to
+    find the file. Posix-style paths would therefore break every scenario on
+    Windows, however valid they are everywhere else in MATLAB.
+    """
+    directory = write_scenario(
+        tmp_path,
+        "id: demo\npair: fake\ninputs:\n  where: '{matlab_repo}/core/addRxns.m'\n",
+    )
+    context = build_context(load_scenario(directory), tmp_path, fake_pair)
+
+    assert context["inputs"]["where"] == str(Path(context["inputs"]["where"]))
 
 
 def test_an_unknown_placeholder_is_an_error_not_a_silent_literal(tmp_path, fake_pair):

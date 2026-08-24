@@ -330,7 +330,11 @@ entries:
   - matlab: getBlast
     python: raven_toolbox.reconstruction.homology.run_blast
     status: parity
-    notes: Confirmed by migration.md and the protocol table.
+    notes: Confirmed by migration.md and the protocol table. getBlast hardcodes -evalue 10e-5 (i.e. 1e-4);
+      run_blast defaults to 1e-5 and takes the cutoff as an argument. The scenario passes RAVEN's value
+      explicitly, so the differing defaults do not masquerade as a behavioural difference.
+    scenarios:
+      - homology_chain
   - matlab: getDiamond
     python: raven_toolbox.reconstruction.homology.run_diamond
     status: parity
@@ -394,6 +398,8 @@ entries:
   - matlab: getModelFromHomology
     python: raven_toolbox.reconstruction.homology.get_model_from_homology
     status: parity
+    scenarios:
+      - homology_chain
     notes: from migration.md. Core homology reconstruction with structured improvements (bidirectional / best-hits-only,
       AST GPR rewrite, complex policy, bitscore best-hits, DataFrame ortholog map).
   - matlab: getModelFromKEGG

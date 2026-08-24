@@ -1,0 +1,41 @@
+id: homology_chain
+pair: raven
+description: >-
+  Homology-based reconstruction, compared stage by stage: the BLAST hit table,
+  then the draft model built from a fixed ortholog mapping. Two checkpoints in
+  one run, so a divergence is located rather than merely observed.
+
+entries:
+  - getBlast
+  - getModelFromHomology
+  - makeFakeBlastStructure
+
+inputs:
+  # Four sequences per side: BLAST finishes in about a second, and the hits are
+  # few enough to read when they disagree.
+  query_fasta: "{matlab_repo}/testing/function_tests/test_data/human_galactosidases.fa"
+  ref_fasta: "{matlab_repo}/testing/function_tests/test_data/yeast_galactosidases.fa"
+  query_id: human
+  ref_id: yeast
+
+  # getBlast hardcodes -evalue 10e-5, i.e. 1e-4. run_blast defaults to 1e-5,
+  # ten times stricter, so the Python side is told to use RAVEN's value --
+  # otherwise this checkpoint would compare two different searches. The
+  # differing defaults are a real finding, recorded on the ledger row rather
+  # than papered over here.
+  blast_evalue: 1.0e-4
+
+  # The draft checkpoint uses a synthetic ortholog mapping instead of the BLAST
+  # output above: the galactosidase sequences have no model to transfer from,
+  # and a fixed mapping makes the model-building logic the only variable.
+  model: "{matlab_repo}/tutorial/smallYeast.yml"
+  source_model_id: smallYeast
+  target_organism_id: tgtOrg
+  ortholog_count: 20
+
+tolerance:
+  # Both sides parse the same BLAST output text, so the numbers should agree to
+  # the digits BLAST printed. Loose enough for float round-tripping through
+  # JSON, tight enough that a real scoring difference fails.
+  rel: 1.0e-9
+  abs: 1.0e-12
