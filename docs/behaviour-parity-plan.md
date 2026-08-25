@@ -122,8 +122,9 @@ A scenario should *assert* each difference, so a silent change to either side fa
    the pair is unchanged. `workflow_dispatch` takes a `force` input for when you want the run
    anyway.
 2. **Uses the branches the ledger tracks.** Both workflows get them from `parity refs`, which
-   reads `parity.toml`. RAVEN's default branch is `main` while the ledger describes
-   `develop3`, so taking defaults compared a release branch against a development one.
+   reads `parity.toml`. Not one of the four repos defaults to its integration branch: RAVEN
+   and GECKO both default to `main` while the ledgers describe `develop3` and `develop4`, so
+   taking defaults compared release branches against development ones.
 3. **Writes a report, not just a red tick.** `nightly/report.md` is regenerated and committed
    each time the comparison actually runs, so drift has a history.
 4. **Distinguishes a crash from agreement.** A scenario whose result file is missing is

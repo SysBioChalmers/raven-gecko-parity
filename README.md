@@ -150,13 +150,16 @@ parity refs
 ```
 
 ```
+gecko    matlab  SysBioChalmers/GECKO@develop4
+gecko    python  SysBioChalmers/geckopy@develop
 raven    matlab  SysBioChalmers/RAVEN@develop3
 raven    python  SysBioChalmers/raven-toolbox@develop
 ```
 
-RAVEN's default branch is `main` and the ledger describes `develop3`, so a workflow that
-takes defaults compares a release branch against a development one and reports the normal
-backlog as drift.
+None of the four defaults to its integration branch --- RAVEN's default is `main` and GECKO's
+is `main`, while the ledgers describe `develop3` and `develop4`. A workflow that takes
+defaults compares a release branch against a development one and reports the normal backlog
+as drift.
 
 ## Status
 

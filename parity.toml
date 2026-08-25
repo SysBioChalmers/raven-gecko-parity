@@ -28,13 +28,13 @@ ledger = "ledgers/gecko.yml"
 
 [pairs.gecko.matlab]
 repo = "SysBioChalmers/GECKO"
-ref = "main"
+ref = "develop4"
 path = "../GECKO"
 exclude = ["test", "tutorials", "doc", "docs"]
 
 [pairs.gecko.python]
 repo = "SysBioChalmers/geckopy"
-ref = "main"
+ref = "develop"
 path = "../geckopy"
 package = "geckopy"
 src = "src"
