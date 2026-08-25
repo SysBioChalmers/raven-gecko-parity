@@ -1,10 +1,10 @@
 {
   "revisions": {
-    "raven.matlab": "6ac14d201639e4ee3971cb59c7813fe8d66310d2",
-    "raven.python": "916984dee28f0bf77cc7b38d46b9a440c1346f64"
+    "raven.matlab": "22828838cd83e5de5f63d406d6c96b8b600d1c83",
+    "raven.python": "f3cd79416841c24f40540ec69cc124671dc7b640"
   },
   "verdicts": {
-    "elemental_balance_smallyeast": "ERROR",
-    "homology_chain": "ERROR"
+    "elemental_balance_smallyeast": "MATCH",
+    "homology_chain": "MATCH"
   }
 }
