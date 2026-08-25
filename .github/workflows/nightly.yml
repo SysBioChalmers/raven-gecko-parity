@@ -103,19 +103,26 @@ jobs:
           release: R2024b
 
       # Scenarios that need a MILP solver read this; the ones that do not ignore it.
-      - name: Gurobi licence
+      # Same secret names as raven-toolbox's parity-nightly workflow, where the WLS
+      # licence is already configured. A missing licence is a notice rather than an
+      # error: most scenarios are solver-free, and losing all of them because one
+      # needs Gurobi would be the wrong trade.
+      - name: Gurobi WLS licence
         if: steps.state.outputs.changed == 'true'
         env:
-          WLSACCESSID: ${{ secrets.GRB_WLSACCESSID }}
-          WLSSECRET: ${{ secrets.GRB_WLSSECRET }}
-          LICENSEID: ${{ secrets.GRB_LICENSEID }}
+          WLSACCESSID: ${{ secrets.GUROBI_WLSACCESSID }}
+          WLSSECRET: ${{ secrets.GUROBI_WLSSECRET }}
+          LICENSEID: ${{ secrets.GUROBI_LICENSEID }}
         run: |
-          if [ -z "$WLSACCESSID" ]; then
-            echo "::notice::no Gurobi WLS secrets; solver-dependent scenarios will be skipped"
+          if [ -z "$WLSACCESSID" ] || [ -z "$WLSSECRET" ] || [ -z "$LICENSEID" ]; then
+            echo "::notice::no Gurobi WLS secrets; solver-dependent scenarios will fail"
             exit 0
           fi
-          printf 'WLSACCESSID=%s\nWLSSECRET=%s\nLICENSEID=%s\n' \
-            "$WLSACCESSID" "$WLSSECRET" "$LICENSEID" > "$HOME/gurobi.lic"
+          umask 077
+          { echo "WLSACCESSID=$WLSACCESSID"
+            echo "WLSSECRET=$WLSSECRET"
+            echo "LICENSEID=$LICENSEID"
+          } > "$HOME/gurobi.lic"
           echo "GRB_LICENSE_FILE=$HOME/gurobi.lic" >> "$GITHUB_ENV"
 
       # A scenario that crashes must not stop the others: the report distinguishes a
