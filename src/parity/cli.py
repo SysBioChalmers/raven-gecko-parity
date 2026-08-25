@@ -135,6 +135,31 @@ def _resolve_repo(config: Config, args: argparse.Namespace) -> tuple[Pair, str]:
     )
 
 
+def cmd_refs(args: argparse.Namespace, config: Config) -> int:
+    """Print the repo/ref pairs the ledgers are written against.
+
+    The workflows check the four repos out from this, so the branch each pair is
+    compared at is stated once, in parity.toml, and cannot drift between the two
+    workflow files that need it.
+    """
+    rows = []
+    for name, pair in sorted(config.pairs.items()):
+        if args.pair and name != args.pair:
+            continue
+        rows.append((name, "matlab", pair.matlab.repo, pair.matlab.ref))
+        rows.append((name, "python", pair.python.repo, pair.python.ref))
+    if not rows:
+        print(f"no such pair: {args.pair}", file=sys.stderr)
+        return 2
+
+    for pair_name, side, repo, ref in rows:
+        if args.format == "shell":
+            print(f"{pair_name}_{side}_ref={ref}")
+        else:
+            print(f"{pair_name:<8} {side:<7} {repo}@{ref}")
+    return 0
+
+
 def cmd_scenarios(args: argparse.Namespace, config: Config) -> int:
     scenarios = list_scenarios(_scenario_root(config), args.pair)
     if not scenarios:
@@ -228,6 +253,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="exit non-zero when a function declared at parity was touched",
     )
     mirror_cmd.set_defaults(func=cmd_mirror)
+
+    refs = sub.add_parser("refs", help="print the branch each repo is compared at")
+    refs.add_argument("--pair", help="only this pair")
+    refs.add_argument("--format", choices=("text", "shell"), default="text",
+                      help="'shell' emits KEY=value lines for $GITHUB_OUTPUT")
+    refs.set_defaults(func=cmd_refs)
 
     scenarios = sub.add_parser("scenarios", help="list the cross-implementation scenarios")
     scenarios.add_argument("--pair", help="only this pair")

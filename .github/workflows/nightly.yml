@@ -1,0 +1,203 @@
+name: nightly
+
+# Runs every scenario against both implementations and records the verdict.
+#
+# The MATLAB side needs a licence, so this cannot run per-PR;
+# matlab-actions/setup-matlab is licence-free only for public repositories, which
+# is why this repo has to stay public.
+#
+# Nothing is compared unless one of the two repos actually moved: `nightly/state.json`
+# holds the revisions of the last real run, and an unchanged pair means the answer is
+# already on disk. Re-running an hour of MATLAB to reprint yesterday's table teaches
+# nobody anything.
+
+on:
+  schedule:
+    - cron: "0 5 * * *"
+  workflow_dispatch:
+    inputs:
+      scenario:
+        description: "Scenario id (blank = all)"
+        required: false
+      force:
+        description: "Run even if neither repo has moved"
+        type: boolean
+        default: false
+
+# The report is committed back, so the run needs write access to this repo.
+permissions:
+  contents: write
+
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e .
+
+      # parity.toml is the single source of truth for which branch each side is
+      # compared at --- RAVEN's default branch is `main`, but the ledger describes
+      # `develop3`.
+      - id: refs
+        run: parity refs --pair raven --format shell >> "$GITHUB_OUTPUT"
+
+      - id: state
+        name: Has either side moved since the last run?
+        run: |
+          matlab_sha=$(git ls-remote https://github.com/SysBioChalmers/RAVEN.git \
+            "refs/heads/${{ steps.refs.outputs.raven_matlab_ref }}" | cut -f1)
+          python_sha=$(git ls-remote https://github.com/SysBioChalmers/raven-toolbox.git \
+            "refs/heads/${{ steps.refs.outputs.raven_python_ref }}" | cut -f1)
+          if [ -z "$matlab_sha" ] || [ -z "$python_sha" ]; then
+            echo "could not resolve one of the tracked branches" >&2
+            exit 1
+          fi
+          echo "matlab_sha=$matlab_sha" >> "$GITHUB_OUTPUT"
+          echo "python_sha=$python_sha" >> "$GITHUB_OUTPUT"
+
+          previous="none none"
+          if [ -f nightly/state.json ]; then
+            previous=$(python -c "
+          import json
+          state = json.load(open('nightly/state.json'))['revisions']
+          print(state.get('raven.matlab', 'none'), state.get('raven.python', 'none'))
+          ")
+          fi
+          if [ "$previous" = "$matlab_sha $python_sha" ] && [ "${{ inputs.force }}" != "true" ]; then
+            echo "unchanged: $previous"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.state.outputs.changed == 'true'
+        with:
+          repository: SysBioChalmers/RAVEN
+          ref: ${{ steps.state.outputs.matlab_sha }}
+          path: repos/RAVEN
+      - uses: actions/checkout@v4
+        if: steps.state.outputs.changed == 'true'
+        with:
+          repository: SysBioChalmers/raven-toolbox
+          ref: ${{ steps.state.outputs.python_sha }}
+          path: repos/raven-toolbox
+
+      - name: Point parity at the checked-out repos
+        if: steps.state.outputs.changed == 'true'
+        run: |
+          cat > parity.local.toml <<'EOF'
+          [pairs.raven.matlab]
+          path = "repos/RAVEN"
+          [pairs.raven.python]
+          path = "repos/raven-toolbox"
+          EOF
+          pip install ./repos/raven-toolbox
+
+      - uses: matlab-actions/setup-matlab@v2
+        if: steps.state.outputs.changed == 'true'
+        with:
+          release: R2024b
+
+      # Scenarios that need a MILP solver read this; the ones that do not ignore it.
+      #
+      # Two shapes are accepted because two exist in the organisation: GUROBI_EDUARD
+      # is an organisation secret holding a licence file verbatim, and the three-field
+      # form is what raven-toolbox's parity-nightly workflow was written against.
+      # Preferring one and failing on the other would make this job's health depend on
+      # which of the two somebody happened to configure.
+      #
+      # A missing licence is a notice, not an error: most scenarios are solver-free,
+      # and losing all of them because one needs Gurobi would be the wrong trade.
+      - name: Gurobi licence
+        if: steps.state.outputs.changed == 'true'
+        env:
+          LICENCE_FILE: ${{ secrets.GUROBI_EDUARD }}
+          WLSACCESSID: ${{ secrets.GUROBI_WLSACCESSID }}
+          WLSSECRET: ${{ secrets.GUROBI_WLSSECRET }}
+          LICENSEID: ${{ secrets.GUROBI_LICENSEID }}
+        run: |
+          umask 077
+          licence="$HOME/gurobi.lic"
+          if [ -n "$LICENCE_FILE" ]; then
+            printf '%s\n' "$LICENCE_FILE" > "$licence"
+          elif [ -n "$WLSACCESSID" ] && [ -n "$WLSSECRET" ] && [ -n "$LICENSEID" ]; then
+            { echo "WLSACCESSID=$WLSACCESSID"
+              echo "WLSSECRET=$WLSSECRET"
+              echo "LICENSEID=$LICENSEID"
+            } > "$licence"
+          else
+            echo "::notice::no Gurobi licence configured; solver-dependent scenarios will fail"
+            exit 0
+          fi
+
+          # Report the shape without printing the value. A named-user academic licence
+          # is tied to one machine and cannot authenticate on a hosted runner, so
+          # finding one here explains a failure that otherwise looks like a solver bug.
+          if grep -q '^[[:space:]]*WLSACCESSID=' "$licence"; then
+            echo "Gurobi WLS licence installed"
+          else
+            echo "::warning::the configured licence is not a WLS licence. A named-user" \
+                 "licence is tied to a specific machine and will not authenticate on a" \
+                 "hosted runner; solver-dependent scenarios will fail."
+          fi
+          echo "GRB_LICENSE_FILE=$licence" >> "$GITHUB_ENV\"
+
+      # A scenario that crashes must not stop the others: the report distinguishes a
+      # missing result from a matching one, so a crash is recorded, not hidden.
+      - name: Run every scenario against both implementations
+        if: steps.state.outputs.changed == 'true'
+        continue-on-error: true
+        run: |
+          for id in $(parity scenarios --pair raven | awk 'NR % 2 == 1 {print $1}'); do
+            if [ -n "${{ inputs.scenario }}" ] && [ "$id" != "${{ inputs.scenario }}" ]; then
+              continue
+            fi
+            echo "::group::$id"
+            parity run "$id" --impl python || echo "::warning::$id failed on python"
+            parity run "$id" --impl matlab || echo "::warning::$id failed on matlab"
+            echo "::endgroup::"
+          done
+
+      - id: report
+        name: Render the report
+        if: steps.state.outputs.changed == 'true'
+        continue-on-error: true
+        run: |
+          python scripts/nightly_report.py \
+            --stamp "$(date -u +%Y-%m-%d)" \
+            --run-url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            --sha "raven.matlab=${{ steps.state.outputs.matlab_sha }}" \
+            --sha "raven.python=${{ steps.state.outputs.python_sha }}"
+
+      # Committed rather than left as an artefact: an artefact expires and nobody
+      # browses old runs, so a report that lives only there is a report nobody reads.
+      - name: Commit the report
+        if: steps.state.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add nightly/
+          if git diff --cached --quiet; then
+            echo "nothing changed"
+          else
+            git commit -m "nightly: parity report for $(date -u +%Y-%m-%d)"
+            git push
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.state.outputs.changed == 'true'
+        with:
+          name: scenario-results
+          path: |
+            results/
+            nightly/
+
+      - name: Fail if the two implementations disagree
+        if: steps.state.outputs.changed == 'true' && steps.report.outcome != 'success'
+        run: |
+          echo "see nightly/report.md" >&2
+          exit 1

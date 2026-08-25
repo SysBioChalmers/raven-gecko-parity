@@ -11,12 +11,14 @@ ledger = "ledgers/raven.yml"
 
 [pairs.raven.matlab]
 repo = "SysBioChalmers/RAVEN"
+ref = "develop3"
 path = "../RAVEN"
 # Directories that hold no public API: vendored code, tests, tutorials, installers, docs.
 exclude = ["software", "testing", "tutorial", "installation", "doc", "docs", "external"]
 
 [pairs.raven.python]
 repo = "SysBioChalmers/raven-toolbox"
+ref = "develop"
 path = "../raven-toolbox"
 package = "raven_toolbox"
 src = "src"
@@ -26,11 +28,13 @@ ledger = "ledgers/gecko.yml"
 
 [pairs.gecko.matlab]
 repo = "SysBioChalmers/GECKO"
+ref = "develop4"
 path = "../GECKO"
 exclude = ["test", "tutorials", "doc", "docs"]
 
 [pairs.gecko.python]
 repo = "SysBioChalmers/geckopy"
+ref = "develop"
 path = "../geckopy"
 package = "geckopy"
 src = "src"

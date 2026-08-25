@@ -164,9 +164,6 @@ entries:
     python: raven_toolbox.curation.batch_curate_from_tsv
     status: parity
     notes: Table-driven batch curation.
-  - matlab: cycleFreeFlux
-    status: via-dependency
-    reason: 'cobrapy covers this: cobra.flux_analysis.loopless_solution / add_loopless.'
   - matlab: defaultCompartmentMap
     python: raven_toolbox.localization.DEFAULT_COMPARTMENT_MAP
     status: parity
@@ -461,9 +458,6 @@ entries:
     python: raven_toolbox.utils.is_dnf
     status: parity
     notes: Direct counterpart; see the standardizeGrRules repair below.
-  - matlab: looplessFVA
-    status: via-dependency
-    reason: 'cobrapy covers this: cobra.flux_analysis.flux_variability_analysis(loopless=True).'
   - matlab: makeFakeBlastStructure
     python: raven_toolbox.reconstruction.homology.make_ortholog_hits
     status: parity
