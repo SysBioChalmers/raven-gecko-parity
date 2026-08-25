@@ -144,7 +144,7 @@ jobs:
                  "licence is tied to a specific machine and will not authenticate on a" \
                  "hosted runner; solver-dependent scenarios will fail."
           fi
-          echo "GRB_LICENSE_FILE=$licence" >> "$GITHUB_ENV\"
+          echo "GRB_LICENSE_FILE=$licence" >> "$GITHUB_ENV"
 
       # A scenario that crashes must not stop the others: the report distinguishes a
       # missing result from a matching one, so a crash is recorded, not hidden.
