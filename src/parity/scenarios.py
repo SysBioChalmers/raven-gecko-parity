@@ -194,25 +194,73 @@ def run_python(scenario: Scenario, repo_root: Path, pair=None) -> dict:
     }
 
 
-def run_matlab(scenario: Scenario, repo_root: Path, pair=None, matlab: str = "matlab") -> dict:
-    """Execute a scenario's MATLAB side via ``matlab -batch``."""
+def matlab_output_file(scenario: Scenario) -> Path:
+    """Where the MATLAB side leaves its result document."""
+    return scenario.directory / ".matlab_result.json"
+
+
+def prepare_matlab(scenario: Scenario, repo_root: Path, pair=None, guard: bool = False) -> str:
+    """Write the scenario's context file and return the MATLAB statement to run.
+
+    Split out of :func:`run_matlab` so the statement can be handed to something
+    other than a subprocess. On GitHub-hosted runners it has to be: MATLAB is
+    licensed for public repositories only through ``matlab-actions/run-command``,
+    so a `matlab -batch` we spawn ourselves gets no licence and dies with
+    ``License Manager Error -1``.
+    """
     entry = scenario.matlab_entry
     if not entry.is_file():
-        raise ScenarioError(f"scenario {scenario.id} has no run.m")
+        raise ScenarioError(f"scenario {scenario.id} has no {scenario.id}.m")
 
-    harness = repo_root / "matlab"
     context_file = scenario.directory / ".context.json"
-    output_file = scenario.directory / ".matlab_result.json"
     context_file.write_text(json.dumps(build_context(scenario, repo_root, pair), indent=2), encoding="utf-8")
 
     setup = f"{pair.matlab.setup_command}; " if pair is not None else ""
-    command = "addpath('{harness}'); {setup}parity_run('{directory}', '{context}', '{output}');".format(
-        harness=harness.as_posix(),
+    statement = "addpath('{harness}'); {setup}parity_run('{directory}', '{context}', '{output}');".format(
+        harness=(repo_root / "matlab").as_posix(),
         setup=setup,
         directory=scenario.directory.as_posix(),
         context=context_file.as_posix(),
-        output=output_file.as_posix(),
+        output=matlab_output_file(scenario).as_posix(),
     )
+    if not guard:
+        return statement
+    # Several scenarios go into one script, because each MATLAB start is
+    # expensive. Unguarded, the first one to error takes the rest of the run with
+    # it, and they would be reported as "no result" with no way to tell that they
+    # never got the chance. The missing result file still marks this one failed.
+    return "try, {statement} catch parityErr, fprintf(2, 'parity: {sid} failed: %s{nl}', parityErr.message); end".format(
+        statement=statement,
+        sid=scenario.id,
+        nl=r"\n",
+    )
+
+
+def collect_matlab(scenario: Scenario) -> dict:
+    """Read the result document the MATLAB side wrote.
+
+    Kept separate from running it so a run driven by `matlab-actions/run-command`
+    --- or by a person sitting in the MATLAB IDE --- can be picked up the same
+    way as one this tool spawned.
+    """
+    output_file = matlab_output_file(scenario)
+    if not output_file.is_file():
+        raise ScenarioError(
+            f"no MATLAB result for {scenario.id} at {output_file}. Run the MATLAB "
+            f"side first --- `parity prepare {scenario.id}` prints the statement."
+        )
+    return json.loads(output_file.read_text(encoding="utf-8"))
+
+
+def run_matlab(scenario: Scenario, repo_root: Path, pair=None, matlab: str = "matlab") -> dict:
+    """Execute a scenario's MATLAB side via ``matlab -batch``.
+
+    For a local checkout with MATLAB on PATH. CI cannot use this --- see
+    :func:`prepare_matlab`.
+    """
+    harness = repo_root / "matlab"
+    command = prepare_matlab(scenario, repo_root, pair)
+    output_file = matlab_output_file(scenario)
     try:
         completed = subprocess.run([matlab, "-batch", command], capture_output=True, text=True, check=False)
     except FileNotFoundError as exc:
@@ -228,7 +276,7 @@ def run_matlab(scenario: Scenario, repo_root: Path, pair=None, matlab: str = "ma
             f"{completed.stdout.strip()}\n{completed.stderr.strip()}"
         )
 
-    return json.loads(output_file.read_text(encoding="utf-8"))
+    return collect_matlab(scenario)
 
 
 @dataclass

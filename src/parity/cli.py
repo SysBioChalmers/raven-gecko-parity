@@ -5,7 +5,10 @@
     parity report             render the Markdown parity document
     parity mirror             what does my current change mean for the other side?
     parity scenarios          list the cross-implementation scenarios
+    parity refs               print the branch each repo is compared at
     parity run                run one scenario against one implementation
+    parity prepare            write a scenario's context; print the MATLAB statement
+    parity collect            record a result MATLAB wrote elsewhere
     parity compare            diff two scenario result files
 """
 
@@ -23,9 +26,11 @@ from parity.ledger import LedgerError, load_ledger, save_ledger
 from parity.scenarios import (
     ScenarioError,
     Tolerance,
+    collect_matlab,
     compare_results,
     list_scenarios,
     load_scenario,
+    prepare_matlab,
     run_matlab,
     run_python,
     write_result,
@@ -191,6 +196,36 @@ def cmd_run(args: argparse.Namespace, config: Config) -> int:
     return 0
 
 
+def _scenario(config: Config, scenario_id: str):
+    directory = _scenario_root(config) / scenario_id
+    if not directory.is_dir():
+        raise ScenarioError(f"no such scenario: {scenario_id}")
+    return directory, load_scenario(directory)
+
+
+def cmd_prepare(args: argparse.Namespace, config: Config) -> int:
+    """Write a scenario's context file and print the MATLAB statement to run.
+
+    For driving MATLAB from something that is not this process --- CI, where the
+    licence only comes through `matlab-actions/run-command`, or a person with the
+    IDE open. Pair with `parity collect` afterwards.
+    """
+    directory, scenario = _scenario(config, args.scenario)
+    pair = config.pair(scenario.pair) if scenario.pair else None
+    print(prepare_matlab(scenario, config.root, pair, guard=args.guard))
+    return 0
+
+
+def cmd_collect(args: argparse.Namespace, config: Config) -> int:
+    """Turn the file MATLAB wrote into a result document under results/matlab/."""
+    directory, scenario = _scenario(config, args.scenario)
+    document = collect_matlab(scenario)
+    target = Path(args.output) if args.output else config.root / "results" / "matlab" / f"{scenario.id}.json"
+    write_result(document, target)
+    print(f"{scenario.id} [matlab] -> {target}")
+    return 0
+
+
 def cmd_compare(args: argparse.Namespace, config: Config) -> int:
     left = json.loads(Path(args.left).read_text(encoding="utf-8"))
     right = json.loads(Path(args.right).read_text(encoding="utf-8"))
@@ -270,6 +305,24 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("-o", "--output", help="result JSON path (default: results/<impl>/<scenario>.json)")
     run.add_argument("--matlab", default="matlab", help="MATLAB executable (default: matlab)")
     run.set_defaults(func=cmd_run)
+
+    prepare = sub.add_parser(
+        "prepare", help="write a scenario's context and print the MATLAB statement to run"
+    )
+    prepare.add_argument("scenario")
+    prepare.add_argument(
+        "--guard",
+        action="store_true",
+        help="wrap the statement in try/catch, so one failure does not abort a shared script",
+    )
+    prepare.set_defaults(func=cmd_prepare)
+
+    collect = sub.add_parser(
+        "collect", help="record the result MATLAB wrote, after running it elsewhere"
+    )
+    collect.add_argument("scenario")
+    collect.add_argument("-o", "--output", help="result JSON path (default: results/matlab/<scenario>.json)")
+    collect.set_defaults(func=cmd_collect)
 
     compare = sub.add_parser("compare", help="diff two scenario result files")
     compare.add_argument("left")
