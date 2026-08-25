@@ -130,8 +130,13 @@ A scenario should *assert* each difference, so a silent change to either side fa
 4. **Distinguishes a crash from agreement.** A scenario whose result file is missing is
    recorded as `ERROR`, never as a match, and the job goes red. One scenario failing does not
    stop the others.
-5. **Gurobi for the MILP scenarios** — the WLS secrets exist at organisation level. When they
-   are absent the job says so and carries on, so solver-free scenarios still run.
+5. **Gurobi for the MILP scenarios** — the licence comes either from the organisation secret
+   `GUROBI_EDUARD`, which holds a licence file verbatim, or from the three-field
+   `GUROBI_WLSACCESSID` / `GUROBI_WLSSECRET` / `GUROBI_LICENSEID` form that raven-toolbox
+   uses. Both are accepted; when neither is configured the job says so and carries on, so
+   solver-free scenarios still run. Only a **WLS** licence works on a hosted runner --- a
+   named-user academic licence is tied to one machine --- so the step says which kind it
+   found.
 
 Still open: extend it to the **gecko pair**, which needs geckopy and GECKO scenarios first.
 
