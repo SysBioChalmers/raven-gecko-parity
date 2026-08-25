@@ -148,7 +148,40 @@ jobs:
 
       # A scenario that crashes must not stop the others: the report distinguishes a
       # missing result from a matching one, so a crash is recorded, not hidden.
-      - name: Run every scenario against both implementations
+      - id: scenarios
+        name: Run the Python side, and stage the MATLAB side
+        if: steps.state.outputs.changed == 'true'
+        continue-on-error: true
+        run: |
+          : > matlab_side.m
+          for id in $(parity scenarios --pair raven | awk 'NR % 2 == 1 {print $1}'); do
+            if [ -n "${{ inputs.scenario }}" ] && [ "$id" != "${{ inputs.scenario }}" ]; then
+              continue
+            fi
+            echo "::group::$id"
+            parity run "$id" --impl python || echo "::warning::$id failed on python"
+            # `parity prepare` writes the context file and prints the statement
+            # rather than running it. MATLAB has to be started by the action
+            # below, not by us -- see the licensing note there.
+            parity prepare "$id" --guard >> matlab_side.m || echo "::warning::$id not prepared"
+            echo "::endgroup::"
+          done
+          cat matlab_side.m
+
+      # MATLAB must be started by this action, not by us. MathWorks licenses
+      # public repositories only through run-command / run-tests / run-build;
+      # setup-matlab merely installs it, so a `matlab -batch` we spawn ourselves
+      # dies with "License Manager Error -1" no matter how public the repo is.
+      #
+      # One invocation for every scenario, because each one costs a MATLAB start.
+      - name: Run the MATLAB side
+        if: steps.state.outputs.changed == 'true'
+        continue-on-error: true
+        uses: matlab-actions/run-command@v2
+        with:
+          command: "run('matlab_side.m')"
+
+      - name: Collect the MATLAB results
         if: steps.state.outputs.changed == 'true'
         continue-on-error: true
         run: |
@@ -156,10 +189,7 @@ jobs:
             if [ -n "${{ inputs.scenario }}" ] && [ "$id" != "${{ inputs.scenario }}" ]; then
               continue
             fi
-            echo "::group::$id"
-            parity run "$id" --impl python || echo "::warning::$id failed on python"
-            parity run "$id" --impl matlab || echo "::warning::$id failed on matlab"
-            echo "::endgroup::"
+            parity collect "$id" || echo "::warning::$id produced no matlab result"
           done
 
       - id: report
