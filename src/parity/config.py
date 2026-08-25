@@ -19,6 +19,11 @@ class ConfigError(RuntimeError):
 class MatlabSide:
     repo: str
     path: Path
+    #: The branch this pair is compared at. Stated here rather than left to each
+    #: repo's default: RAVEN's default is `main` while the ledger describes
+    #: `develop3`, so taking defaults quietly compares a release branch against a
+    #: development one.
+    ref: str = "main"
     exclude: tuple[str, ...] = ()
     #: MATLAB run before a scenario, to put the toolbox on the path. ``{path}`` is this
     #: repo's location. Override it for toolboxes with a real installer.
@@ -38,6 +43,7 @@ class PythonSide:
     repo: str
     path: Path
     package: str
+    ref: str = "main"
     src: str = "src"
 
     @property
@@ -132,6 +138,7 @@ def load_config(path: Path | None = None) -> Config:
             matlab=MatlabSide(
                 repo=matlab_spec["repo"],
                 path=_resolve(root, name, "matlab", matlab_spec["path"]),
+                ref=matlab_spec.get("ref", MatlabSide.ref),
                 exclude=tuple(matlab_spec.get("exclude", ())),
                 setup=matlab_spec.get("setup", MatlabSide.setup),
             ),
@@ -139,6 +146,7 @@ def load_config(path: Path | None = None) -> Config:
                 repo=python_spec["repo"],
                 path=_resolve(root, name, "python", python_spec["path"]),
                 package=python_spec["package"],
+                ref=python_spec.get("ref", PythonSide.ref),
                 src=python_spec.get("src", "src"),
             ),
         )

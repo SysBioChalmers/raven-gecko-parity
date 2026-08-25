@@ -10,7 +10,7 @@ More than the single scenario suggests, and the plan builds on it rather than ar
 
 - `parity run` / `parity compare` — run a scenario against one implementation, diff two result
   documents within a declared tolerance.
-- `.github/workflows/scenarios.yml` — checks out both repos, installs MATLAB through
+- `.github/workflows/nightly.yml` — checks out both repos, installs MATLAB through
   `matlab-actions/setup-matlab` (licence-free for public repositories), runs every scenario on
   both sides and compares. **MATLAB in CI is already solved.**
 - `parity.local.toml` — per-machine path overrides, so a local run can point at any checkout.
@@ -115,20 +115,24 @@ A scenario should *assert* each difference, so a silent change to either side fa
 
 ### Nightly, across all four repos, only when something moved
 
-Today `scenarios.yml` runs **weekly** (Mondays 05:00), for the **raven pair only**, and
-unconditionally. The target:
+`nightly.yml` runs at 05:00 daily for the **raven pair**, and:
 
-1. **Nightly**, and only when a tracked branch has new commits since the last comparison —
-   store the four commit shas alongside the results and skip when all four match.
-2. **All four repos**, on the branches the ledger tracks, which means naming refs explicitly.
-   This matters: `scenarios.yml` checks out RAVEN with no `ref:`, so it takes `main`, while the
-   ledger and the documentation site both track **`develop3`**. The weekly run is comparing a
-   release branch against a development branch today.
-3. **A report, not just a red tick.** Write a dated report of what differs to `results/`,
-   commit it (or attach it to an issue), so drift has a history rather than an artefact that
-   expires. Only differences need reporting; an unchanged nightly should be quiet.
-4. **Gurobi for the MILP scenarios** — the WLS secrets exist at organisation level, so the
-   set-level scenarios can run in CI rather than only locally.
+1. **Skips when nothing moved.** `nightly/state.json` holds the revisions of the last real
+   comparison; the job resolves both tracked branches with `git ls-remote` and stops there if
+   the pair is unchanged. `workflow_dispatch` takes a `force` input for when you want the run
+   anyway.
+2. **Uses the branches the ledger tracks.** Both workflows get them from `parity refs`, which
+   reads `parity.toml`. RAVEN's default branch is `main` while the ledger describes
+   `develop3`, so taking defaults compared a release branch against a development one.
+3. **Writes a report, not just a red tick.** `nightly/report.md` is regenerated and committed
+   each time the comparison actually runs, so drift has a history.
+4. **Distinguishes a crash from agreement.** A scenario whose result file is missing is
+   recorded as `ERROR`, never as a match, and the job goes red. One scenario failing does not
+   stop the others.
+5. **Gurobi for the MILP scenarios** — the WLS secrets exist at organisation level. When they
+   are absent the job says so and carries on, so solver-free scenarios still run.
+
+Still open: extend it to the **gecko pair**, which needs geckopy and GECKO scenarios first.
 
 ### On demand, on any branch, locally
 
@@ -155,8 +159,8 @@ local path a single step instead of three.
 
 1. **Homology chain** — deterministic, shared binaries, seconds to run, covers half of one
    reconstruction route. Proves the checkpoint pattern.
-2. **Fix the runner**: explicit refs (RAVEN `develop3`), nightly, change detection, all four
-   repos, report on difference.
+2. ~~**Fix the runner**: explicit refs (RAVEN `develop3`), nightly, change detection, report
+   on difference.~~ Done; the gecko pair still needs scenarios before it can join.
 3. **The cheap deterministic scenarios**, in a batch — they are mostly declaration plus a
    dozen lines each.
 4. **ftINIT chain**, stage by stage.

@@ -136,8 +136,27 @@ that avoid false differences.
 ## CI
 
 `ci.yml` checks out all four repos and runs `parity check` on every push and nightly.
-`scenarios.yml` runs the behaviour tests weekly and on demand, using
-`matlab-actions/setup-matlab`, which is licence-free for public repositories.
+
+`nightly.yml` runs the behaviour scenarios against both implementations, using
+`matlab-actions/setup-matlab` --- which is licence-free for public repositories, and the
+reason this repo needs to be public. It only does the work when a tracked branch has moved
+since the last comparison, and it commits [`nightly/report.md`](nightly/report.md) so drift
+has a history instead of an artefact that expires.
+
+Both take the branch to compare from `parity.toml`, not from each repo's default:
+
+```bash
+parity refs
+```
+
+```
+raven    matlab  SysBioChalmers/RAVEN@develop3
+raven    python  SysBioChalmers/raven-toolbox@develop
+```
+
+RAVEN's default branch is `main` and the ledger describes `develop3`, so a workflow that
+takes defaults compares a release branch against a development one and reports the normal
+backlog as drift.
 
 ## Status
 
