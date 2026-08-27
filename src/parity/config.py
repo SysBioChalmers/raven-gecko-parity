@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import os
+import re
 import tomllib
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 CONFIG_NAME = "parity.toml"
@@ -26,7 +27,9 @@ class MatlabSide:
     ref: str = "main"
     exclude: tuple[str, ...] = ()
     #: MATLAB run before a scenario, to put the toolbox on the path. ``{path}`` is this
-    #: repo's location. Override it for toolboxes with a real installer.
+    #: repo's location, and ``{<pair>_matlab}`` / ``{<pair>_python}`` any other configured
+    #: checkout --- GECKO calls into RAVEN throughout, so its scenarios need both.
+    #: Override it for toolboxes with a real installer.
     setup: str = "addpath(genpath('{path}'))"
 
     @property
@@ -151,7 +154,40 @@ def load_config(path: Path | None = None) -> Config:
             ),
         )
 
-    return Config(root=root, pairs=pairs)
+    return Config(root=root, pairs=_resolve_setup_references(pairs))
+
+
+def _resolve_setup_references(pairs: dict[str, Pair]) -> dict[str, Pair]:
+    """Substitute ``{<pair>_matlab}`` / ``{<pair>_python}`` into every MATLAB setup command.
+
+    A GECKO scenario needs RAVEN on the MATLAB path as well as GECKO --- GECKO calls
+    importModel, works on RAVEN model structs and ships no copy of them. Writing RAVEN's
+    location into GECKO's setup command by hand would hard-code a path that
+    `parity.local.toml` is otherwise free to move, so the setup command names the *pair
+    side* and this resolves it against whatever that side is configured as.
+
+    ``{path}`` is deliberately left alone: it is per-side and resolved later, by
+    :attr:`MatlabSide.setup_command`.
+    """
+    locations = {
+        f"{name}_{side}": pair.side(side).path.as_posix()
+        for name, pair in pairs.items()
+        for side in ("matlab", "python")
+    }
+
+    resolved = {}
+    for name, pair in pairs.items():
+        setup = pair.matlab.setup
+        for placeholder, location in locations.items():
+            setup = setup.replace("{" + placeholder + "}", location)
+        unknown = re.findall(r"\{([a-z_]+)\}", setup)
+        if any(token != "path" for token in unknown):
+            known = ", ".join(sorted(locations))
+            raise ConfigError(
+                f"pair {name!r}: setup names {unknown} --- expected 'path' or one of {known}"
+            )
+        resolved[name] = replace(pair, matlab=replace(pair.matlab, setup=setup))
+    return resolved
 
 
 def _resolve(root: Path, pair: str, side: str, configured: str) -> Path:

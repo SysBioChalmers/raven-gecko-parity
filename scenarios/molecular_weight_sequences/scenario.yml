@@ -1,0 +1,102 @@
+id: molecular_weight_sequences
+pair: gecko
+description: >-
+  Molecular weight from an amino-acid sequence, for a fixed list of
+  sequences chosen to separate the ways the two implementations disagree
+  rather than to look like real proteins. No model, no adapter, no file on
+  either side --- calculateMW / calculate_mw take a bare string, so the
+  sequences are the fixture.
+
+entries:
+  - calculateMW
+
+# This scenario is expected to fail, and asserting that is the point: three
+# real, small numeric divergences between the two mass tables, plus one
+# behavioural one, none of which "confirmed against the migration doc" had
+# caught because nothing had run the two functions against the same input
+# before. See docs/gecko-behaviour-parity-plan.md for the write-up.
+#
+# Each sequence below isolates one variable. Comments give the expected
+# per-sequence delta (MATLAB minus Python) so a result that stops matching
+# this list is itself a finding, not just a re-confirmation.
+inputs:
+  sequences:
+    # No residues at all: MATLAB's loop finds nothing to add and returns its
+    # starting water mass, 18. geckopy returns NaN by design, precisely so
+    # that an empty sequence cannot be mistaken for an 18 Da "protein" ---
+    # a real behavioural difference, not a rounding gap. Two routes to zero
+    # residues, so the divergence is shown to be general rather than
+    # specific to the empty string.
+    - ""
+    - "007 42"
+
+    # One standard residue, isolating the water-mass constant on its own:
+    # MATLAB starts at 18, geckopy at 18.01528. Expected delta: -0.01528
+    # (MATLAB minus Python) on every sequence below that has any residues at
+    # all, layered under whatever else that sequence is testing.
+    - "A"
+
+    # All twenty standard residues once each. Both tables agree to the
+    # gram-mole on every one of them --- if this sequence's delta is ever
+    # not exactly the water-mass constant, the standard table itself has
+    # drifted, which is a bigger problem than any of the cases below.
+    - "ACDEFGHIKLMNPQRSTVWY"
+
+    # X ("any residue"): GECKO MATLAB hard-codes 126.50, an unsourced
+    # historical value. geckopy computes the unweighted mean of its own
+    # twenty standard masses instead, for self-consistency with its own
+    # table --- 118.885, not the 126.50 MATLAB uses. Two occurrences, so a
+    # per-residue difference is distinguished from a one-off.
+    - "X"
+    - "XX"
+
+    # B ("D or N"): not previously documented as a divergence at all. GECKO
+    # MATLAB hard-codes a pre-rounded 114.60; geckopy averages its own D and
+    # N entries live, 114.595. Half a hundredth of a Dalton --- found only
+    # because this scenario runs the two functions on the same input, which
+    # is the whole reason it exists.
+    - "B"
+
+    # J, O, U, Z: the other four non-standard codes. Unlike B and X, these
+    # four agree exactly between the tables --- confirmed here rather than
+    # assumed, so that a future edit to either table has something to break.
+    - "J"
+    - "O"
+    - "U"
+    - "Z"
+
+    # Case: GECKO MATLAB matches amino acid codes with strfind, which is
+    # case-sensitive, so a lowercase letter is "extra", ignored exactly like
+    # a digit or a space --- it does not raise, it simply contributes
+    # nothing. geckopy upper-cases the whole sequence first, so the same
+    # lowercase letter is a real residue. Two of the four letters here count
+    # on one side and not the other, which is a difference measured in
+    # whole residues, not fractions of a Dalton.
+    - "AaAa"
+
+    # A sequence with digits and a space mixed in among real residues,
+    # rather than replacing them: both sides document ignoring "extra
+    # things", and this is the case that confirms it --- expected delta is
+    # the water-mass constant only, the same as the pure sequences above.
+    - "MRA1 L2"
+
+    # The five sequences ecTestGEM actually ships, in
+    # test/unit_tests/ecTestGEM/data/uniprot.tsv. None contains X, B, or a
+    # lowercase letter, so on real (if synthetic) data the only expected
+    # delta is the water-mass constant --- the adversarial cases above are
+    # what a real sequence essentially never exercises, which is worth
+    # seeing stated plainly rather than assumed.
+    - "MRAL"
+    - "MNTD"
+    - "MSYN"
+    - "MDFM"
+    - "MLFK"
+
+# Not zero: calculateMW sums many terms, and MATLAB's own aa_MWs table is
+# already given to two decimal places, so the last bit of a float can
+# legitimately differ even where nothing above predicts a difference.
+# Tight enough that none of the deltas this scenario is built to find could
+# hide behind it --- the smallest, B's, is over 300 000 times this bound.
+tolerance:
+  rel: 1.0e-9
+  abs: 1.0e-12

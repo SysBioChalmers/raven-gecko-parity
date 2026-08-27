@@ -1,0 +1,87 @@
+id: gapfill_connect_smallyeast
+pair: raven
+description: >-
+  Connectivity gap-filling: given a draft with reactions missing and a
+  template to draw from, which draft reactions become able to carry flux,
+  which template reactions have to be added to get there, and which stay
+  unconnectable whatever is added.
+
+entries:
+  - fillGaps
+
+inputs:
+  # Draft and template are both smallYeast --- the draft with reactions taken
+  # out, the template intact --- so the minimum repair is exactly the set that
+  # was removed, and both sides read the same file for each role.
+  model: "{matlab_repo}/tutorial/smallYeast.yml"
+
+  # smallYeast ships its uptake reactions shut (lb = ub = 0), and a draft with
+  # no nutrients has almost every reaction blocked for a reason that has
+  # nothing to do with the gaps --- fillGaps says as much in its own
+  # documentation. Opening glucose and oxygen gives the model something to run
+  # on. Applied to the template too, so the two differ only by the removed
+  # reactions.
+  opened_reactions:
+    - glcIN
+    - o2IN
+  opened_upper_bound: 1000.0
+
+  # fillGaps refuses a reference model carrying the same id as the draft, and
+  # draft and template are the same file here. Renaming the template satisfies
+  # that, and is applied on both sides so the two are handed identical inputs;
+  # neither implementation keys anything else off the model id (reactions are
+  # matched by reaction id).
+  template_id: smallYeastTemplate
+
+  # Two removal sets, so the checkpoint shows the repair scaling with the
+  # damage rather than just succeeding once. PGI and ZWF are the only two ways
+  # out of glucose 6-phosphate.
+  single_removed:
+    - PGI
+  double_removed:
+    - PGI
+    - ZWF
+
+  # Both sides solve with Gurobi, named here rather than inherited. RAVEN's
+  # default preference is glpk, which cannot solve a MILP at all (fillGaps
+  # stops with "glpk is not suitable for solving MILPs"), and cobrapy would
+  # otherwise use whatever the machine happens to have configured --- so
+  # without these two lines the scenario compares one solver against another
+  # and calls the result parity.
+  #
+  # This is what the nightly is already set up for: it installs a Gurobi
+  # licence from GUROBI_EDUARD or the three-field WLS secrets, and says so and
+  # carries on when neither is configured. The consequence is that this
+  # scenario, unlike the other fourteen, needs that licence to run at all.
+  matlab_solver: gurobi
+  python_solver: gurobi
+
+  # RAVEN's defaults, stated. allowNetProduction=false considers both kinds of
+  # unconnectivity (missing reactant and unusable product);
+  # useModelConstraints=false asks for as many draft reactions as possible to
+  # carry flux, rather than for the model's own constraints to be satisfiable.
+  allow_net_production: false
+  use_model_constraints: false
+
+# This is the second scenario that needs a solver, and the first that needs a
+# MILP. Degeneracy is the thing to worry about with a MILP --- two solvers can
+# return different minimum-cardinality repairs for the same gap, and comparing
+# the chosen set would then report a difference that is not one. It does not
+# arise on this fixture, and by construction: the template is the draft plus
+# exactly the removed reactions, so the minimum repair is unique and is that
+# set. Verified before the scenario was written --- removing PGI adds back PGI
+# and nothing else; removing PGI and ZWF adds back both.
+#
+# That makes the chosen set safe to compare here. It would not be on a fixture
+# where the template offered two ways to repair the same gap, and a scenario
+# doing that should compare the size of the repair rather than its membership.
+#
+# newly_connected and cannot_connect are the more robust half of the
+# comparison either way: they are outcomes rather than choices, so they hold
+# even where the argmin does not.
+
+tolerance:
+  # Counts and identifier sets only. The bounds the harness opens are declared
+  # above and copied, not computed.
+  rel: 0.0
+  abs: 0.0

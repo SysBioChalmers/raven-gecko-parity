@@ -1,0 +1,37 @@
+id: task_list_parsing
+pair: raven
+description: >-
+  Parsing a metabolic task list: how many tasks, and for each one its inputs,
+  outputs, extra equations, bound changes and flags, with the defaults each
+  side fills in for an omitted bound.
+
+entries:
+  - parseTaskList
+
+inputs:
+  # RAVEN's own task-list fixture, read by both sides out of the RAVEN
+  # checkout. Eleven rows that between them cover most of the ways this format
+  # is awkward: a comment row carrying a marker before the ID column, a section
+  # header whose ID cell holds prose, several metabolites in one cell separated
+  # by ';' and sharing that row's bounds, continuation rows with no ID, and
+  # omitted bounds that each side has to default.
+  task_file: "{matlab_repo}/testing/function_tests/test_data/test_tasks.txt"
+
+# Task order and the order of entries within a task are the parser's output,
+# not an incidental detail, so neither is sorted here. A task list is read as a
+# sequence of rows and a difference in where a continuation row was attached is
+# exactly the kind of thing worth catching --- raven_toolbox's own source
+# records a past divergence of this shape (69 tasks against RAVEN's 57 on
+# Human-GEM's essential task list, from a comment row being read as an empty
+# task).
+#
+# The defaults are part of what is compared, and they are not uniform: IN and
+# OUT default to LB 0 / UB 1000, while EQU defaults to UB 1000 and to LB -1000
+# when the equation is reversible ('<=>') and 0 when it is not. An omitted
+# bound therefore carries as much information as a stated one.
+
+tolerance:
+  # Nothing is computed --- every number here is a decimal string from the file
+  # parsed once, or a default. Any difference is a real one.
+  rel: 0.0
+  abs: 0.0

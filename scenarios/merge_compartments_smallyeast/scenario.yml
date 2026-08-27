@@ -1,0 +1,64 @@
+id: merge_compartments_smallyeast
+pair: raven
+description: >-
+  Collapsing every compartment into one: which metabolites are recognised as
+  the same species across compartments, how their stoichiometric
+  contributions add up, and which reactions vanish because they had nothing
+  left to do.
+
+entries:
+  - mergeCompartments
+
+inputs:
+  # smallYeast has two compartments and seven species present in both
+  # (acetyl-CoA, coenzyme A, CO2, and the four nicotinamide cofactors), plus
+  # three reactions that exist only to move things between them --- so the
+  # merge has grouping, coefficient summing and cancellation to do rather than
+  # just relabelling.
+  model: "{matlab_repo}/tutorial/smallYeast.yml"
+
+  # RAVEN's deleteRxnsWithOneMet, stated because the two sides default it
+  # differently (false in RAVEN, true in the Python signature) and because
+  # switching it on is where they part company --- see below. With it off,
+  # reactions that cancel to *nothing* still go on both sides, which is the
+  # path this scenario wants: CAT2, CO2TRANS and ShuttleX are the model's
+  # three transport reactions, and after merging there is nothing left of
+  # them.
+  delete_single_metabolite_reactions: false
+
+  # Merge into "s" for "System", the RAVEN convention. Both sides default to
+  # it; stated so a change to either default is caught here rather than
+  # silently changing what is compared.
+  merged_compartment: s
+
+# Metabolites are compared by **name**, not by id, and that is a concession to
+# a real divergence rather than a convenience:
+#
+#   RAVEN keeps the id of the first copy it finds --- acetyl-CoA[c] and
+#   acetyl-CoA[m] merge into whichever of ACCOA_c / ACCOA_m comes first in the
+#   model, keeping that id, which then names a compartment that no longer
+#   exists. Its own docstring warns about this ("If the metabolite IDs reflect
+#   the compartment that they are in the IDs may no longer be representative").
+#   The Python side rewrites the suffix instead, so both become ACCOA_s.
+#
+# Every merged metabolite would therefore differ by id while naming the same
+# species, and the comparison would say nothing about the merge. Names are the
+# identity the grouping is actually built on --- RAVEN groups by metNames, and
+# the Python side is given the same key here rather than its default id-suffix
+# one --- so comparing by name tests the grouping without asserting the naming
+# convention. Recorded on the ledger row.
+#
+# The other divergence this scenario steps around, also on the ledger row:
+# with deleteRxnsWithOneMet **on**, RAVEN reserves the reactions that already
+# had a single metabolite before the merge (a model's exchange reactions) and
+# deletes only those that were reduced to one by it. The Python side deletes
+# both, so smallYeast loses its eight exchange reactions as well. That is a
+# difference in behaviour, not in naming, and asserting it here would make this
+# scenario permanently red over a mode the checkpoint does not otherwise need.
+
+tolerance:
+  # Coefficients are summed when two compartment copies collapse into one, so
+  # this is the one place in the scenario where a float is computed rather
+  # than copied.
+  rel: 1.0e-12
+  abs: 1.0e-15

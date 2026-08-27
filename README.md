@@ -130,6 +130,32 @@ Scenarios are for the places where the numbers matter --- ftINIT, gap-filling, l
 kcat matching, protein pool limits. Do not try to cover everything, and do not diff MATLAB
 against Python at line level.
 
+Twenty-five cover the raven pair today, over thirty-three `parity` rows; `parity scenarios` lists
+them with what each one claims to cover. Twenty-three agree. Two report a difference on purpose, each with an open question
+behind it: `yaml_roundtrip_smallyeast` (the two YAML writers preserve the same model but do not
+produce the same file) and `task_checking_smallyeast` (the two build a different LP for a
+metabolic task, so one of six task verdicts flips). See
+[docs/behaviour-parity-plan.md](docs/behaviour-parity-plan.md) for both and for what is queued
+next.
+
+Five cover the gecko pair, over fourteen of its `parity` rows, all on GECKO's own unit-test
+model. Four agree on content: `ec_model_expansion_ectestgem`, `enzyme_annotation_ectestgem`,
+`protein_pool_ectestgem` and `ec_model_io_ectestgem`. The second was blocked until recently
+--- GECKO `develop4` called RAVEN's `progressbar`, which RAVEN `develop3` had replaced with
+`progressReport` ([GECKO#424](https://github.com/SysBioChalmers/GECKO/issues/424), fixed by
+[GECKO#425](https://github.com/SysBioChalmers/GECKO/pull/425), merged). The other two are red
+on purpose. `molecular_weight_sequences`: eighteen sequences chosen to isolate one variable
+each, and all eighteen differ --- the two mass tables agree on the twenty standard residues
+but not on `X` or `B`, and the two functions disagree on case-sensitivity and on what an
+empty sequence is worth
+([raven-gecko-parity#11](https://github.com/SysBioChalmers/raven-gecko-parity/issues/11)).
+`ec_model_io_ectestgem`: a save/load round trip agrees on every field, on both sides, but the
+written *file* does not lay out the same way --- the same divergence already tracked for
+RAVEN's plain-GEM writers
+([raven-gecko-parity#6](https://github.com/SysBioChalmers/raven-gecko-parity/issues/6)), one
+layer down. See [docs/gecko-behaviour-parity-plan.md](docs/gecko-behaviour-parity-plan.md) for the
+programme behind these and for what the rest of the 47 gecko `parity` rows need.
+
 See [docs/scenarios.md](docs/scenarios.md) for how to write one, including the conventions
 that avoid false differences.
 

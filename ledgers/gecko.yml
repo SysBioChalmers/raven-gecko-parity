@@ -41,7 +41,9 @@ entries:
   - matlab: applyComplexData
     python: geckopy.apply_complex_data
     status: parity
-    notes: Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5.
+    scenarios:
+      - enzyme_annotation_ectestgem
+    notes: 'GECKO develop4 called RAVEN''s progressbar, removed in RAVEN #623; ported to progressReport in GECKO #425 (merged to develop4 2026-08-26).'
   - matlab: applyCustomKcats
     python: geckopy.apply_custom_kcats
     status: parity
@@ -58,14 +60,28 @@ entries:
   - matlab: calculateFfactor
     python: geckopy.calculate_f_factor
     status: parity
+    scenarios:
+      - protein_pool_ectestgem
     notes: Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5.
   - matlab: calculateMW
     python: geckopy.calculate_mw
     status: parity
-    notes: Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5.
+    issue: SysBioChalmers/raven-gecko-parity#11
+    scenarios:
+      - molecular_weight_sequences
+    notes: 'DIVERGENCE, now measured. Both agree on the twenty standard residues to the
+      gram-mole. Four differences: the water-mass constant (18 vs 18.01528); X''s mass
+      (126.50, an unsourced historical constant, vs the live mean of the standard table,
+      118.885); B''s mass (114.60 pre-rounded vs 114.595 computed) --- not previously
+      documented; and shape --- calculateMW is case-sensitive (a lowercase letter is
+      ignored, like a digit) and returns 18 for a sequence with no recognised residues,
+      where calculate_mw upper-cases first and returns NaN for the same case. All eighteen
+      cases in molecular_weight_sequences are red on purpose.'
   - matlab: constrainEnzConcs
     python: geckopy.constrain_enz_concs
     status: parity
+    scenarios:
+      - protein_pool_ectestgem
     notes: Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5.
   - matlab: constrainFluxData
     python: geckopy.apply_flux_data_constraints
@@ -89,6 +105,8 @@ entries:
   - matlab: fillEnzConcs
     python: geckopy.fill_enz_concs
     status: parity
+    scenarios:
+      - protein_pool_ectestgem
     notes: Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5.
   - matlab: findECInDB
     python: geckopy.find_ec_in_db
@@ -127,9 +145,14 @@ entries:
   - matlab: getECfromDatabase
     python: geckopy.fill_eccodes_from_database
     status: parity
+    scenarios:
+      - enzyme_annotation_ectestgem
+    notes: 'GECKO develop4 called RAVEN''s progressbar, removed in RAVEN #623; ported to progressReport in GECKO #425 (merged to develop4 2026-08-26).'
   - matlab: getECfromGEM
     python: geckopy.fill_eccodes_from_gem
     status: parity
+    scenarios:
+      - enzyme_annotation_ectestgem
   - matlab: getECstring
     status: subsumed
     reason: EC-string formatting, inlined on the Python side inside fill_eccodes_from_database and fill_eccodes_from_gem.
@@ -163,6 +186,8 @@ entries:
   - matlab: loadConventionalGEM
     python: geckopy.load_conventional_gem
     status: parity
+    scenarios:
+      - ec_model_expansion_ectestgem
     notes: Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5.
   - matlab: loadDatabases
     status: subsumed
@@ -172,8 +197,13 @@ entries:
   - matlab: loadEcModel
     python: geckopy.load_ec_model
     status: parity
-    notes: '[3->4] auto-flips legacy reverse-direction usage_prot_* / prot_pool_exchange to the forward convention
-      on load. A scenario here would be well spent.'
+    issue: SysBioChalmers/raven-gecko-parity#6
+    scenarios:
+      - ec_model_io_ectestgem
+    notes: '[3->4] auto-flips legacy reverse-direction usage_prot_* / prot_pool_exchange to the forward
+      convention on load. ec_model_io_ectestgem: reads back a freshly built ecModel exactly, both sides,
+      zero differences --- the legacy-flip path is not exercised, since current makeEcModel already
+      writes forward.'
   - matlab: loadFluxData
     python: geckopy.load_flux_data
     status: parity
@@ -181,10 +211,14 @@ entries:
   - matlab: loadProtData
     python: geckopy.load_prot_data
     status: parity
+    scenarios:
+      - protein_pool_ectestgem
     notes: Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5.
   - matlab: makeEcModel
     python: geckopy.make_ec_model
     status: parity
+    scenarios:
+      - ec_model_expansion_ectestgem
     notes: '[3->4] ec.genes/enzymes/mw/sequence sorted alphabetically for stable order; KEGG fallback for
       unmatched genes is opt-in via kegg_db=. [Py] single return; unmatched genes logged and annotated on
       rxn.notes[''geckopy_warning''].'
@@ -198,6 +232,8 @@ entries:
   - matlab: ModelAdapter
     python: geckopy.ModelAdapter
     status: parity
+    scenarios:
+      - ec_model_expansion_ectestgem
     notes: Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5.
   - matlab: ModelAdapterManager
     status: matlab-only
@@ -237,7 +273,12 @@ entries:
   - matlab: saveEcModel
     python: geckopy.save_ec_model
     status: parity
-    notes: '[3->4] emits the new cobrapy-style YAML; usage_prot_* in forward convention.'
+    issue: SysBioChalmers/raven-gecko-parity#6
+    scenarios:
+      - ec_model_io_ectestgem
+    notes: '[3->4] emits the new cobrapy-style YAML; usage_prot_* in forward convention. Content is at
+      parity (ec_model_io_ectestgem: every field, both sides, zero differences); layout is not --- same
+      divergence as writeYAMLmodel / write_yaml_model, one level down.'
   - matlab: selectKcatValue
     python: geckopy.apply_kcat_list
     status: parity
@@ -252,6 +293,8 @@ entries:
   - matlab: setProtPoolSize
     python: geckopy.set_prot_pool_size
     status: parity
+    scenarios:
+      - protein_pool_ectestgem
     notes: Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5.
   - matlab: sigmaFitter
     python: geckopy.fit_sigma

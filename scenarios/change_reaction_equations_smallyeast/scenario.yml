@@ -1,0 +1,60 @@
+id: change_reaction_equations_smallyeast
+pair: raven
+description: >-
+  Replacing a reaction's stoichiometry in place: what survives the rewrite
+  (name, bounds, GPR, subsystem, objective coefficient) and what does not
+  (the old stoichiometry), and creating a metabolite as part of a rewrite
+  the same way addRxns/add_reactions_from_equations would.
+
+entries:
+  - changeRxns
+
+inputs:
+  model: "{matlab_repo}/tutorial/smallYeast.yml"
+
+  # Two reactions changed in one call, each exercising something the other
+  # does not:
+  #
+  #   PGI   rewired to a different, but already-existing, pair of
+  #         metabolites (its equation becomes GLC_c <=> G6P_c, still
+  #         reversible). Nothing has to be created.
+  #   HXK   rewritten with an extra product, PROBE_c, that does not yet
+  #         exist --- so this checkpoint also exercises the metabolite
+  #         creation both changeRxns and change_reaction_equations delegate
+  #         to the same machinery addRxns / add_reactions_from_equations
+  #         use.
+  equations:
+    PGI: "GLC_c <=> G6P_c"
+    HXK: "ATP_c + GLC_c => ADP_c + G6P_c + PROBE_c"
+
+  compartment: c
+
+  # Stated rather than defaulted, and worth stating because the defaults are
+  # opposites here too: RAVEN's allowNewMets defaults false, the Python
+  # signature's allow_new_mets defaults true --- the same divergence already
+  # recorded for addRxns / add_reactions_from_equations, which this function
+  # shares its metabolite-matching machinery with.
+  allow_new_mets: true
+
+# Both functions document that they touch stoichiometry ONLY: bounds are
+# untouched (both docstrings say so explicitly --- "does not care about
+# bounds"; "Bounds are not modified, matching RAVEN"), and everything else
+# about a reaction --- name, GPR, subsystem, objective coefficient --- survives
+# because the reaction is rewritten in place rather than replaced. Comparing
+# those fields before and after is therefore not incidental to this scenario;
+# it is most of the claim, and a rewrite that silently dropped a GPR while
+# getting the stoichiometry right would otherwise pass unnoticed.
+#
+# One consequence of "bounds untouched" is not exercised here: PGI's arrow
+# stays reversible before and after, so this fixture never rewrites an
+# irreversible equation as reversible (or the reverse) while the bounds stay
+# put. Both docstrings warn this is exactly the case a caller gets wrong ---
+# the equation's arrow no longer matches what the reaction can actually do,
+# and nothing here would catch that going stale. Worth a second fixture, not
+# this one.
+
+tolerance:
+  # Stoichiometric coefficients are parsed from the decimal strings above, not
+  # computed; bounds and the objective coefficient are copied unchanged.
+  rel: 1.0e-12
+  abs: 1.0e-15

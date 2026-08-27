@@ -1,0 +1,71 @@
+id: copy_to_compartment_smallyeast
+pair: raven
+description: >-
+  Copying reactions into another compartment: the reaction and metabolite
+  copies that get created, what the new compartment is called, and what
+  changes when the originals are moved rather than duplicated.
+
+entries:
+  - copyToComps
+
+inputs:
+  model: "{matlab_repo}/tutorial/smallYeast.yml"
+
+  # The first three steps of glycolysis. Between them they touch six
+  # metabolites, two of which (ATP and ADP) appear in more than one of the
+  # reactions --- so the copy has to reuse the metabolite it just created
+  # rather than making a second one, which is the part of this that can go
+  # wrong quietly.
+  reactions:
+    - HXK
+    - PGI
+    - PFK
+
+  # A compartment the model does not have. Copying into an *existing* one is
+  # deliberately not exercised: RAVEN unconditionally creates "<id>_<comp>" for
+  # every metabolite of a copied reaction, while the Python side maps to a
+  # metabolite already in the target compartment when there is one. smallYeast
+  # would not reach that difference anyway --- none of the six metabolites
+  # above has a mitochondrial copy --- but naming a new compartment makes the
+  # scenario say what it tests rather than relying on the fixture to be
+  # accidentally safe. Recorded on the ledger row.
+  target_compartment: p
+
+  # Both sides default the name to the compartment id, so it is given
+  # explicitly here: a default that agrees is not evidence that the parameter
+  # is handled the same way.
+  target_compartment_name: peroxisome
+
+# Two checkpoints, differing only in deleteOriginal:
+#
+#   copy   the three reactions are duplicated: 53 -> 56 reactions.
+#   move   the originals go: 53 reactions again, but not the same 53.
+#
+# The metabolite count is 58 either way. The originals' metabolites stay behind
+# when the reactions are moved, because neither implementation prunes what is
+# left unused --- worth stating, since "move" sounds like it should not leave
+# six orphans and both agree that it does.
+#
+# Metabolites are compared as (name, compartment) rather than by id, because
+# the two implementations name a copy differently, in the same way they do when
+# merging compartments:
+#
+#   RAVEN appends the target compartment to the id it already has, exactly as
+#   its docstring says ("New reactions and metabolites will be named as
+#   id_toComps(i)"), so ADP_c copied into p becomes ADP_c_p. The Python side
+#   rewrites the compartment suffix instead, giving ADP_p.
+#
+# Reaction ids are unaffected here --- smallYeast's reaction ids carry no
+# compartment suffix, so HXK becomes HXK_p on both sides --- and everything
+# else about the copy is comparable once the metabolite naming is set aside.
+# Recorded on the ledger row.
+#
+# New reactions and metabolites are derived by difference from the model before
+# and after rather than read from the return value: RAVEN returns only the
+# updated model where the Python side also returns the two id lists, so the
+# difference is the one quantity both sides can state.
+
+tolerance:
+  # Stoichiometric coefficients are copied verbatim into the new compartment.
+  rel: 1.0e-12
+  abs: 1.0e-15

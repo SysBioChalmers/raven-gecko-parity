@@ -1,0 +1,56 @@
+id: remove_metabolites_smallyeast
+pair: raven
+description: >-
+  Deleting metabolites from a model: what happens to a reaction that loses
+  one ingredient among several, what happens to one that loses its only
+  ingredient, and deleting by name across every compartment at once rather
+  than by id.
+
+entries:
+  - removeMets
+
+inputs:
+  model: "{matlab_repo}/tutorial/smallYeast.yml"
+
+  # ATP is used by twelve reactions with several other metabolites each, so
+  # removing it strips one row from twelve stoichiometries without emptying
+  # any of them --- the "silently mutated, not removed" case. Glycerol is used
+  # by two: GPP, which has other metabolites and survives reduced, and
+  # glyOUT, an exchange reaction for which glycerol is the *only* metabolite
+  # --- so glyOUT loses all of its stoichiometry and becomes a reaction over
+  # nothing. Both are removed in one call, so the two outcomes are checked
+  # side by side rather than one scenario run apiece.
+  removed_by_id:
+    - ATP_c
+    - GLY_c
+
+  # CO2 exists as both CO2_c and CO2_m. Removing it by name is the documented
+  # reason removeMets takes an isNames option at all --- "a way to delete
+  # metabolites in several compartments at once without knowing the exact
+  # IDs" --- and it is the one thing raven_toolbox's wrapper around cobra's own
+  # remove_metabolites was written to add.
+  removed_by_name: CO2
+
+# What is NOT covered here, and why: neither implementation's "clean up what
+# is left" options line up.
+#
+# RAVEN's removeMets, called with removeUnusedRxns / removeUnusedGenes /
+# removeUnusedComps all left at their shared default of false, never prunes a
+# reaction just because a metabolite it needed is gone --- glyOUT survives as
+# a reaction with zero metabolites, exactly as above. remove_metabolites has
+# no removeUnusedRxns equivalent at all: it wraps cobra's own
+# remove_metabolites, which offers only destructive (delete every reaction
+# touching the metabolite, whatever else that reaction still has) or nothing.
+# destructive=True is not RAVEN's removeUnusedRxns=true either: it would
+# delete HXK, PFK, PGK and the other nine reactions above outright for merely
+# having used ATP, which is a much more aggressive removal than pruning the
+# one reaction left with nothing in it. There is therefore no shared cleanup
+# behaviour to assert, and this scenario leaves both sides at their
+# non-destructive default rather than picking a Python option with no RAVEN
+# counterpart to compare it against. Recorded on the ledger row.
+
+tolerance:
+  # Stoichiometric coefficients are copied unchanged for every metabolite that
+  # survives; nothing here is computed.
+  rel: 1.0e-12
+  abs: 1.0e-15

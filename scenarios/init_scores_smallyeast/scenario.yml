@@ -1,0 +1,67 @@
+id: init_scores_smallyeast
+pair: raven
+description: >-
+  The first stage of ftINIT, compared in two checkpoints: expression levels
+  turned into per-gene scores, and per-gene scores aggregated through each
+  reaction's GPR into a reaction score.
+
+entries:
+  - scoreComplexModel
+
+inputs:
+  model: "{matlab_repo}/tutorial/smallYeast.yml"
+
+  # RAVEN's own expression fixture, read by both sides out of the RAVEN
+  # checkout. It ships as the input to tutorial3 (reporter metabolites), so the
+  # values are p-values rather than RNA-seq counts --- which does not matter
+  # here: what is being compared is the transform, and 60 of smallYeast's 61
+  # genes appear in it, spread over four orders of magnitude.
+  expression: "{matlab_repo}/tutorial/expression.txt"
+
+  # The reference level every gene is compared against. Chosen so that both
+  # clamps are exercised: at 0.1, fifteen genes land on the -5 floor and nine
+  # on the +10 ceiling, and the reaction scores span the full range. A
+  # threshold that left the scores in the linear middle would never test the
+  # clamping, which is where two implementations of the same formula usually
+  # part company.
+  threshold: 0.1
+
+  # Stated rather than defaulted. Both sides default to max/min/-2, but a
+  # scenario that leaves them implicit tests one default against the other
+  # instead of testing the aggregation.
+  isozyme_scoring: max
+  complex_scoring: min
+  no_gene_score: -2.0
+
+# Two checkpoints, so a divergence is located rather than merely observed. The
+# plan's ftINIT chain starts here for a reason: a difference in `gene_scores`
+# explains every difference downstream of it, and one that appears only in
+# `reaction_scores` is in the GPR walk.
+#
+# What each side runs:
+#
+#   MATLAB  scoreComplexModel(model, [], arrayData, tissue) --- one call that
+#           does both stages and returns geneScores and rxnScores.
+#   Python  gene_scores_from_expression -> score_reactions_from_genes, the same
+#           two stages as two functions.
+#
+# Two properties of the fixture are handled in the harness, identically on both
+# sides, because they are about the file rather than about either toolbox:
+#
+#   * expression.txt lists 6383 rows for 6084 genes; three of the duplicated
+#     ids are smallYeast genes. The first occurrence wins on both sides, which
+#     is what RAVEN's own ismember lookup would do, but it is done up front so
+#     that neither implementation's internal ordering can decide it.
+#   * the table is restricted to genes the model has. RAVEN does this itself;
+#     doing it in the harness keeps the two inputs identical.
+#
+# YCR073W-A is the one smallYeast gene with no expression value, and it sits in
+# an OR with three others in PGL --- so the missing-gene path is exercised, in
+# exactly one reaction, and both sides should ignore it and take the maximum of
+# the rest.
+
+tolerance:
+  # 5*log(level/threshold) on both sides. Two libm implementations may differ
+  # in the last bit, and nothing here would hide behind 1e-12.
+  rel: 1.0e-12
+  abs: 1.0e-15

@@ -1,0 +1,54 @@
+id: change_gene_rules_smallyeast
+pair: raven
+description: >-
+  Setting or appending gene-reaction rules in batch: overwriting a
+  reaction's GPR outright, and adding a new isozyme to one that already has
+  a GPR, alongside the genes each pulls in.
+
+entries:
+  - changeGrRules
+
+inputs:
+  model: "{matlab_repo}/tutorial/smallYeast.yml"
+
+  # Overwritten outright. PGI has a single-gene GPR; the new one replaces it
+  # completely and creates two genes neither model has.
+  replaced:
+    PGI: "YPROBE1 or YPROBE2"
+
+  # Appended as a new isozyme. HXK already has a three-gene OR; the result
+  # should be that OR plus one more disjunct, as an AND-complex of two new
+  # genes.
+  appended:
+    HXK: "YPROBE3 and YPROBE4"
+
+# Two checkpoints, both starting from a fresh read of the model so neither
+# leaks into the other:
+#
+#   replace    changeGrRules(model, rxns, newRules, 'replace', true) /
+#              change_gene_reaction_rules(model, rules, replace=True).
+#   append     the same with replace=false, onto a reaction that already has
+#              a GPR --- both sides produce "(old) or (new)" and standardize
+#              it into the same DNF.
+#
+# NOT covered here: append mode onto a reaction with NO existing GPR. RAVEN's
+# changeGrRules always builds "(old) or (new)" regardless of whether old is
+# empty, and confirmed directly (not inferred from reading the source): on
+# smallYeast's ATPX, which has no GPR, that produces the literal string
+# "() or (YPROBE1 and YPROBE2)". standardizeGrRules cannot parse it --- an
+# empty parenthesised group is not a valid gene, complex or isozyme --- and
+# rather than raising, it leaves that one grRule exactly as the broken string,
+# unstandardized, while every other row in the same call is fixed up
+# normally. change_gene_reaction_rules explicitly special-cases an empty
+# existing rule (`if replace or not rxn.gene_reaction_rule: new_rule = rule`)
+# and produces the clean "new" rule with no artefact at all. Tracked as
+# raven-gecko-parity#12 and recorded on the ledger row; asserting it here
+# would compare a well-formed GPR against a string that cannot be parsed as
+# one, which is not a numeric or structural difference this harness is built
+# to characterise --- it is the finding itself.
+
+tolerance:
+  # Nothing computed; a GPR is either the string that was declared or it is
+  # not.
+  rel: 0.0
+  abs: 0.0

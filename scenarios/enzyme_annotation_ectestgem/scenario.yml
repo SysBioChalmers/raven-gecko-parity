@@ -1,0 +1,41 @@
+id: enzyme_annotation_ectestgem
+pair: gecko
+description: Complex stoichiometry and EC-code assignment on GECKO's ecTestGEM.
+
+# The second GECKO scenario, and the annotation half of the pipeline: what goes *into*
+# the ec substructure once makeEcModel has built it, but before any kcat is fetched. Still
+# no solver and no network --- the Complex Portal, UniProt and KEGG snapshots are the ones
+# GECKO ships with its own unit tests, and both sides read those same files.
+#
+# ec_model_expansion_ectestgem is the prerequisite: if the expansion itself differs, every
+# checkpoint here differs with it, and the expansion scenario says so first.
+#
+# Each function is exercised twice, over all ec reactions and over a declared subset. The
+# subset case is the one that catches an off-by-one in the index mapping: an implementation
+# that ignores the selection passes the first and fails the second.
+
+entries:
+  - applyComplexData
+  - getECfromGEM
+  - getECfromDatabase
+
+inputs:
+  adapter_matlab: "{matlab_repo}/test/unit_tests/ecTestGEM/TestGEMAdapter.m"
+  fixture_dir: "{matlab_repo}/test/unit_tests/ecTestGEM"
+  adapter_python: "{python_repo}/examples/ecTestGEM"
+
+  # Which ec reactions to restrict the EC-code lookups to. Declared here rather than
+  # hard-coded on either side, so both select the same ones; the names differ between the
+  # two ecModel flavours because the expansion names them differently.
+  subset_full:
+    - R2_EXP_1
+    - R3
+  subset_light:
+    - "001_R2"
+    - "001_R3"
+
+# EC codes are strings and complex stoichiometries are small integers: nothing here is
+# summed, so a difference in the last bits would be a real difference.
+tolerance:
+  rel: 0.0
+  abs: 0.0

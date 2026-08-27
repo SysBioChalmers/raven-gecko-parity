@@ -38,18 +38,53 @@ entries:
   - matlab: addRxns
     python: raven_toolbox.manipulation.add_reactions_from_equations
     status: parity
-    notes: 'from migration.md. The keystone: equation-string → reactions, matching mets by id, name, or name[comp];
-      strict / auto policies for new mets and genes.'
+    issue: SysBioChalmers/raven-gecko-parity#9
+    scenarios:
+      - add_reactions_from_equations_smallyeast
+    notes: 'from migration.md. The keystone: equation-string to reactions, matching mets by id, name, or
+      name[comp]; strict / auto policies for new mets and genes. Cross-validated on smallYeast over seven
+      equations covering the reversible and irreversible arrows, integer and decimal coefficients on both sides
+      of one equation, a metabolite that has to be created, a GPR naming two genes that have to be created, and
+      explicit bounds overruling the arrow in both directions: same reactions, bounds, stoichiometry, gene rules
+      and created entities. DIVERGENCE: a created metabolite gets metNames set to its id in RAVEN and no name at
+      all in Python --- see #9, and note that a nameless metabolite defeats the name-keyed matching in
+      merge_compartments and add_reactions_from_model. Defaults are not compared and are opposites:
+      allowNewMets and allowNewGenes default false in RAVEN and true in the Python signature, so the scenario
+      states both. The bounds an arrow implies also come from different places --- model.annotations.defaultLB /
+      defaultUB against cobra''s configuration --- which agree at -1000/1000 for smallYeast by coincidence
+      rather than by construction. Untested: eqnType 2 and 3, the name and name[compartment] token forms.'
   - matlab: addRxnsGenesMets
     python: raven_toolbox.manipulation.add_reactions_from_model
     status: parity
-    notes: from migration.md. Copy reactions from a source model, matching mets by name[comp] (vs cobra's
-      strict-by-id merge).
+    scenarios:
+      - add_reactions_from_model_smallyeast
+    notes: 'from migration.md. Copy reactions from a source model, matching mets by name[comp] (vs cobra''s
+      strict-by-id merge). Cross-validated on smallYeast by removing the oxidative pentose phosphate pathway
+      together with the metabolites and genes it left unused, then transferring it back from the intact model:
+      same reactions, same two metabolites created, same seven genes created, same stoichiometry, bounds and
+      gene rules, and the same note and confidence score on each transferred reaction. Both the addGene=true and
+      addGene=false paths are covered --- the second restores the reactions and metabolites and leaves the gene
+      count untouched on both sides. Defaults are not compared: the note defaults to "Added via
+      addRxnsAndMets()" on one side and "Added via add_reactions_from_model()" on the other, and the confidence
+      score to 0 in RAVEN and to nothing in the Python signature, so the scenario states both. Untested: a draft
+      and source that disagree about metabolite naming, which is where the name[comp] matching earns its
+      keep.'
   - matlab: addTransport
     python: raven_toolbox.manipulation.add_transport_reactions
     status: parity
-    notes: from migration.md. Transport across compartments, matching mets by name, sequential tr_NNNN ids.
-      cobra has no transport primitive.
+    issue: SysBioChalmers/raven-gecko-parity#10
+    scenarios:
+      - add_transport_reactions_smallyeast
+    notes: 'from migration.md. Transport across compartments, matching mets by name, sequential tr_NNNN ids.
+      cobra has no transport primitive. Cross-validated on smallYeast, transporting four cytosolic metabolites
+      known to exist in the mitochondrion, reversible and irreversible: same reaction names ("<met> transport,
+      <fromCompName>-<toCompName>", built from compartment names not ids), same bounds, same species and
+      coefficients on each side of the transport. BUG in addTransport, not a Python-side difference: it crashes
+      with a dimension mismatch on this fixture''s natural default call (all metabolites in c, no metNames given)
+      --- it builds the reaction names from the full requested metabolite list but the reactions themselves from
+      the subset that has a match in the target compartment, then concatenates the two without reconciling their
+      lengths. Filed as #10. Reaction ids are not compared --- both sides mint fresh sequential ids unrelated to
+      the transport itself.'
   - matlab: analyzeSampling
     status: python-pending
     notes: Correlates per-reaction expression t-scores with flux samples. No port decision is recorded either
@@ -83,11 +118,38 @@ entries:
   - matlab: changeGrRules
     python: raven_toolbox.manipulation.change_gene_reaction_rules
     status: parity
-    notes: Confirmed by the protocol table in todo.md.
+    issue: SysBioChalmers/raven-gecko-parity#12
+    scenarios:
+      - change_gene_rules_smallyeast
+    notes: 'Confirmed by the protocol table in todo.md. Cross-validated on smallYeast for the two paths that
+      agree: replace=true overwriting a GPR outright, and replace=false appending a new isozyme onto a reaction
+      that already has one --- both produce identical genes-created and identical DNF on both sides.
+      DIVERGENCE, confirmed directly rather than inferred: replace=false onto a reaction with NO existing GPR.
+      changeGrRules unconditionally builds "(old) or (new)", so on an empty old rule that is the literal string
+      "() or (new)" --- not a valid gene, complex or isozyme. It does not raise: rxnGeneMat comes out correctly
+      populated (both new genes attached), but grRules{i} is left as that unparseable string, and grRuleToDNF /
+      isDnfGrRule --- and so standardizeGrRules on any later call, and expandModel, which calls grRuleToDNF per
+      reaction --- throw RAVEN:badGrRule on that reaction. The model is right in the matrix and broken in the
+      text, and the failure surfaces wherever the text is next re-parsed, not at the changeGrRules call that
+      caused it. change_gene_reaction_rules explicitly guards this case
+      ("if replace or not rxn.gene_reaction_rule") and produces the clean rule with no artefact. See #12.'
   - matlab: changeRxns
     python: raven_toolbox.manipulation.change_reaction_equations
     status: parity
-    notes: from migration.md. Stoichiometry change in place; batch GPR set/append ((old) or (new)).
+    scenarios:
+      - change_reaction_equations_smallyeast
+    notes: 'from migration.md. Stoichiometry change in place, delegating to the same metabolite-matching
+      machinery as addRxns / add_reactions_from_equations. Both docstrings promise the change touches
+      stoichiometry ONLY --- bounds, name, GPR, subsystem and objective coefficient survive because the reaction
+      is rewritten in place rather than replaced. Cross-validated on smallYeast: rewired PGI to a different
+      existing metabolite pair and rewrote HXK with a product that had to be created, then fingerprinted every
+      one of the other 51 reactions before and after and found none of them moved. Same divergence as
+      addRxns / add_reactions_from_equations on new-metabolite creation (raven-gecko-parity#9: the created
+      metabolite is named after its id in RAVEN, left nameless in Python) --- inherited here rather than
+      re-discovered, since both functions share the same underlying machinery. allowNewMets defaults false in
+      RAVEN and true in the Python signature, stated explicitly for the same reason as addRxns. Untested:
+      rewriting an equation''s arrow (reversible to irreversible or back) while the bounds do not follow it ---
+      both docstrings warn this is the case a caller gets wrong, and this fixture''s arrow does not change.'
   - matlab: checkFileExistence
     status: internal
     reason: File-existence glue with MATLAB dialog prompts.
@@ -111,7 +173,20 @@ entries:
   - matlab: checkTasks
     python: raven_toolbox.tasks.check_tasks
     status: parity
-    notes: 'migration.md says ported, but no matching export found: raven_toolbox.tasks.parse_task_list, raven_toolbox.check_tasks'
+    issue: SysBioChalmers/raven-gecko-parity#7
+    scenarios:
+      - task_checking_smallyeast
+    notes: 'DIVERGENCE in the LP that a task is checked against. The two set up a task in different ways:
+      checkTasks relaxes the metabolite balance (model.b) for the declared inputs and outputs and leaves the
+      model''s own reactions exactly as they are, while check_tasks closes the model''s boundary reactions and
+      works through exchange reactions. A metabolite the model can already excrete through its own open exchange
+      therefore stays available to a RAVEN task even when the task does not list it, and does not to a Python one.
+      Found by task_checking_smallyeast: GLC_AER_TIGHT (aerobic growth on glucose, CO2 the only declared outlet)
+      is feasible in MATLAB via smallYeast''s own ethOUT/glyOUT, and infeasible in Python. check_tasks(...,
+      close_boundaries=False) reproduces the MATLAB verdict on all six tasks. Not solver noise: the scenario
+      names Gurobi on both sides, and the same single task differs under it as under glpk-against-Gurobi. Related: checkTasks warns when the
+      model has no ''unconstrained'' field, so RAVEN''s task framework assumes models that keep their exchange
+      *metabolites*, which a cobrapy model does not have.'
   - matlab: cleanSheet
     status: subsumed
     reason: Excel cell-cleaning helper; inside io.export_to_excel.
@@ -147,19 +222,47 @@ entries:
   - matlab: contractModel
     python: raven_toolbox.manipulation.remove_duplicate_reactions
     status: parity
-    notes: todo.md flags these as NOT exactly equivalent --- a behaviour row, so no scenario asserting identity
-      until the difference is characterised.
+    issue: SysBioChalmers/raven-gecko-parity#8
+    notes: 'DIVERGENCE, now measured. Expand-then-contract is a round trip in RAVEN and lossy in raven-toolbox.
+      On smallYeast expanded to 77 reactions both contract back to 53 and remove the same 24, so the detection
+      agrees; what survives does not. contractModel keeps the FIRST member of each set, strips the _EXP_N suffix
+      (documented behaviour: the model is assumed to have come through expandModel) and merges the set''s
+      grRules with "or", so HXK returns with "YCL040W or YFR053C or YGL253W". remove_duplicate_reactions keeps
+      the LAST member, keeps its expanded id, and keeps only its own rule, so the same reaction comes back as
+      HXK_EXP_3 with one of the three genes. Separately, the two disagree on what counts as a duplicate:
+      contractModel compares stoichiometry with distReverse, while remove_duplicate_reactions also requires
+      identical bounds and objective coefficient. Detection is a different function on both sides and IS at
+      parity --- see findDuplicateRxns and duplicate_reactions_smallyeast. No scenario asserts the merge until
+      #8 settles whether the round trip is meant to be lossless.'
   - matlab: convertCharArray
     status: internal
     reason: MATLAB argument-validation glue. Python uses ordinary keyword arguments and type hints.
   - matlab: convertToIrrev
     python: raven_toolbox.manipulation.convert_to_irreversible
     status: parity
-    notes: from migration.md. Splits reversible non-exchange reactions into forward + _REV. Adopted from geckopy.
+    scenarios:
+      - model_manipulation_smallyeast
+    notes: 'from migration.md. Splits reversible non-exchange reactions into forward + _REV. Adopted from geckopy.
+      Cross-validated on smallYeast: identical reaction sets, bounds, stoichiometry and gene sets. Two cases the
+      fixture cannot reach, both of which would differ: RAVEN splits every reaction with rev ~= 0 including
+      reversible exchange reactions, where the Python side skips boundary reactions whatever their bounds; and
+      RAVEN moves a negative objective coefficient onto the reverse reaction, where the Python side leaves it.'
   - matlab: copyToComps
     python: raven_toolbox.manipulation.copy_to_compartment
     status: parity
-    notes: Duplicate reactions into a target compartment.
+    scenarios:
+      - copy_to_compartment_smallyeast
+    notes: 'Duplicate reactions into a target compartment. Cross-validated on smallYeast, copying and then
+      moving the first three steps of glycolysis into a new compartment: same new reactions, same six new
+      species, same compartment name, same stoichiometry, bounds and gene rules, and both leave the originals''
+      metabolites behind when the reactions are moved. NAMING DIVERGES, the same way it does in
+      mergeCompartments: copyToComps appends the target compartment to the id a metabolite already has, exactly
+      as its docstring says ("New reactions and metabolites will be named as id_toComps(i)"), so ADP_c copied
+      into p becomes ADP_c_p, while copy_to_compartment rewrites the suffix and gives ADP_p. The scenario
+      compares metabolites as (name, compartment) for that reason. Interface also differs: copyToComps takes a
+      list of target compartments, copy_to_compartment one. Untested: copying into a compartment that already
+      holds the species, where RAVEN would create a second copy and the Python side would map onto the existing
+      one.'
   - matlab: curateModelFromTables
     python: raven_toolbox.curation.batch_curate_from_tsv
     status: parity
@@ -200,7 +303,12 @@ entries:
   - matlab: expandModel
     python: raven_toolbox.manipulation.expand_model
     status: parity
-    notes: from migration.md. Splits OR-GPR (isozyme) reactions into one per AND-clause. Adopted from geckopy.
+    scenarios:
+      - model_manipulation_smallyeast
+    notes: 'from migration.md. Splits OR-GPR (isozyme) reactions into one per AND-clause. Adopted from geckopy.
+      Cross-validated on smallYeast: same _EXP_N reaction set, same clause on each copy, same bounds and
+      stoichiometry. The scenario compares grRules as gene sets rather than as strings --- expandModel ends by
+      calling standardizeGrRules, which brackets complexes, while the Python side joins a clause with " and ".'
   - matlab: exportForGit
     python: raven_toolbox.io.export_for_git
     status: parity
@@ -224,12 +332,28 @@ entries:
   - matlab: fillGaps
     python: raven_toolbox.gapfilling.connect_blocked_reactions
     status: parity
-    notes: from migration.md. MILP (min penalty-weighted template reactions s.t. blocked reactions carry flux).
-      Targeted mode → 🗒️ cobra.gapfill.
+    scenarios:
+      - gapfill_connect_smallyeast
+    notes: 'from migration.md. MILP (min penalty-weighted template reactions s.t. blocked reactions carry flux).
+      Targeted mode is cobra.gapfill. Cross-validated at zero tolerance on smallYeast with PGI removed, and with
+      PGI and ZWF removed, filling from the intact model: same repair set, same newly-connected reactions (32
+      and 31), same 18 left unconnectable, same filled model. The two ran on different MILP solvers --- SCIP on
+      the MATLAB side, Gurobi on the Python one --- and still agreed on the argmin, which the fixture makes safe
+      by construction: the template is the draft plus exactly the removed reactions, so the minimum repair is
+      unique. A fixture offering two ways to repair the same gap would need the comparison moved to the size of
+      the repair. RAVEN''s default glpk cannot solve a MILP at all; the scenario names SCIP, which ships in the
+      RAVEN checkout, so it needs no commercial licence.'
   - matlab: findDuplicateRxns
     python: raven_toolbox.manipulation.find_duplicate_reactions
     status: parity
-    notes: auto-paired (name match after expanding MATLAB abbreviations); confirm the behaviour actually matches
+    scenarios:
+      - duplicate_reactions_smallyeast
+    notes: 'Detection only --- stoichiometry compared, bounds and GPRs ignored. Cross-validated at zero
+      tolerance on smallYeast and on smallYeast after expandModel, with ignoreDirection both ways: same groups
+      every time, including the two duplicate pairs the tutorial model already contains (ethIN/ethOUT and
+      FRDS2/SDH, which are duplicates only when direction is ignored). Return shapes differ and are normalised
+      by the scenario: MATLAB returns every pairwise combination as reaction indices, Python returns lists of
+      reaction objects; the pairs within a set form a clique, so recovering groups from them loses nothing.'
   - matlab: findGeneDeletions
     status: via-dependency
     reason: 'cobrapy covers this: cobra.flux_analysis.single_gene_deletion / double_gene_deletion.'
@@ -300,7 +424,15 @@ entries:
   - matlab: gapFillTopological
     python: raven_toolbox.gapfilling.analyse_topology
     status: parity
-    notes: Both are the BFS metabolite-producibility pre-screen.
+    scenarios:
+      - gapfill_topology_smallyeast
+    notes: 'Both are the BFS metabolite-producibility pre-screen, written as explicit mirrors of each other
+      and both citing Meneco. Cross-validated on smallYeast with PGI and ZWF removed: identical reachable set,
+      identical blocked targets, identical candidate reactions per blocked metabolite, identical pruning
+      fraction. The scenario passes seeds and targets explicitly because the *defaults* differ --- RAVEN seeds
+      from every exchange reaction whose bounds allow uptake and targets the substrates of the objective
+      reaction, while the Python side seeds from one-metabolite reactions with lower_bound < 0 and targets every
+      metabolite in the model.'
   - matlab: gapReport
     status: python-pending
     notes: Summary report over a gap analysis. analyse_topology returns the data; the reporting layer is not
@@ -431,11 +563,24 @@ entries:
   - matlab: groupRxnScores
     python: raven_toolbox.init.group_rxn_scores
     status: parity
-    notes: auto-paired (exact name match); confirm the behaviour actually matches
+    scenarios:
+      - init_merge_linear_smallyeast
+    notes: 'Sums the original reaction scores over each merged group. Cross-validated on smallYeast against a
+      declared score table built to reach every branch of the zero handling: a group cancelling to zero with
+      non-zero members (0.01), a genuine zero member lifted to 0.01 before the sum, a masked member contributing
+      0, an unmerged scored reaction, and an unmerged masked one. Interface differs only in how the mask is
+      passed --- a logical vector over the original reactions in MATLAB, a list of ids in Python.'
   - matlab: grRuleToDNF
     python: raven_toolbox.manipulation.gpr_to_dnf
     status: parity
-    notes: Rewrites a GPR into disjunctive normal form.
+    scenarios:
+      - gpr_dnf_rules
+    notes: 'Rewrites a GPR into disjunctive normal form. Cross-validated on a fixture of 25 rules: same clauses,
+      same clause order, same gene order within a clause, duplicates kept on both sides. Accepted input syntax
+      differs at the edges and is deliberately not asserted by the scenario: RAVEN''s tokeniser takes "&&", "||"
+      and mixed-case operators ("Or"), while cobra''s parser takes only the single-character "&"/"|" and fully
+      uppercase AND/OR. Anything else warns and yields an empty GPR there, so the reaction loses its genes
+      silently rather than raising.'
   - matlab: grRuleToString
     status: via-dependency
     reason: 'cobrapy covers this: GPR.to_string().'
@@ -457,7 +602,10 @@ entries:
   - matlab: isDnfGrRule
     python: raven_toolbox.utils.is_dnf
     status: parity
-    notes: Direct counterpart; see the standardizeGrRules repair below.
+    scenarios:
+      - gpr_dnf_rules
+    notes: Direct counterpart; see the standardizeGrRules repair below. Cross-validated on the gpr_dnf_rules
+      fixture, including the rules that need distributivity.
   - matlab: makeFakeBlastStructure
     python: raven_toolbox.reconstruction.homology.make_ortholog_hits
     status: parity
@@ -479,17 +627,46 @@ entries:
   - matlab: mergeCompartments
     python: raven_toolbox.manipulation.merge_compartments
     status: parity
-    notes: Collapse a multi-compartment model into one.
+    scenarios:
+      - merge_compartments_smallyeast
+    notes: 'Collapse a multi-compartment model into one. Cross-validated on smallYeast: same 45 species out of
+      52 metabolites, same three transport reactions cancelled away (CAT2, CO2TRANS, ShuttleX), same summed
+      stoichiometry, same bounds. Three things the scenario had to work around. (1) Merged metabolite IDS
+      DIFFER: RAVEN keeps the id of the first copy it finds, so acetyl-CoA ends up as ACCOA_c or ACCOA_m naming
+      a compartment that no longer exists --- its own docstring warns of this --- while the Python side rewrites
+      the suffix to ACCOA_s. Compared by name instead, which is also what the grouping is built on (metNames on
+      one side, and the same key passed explicitly on the other, since its default keys off the id suffix).
+      (2) With deleteRxnsWithOneMet on, RAVEN reserves reactions that already had a single metabolite before
+      the merge (a model''s exchange reactions) and deletes only those reduced to one by it; the Python side
+      deletes both, so smallYeast would lose its eight exchanges. The scenario runs with the mode off.
+      (3) mergeCompartments'' third output is documented as the reactions deleted for being duplicates, but it
+      passes through contractModel''s *third* output (an indexed cell array, one entry per retained reaction)
+      rather than its second (the flat list of removed ids). A caller reading the docstring gets one entry per
+      surviving reaction instead.'
   - matlab: mergeLinear
     python: raven_toolbox.init.merge_linear
     status: parity
-    notes: from migration.md. Linear merge of unit-stoichiometry chains; bookkeeping (group_ids, reversed_rxns)
-      to map back to the reference model.
+    scenarios:
+      - init_merge_linear_smallyeast
+    notes: 'from migration.md. Linear merge of unit-stoichiometry chains; bookkeeping (group_ids, reversed_rxns)
+      to map back to the reference model. Cross-validated on smallYeast with and without protected reactions:
+      identical partition, identical reduced reaction set, identical bounds and stoichiometry. DO NOT COMPARE
+      THE RAW GROUP IDS across implementations --- the two agree on which reactions merge together and number
+      the groups differently, because each side''s counter increments in its own merge order. Both document the
+      integer only as an equivalence marker, so the numbering is not a promise either one makes. The reversed
+      flag is untested: no chain in smallYeast or smallYeastBad needs a reaction flipped, so both return
+      all-false.'
   - matlab: mergeModels
     python: raven_toolbox.manipulation.merge_models
     status: parity
-    notes: from migration.md. N-model merge, unify mets by name[comp] (or id), keep all reactions (id collisions
-      renamed). cobra's merge is pairwise / strict-by-id.
+    scenarios:
+      - merge_models_smallyeast
+    notes: 'from migration.md. N-model merge, unify mets by name[comp] (or id), keep all reactions (id collisions
+      renamed). cobra''s merge is pairwise / strict-by-id. Cross-validated on smallYeast + smallYeastBad:
+      identical reaction, metabolite and gene sets, identical stoichiometry and gene sets, identical rename set
+      ("<id>_<source model id>"), and identical provenance (rxnFrom against notes["origin"]). One case the fixture
+      cannot reach: on a *second* collision of the same id the Python side goes on to "<id>_<source>_2" while
+      RAVEN emits the same id twice, which needs three or more models sharing an id to trigger.'
   - matlab: modelSummary
     status: python-pending
     notes: Console/struct model summary. No port decision is recorded either way. Left in the queue rather
@@ -530,8 +707,12 @@ entries:
   - matlab: parseTaskList
     python: raven_toolbox.tasks.parse_task_list
     status: parity
-    notes: from migration.md. check_tasks reuses one model across the task list (no per-task model copy) —
-      at genome scale ~12× faster than the copy-per-task implementation it replaced.
+    scenarios:
+      - task_list_parsing
+    notes: 'from migration.md. check_tasks reuses one model across the task list (no per-task model copy) ---
+      at genome scale ~12x faster than the copy-per-task implementation it replaced. Cross-validated on RAVEN''s
+      test_tasks.txt: same tasks in the same order, same inputs, outputs, equations and bound changes, and the
+      same defaults filled in for an omitted bound.'
   - matlab: parseYAML
     status: subsumed
     reason: The RAVEN YAML tokeniser; inside io.read_yaml_model.
@@ -595,9 +776,14 @@ entries:
   - matlab: readYAMLmodel
     python: raven_toolbox.io.read_yaml_model
     status: parity
-    notes: from migration.md. Aligned to cobra's !!omap writer (RAVEN fa281a1). Adds the RAVEN-only top-level
+    issue: SysBioChalmers/raven-gecko-parity#6
+    scenarios:
+      - yaml_roundtrip_smallyeast
+    notes: 'from migration.md. Aligned to cobra''s !!omap writer (RAVEN fa281a1). Adds the RAVEN-only top-level
       per-entry keys (inchis/deltaG/metFrom/notes, confidence_score/references/rxnFrom/deltaG, protein) into
-      .notes, plus version/metaData/GECKO ec-*. cobra-readable output verified.
+      .notes, plus version/metaData/GECKO ec-*. cobra-readable output verified. Cross-validated on smallYeast:
+      the two readers produce the same model down to bounds, formulae, compartments, gene sets and
+      stoichiometry.'
   - matlab: removeBadRxns
     status: python-pending
     notes: Flags reactions with structural problems for review. No port decision is recorded either way. Left
@@ -605,8 +791,20 @@ entries:
   - matlab: removeGenes
     python: raven_toolbox.manipulation.remove_genes
     status: parity
+    scenarios:
+      - remove_genes_smallyeast
     notes: 'migration.md says ported, but no matching export found: raven_toolbox.manipulation.remove_metabolites,
-      raven_toolbox.remove_genes'
+      raven_toolbox.remove_genes. Cross-validated on smallYeast removing three genes at once --- PGI''s sole
+      gene (reaction cannot survive), one of PFK''s two isozyme genes, one of HXK''s three --- against both
+      policies the two sides share: removeBlockedRxns=false / blocked_reactions="constrain" (PGI kept, bounded
+      to (0, 0)) and removeBlockedRxns=true / blocked_reactions="remove" (PGI deleted). Identical reaction,
+      metabolite and gene counts, identical GPRs (as DNF clauses) on the two surviving reactions, identical
+      blocked set. THE DEFAULTS DO NOT CORRESPOND: RAVEN''s removeBlockedRxns default (false) behaves like the
+      Python side''s blocked_reactions="constrain", not like the Python default ("remove") --- comparing each
+      side''s own default would silently compare the constrain policy against the remove policy. Python also has
+      a third policy, blocked_reactions="keep" (leave the reaction with its original bounds and an empty GPR),
+      with no RAVEN equivalent; genuinely one-sided, not an unmapped default. Untested: an AND (complex) GPR
+      losing a subunit and being emptied as a whole --- no reaction in smallYeast has one.'
   - matlab: removeIdentifierPrefix
     status: python-pending
     notes: Strips the SBML-safe identifier prefix. No port decision is recorded either way. Left in the queue
@@ -614,12 +812,37 @@ entries:
   - matlab: removeLowScoreGenes
     python: raven_toolbox.init.remove_low_score_genes
     status: parity
-    notes: from migration.md. Final gene-prune step of ftINIT.
+    scenarios:
+      - remove_low_score_genes_smallyeast
+    notes: 'from migration.md. Final gene-prune step of ftINIT. Cross-validated on smallYeast''s real isozyme
+      GPRs (HXK: two negative genes dropped, positive one survives alone; PFK: both negative but distinct
+      scores, least-negative survives) plus a synthetic OR-of-(gene, complex) rule built on PGI via
+      changeGrRules to reach a case smallYeast has no natural example of: RAVEN''s own docstring example
+      ("G1 or (G2 and G3 and G4); Negative: G1, G2; New: G2 and G3 and G4") reproduced with three genes instead
+      of four --- the complex survives whole (G2''s own negative score does not get it individually stripped),
+      dropping only the "G1 or" alternative, because the complex''s aggregate score (min of its members) beats
+      G1''s own score. Identical gene counts, identical removed-gene list (including YBR196C, orphaned as a
+      byproduct of the synthetic rewrite and pruned by both sides even though it was never itself scored), and
+      50 untouched reactions confirmed unchanged. NOT COVERED: an exact tie between two all-negative
+      alternatives. RAVEN''s own docstring says the tie-break is random; the Python side documents picking
+      deterministically instead as a deliberate departure. No two scores in the fixture are equal, on purpose.'
   - matlab: removeMets
     python: raven_toolbox.manipulation.remove_metabolites
     status: parity
-    notes: from migration.md. Delegate to cobra; add by_name cross-compartment deletion (mets) and a blocked_reactions
-      policy (genes). removeReactions itself ⛔ — cobra's remove_reactions covers it.
+    scenarios:
+      - remove_metabolites_smallyeast
+    notes: 'from migration.md. Delegates to cobra''s own remove_metabolites, adding only isNames-style
+      cross-compartment deletion by name. Cross-validated on smallYeast: removing ATP (12 reactions, all
+      several-metabolite, none emptied) and glycerol (one several-metabolite reaction reduced, one
+      single-metabolite exchange reaction --- glyOUT --- reduced to zero metabolites and left in the model
+      rather than pruned) in one call, then CO2 by name across both compartments in a second. Identical reaction
+      and metabolite counts, identical stoichiometry on every affected reaction, identical survival of the
+      zero-metabolite reaction, identical by-name cross-compartment removal. NOT COMPARABLE:
+      removeUnusedRxns / removeUnusedGenes / removeUnusedComps have no counterpart in remove_metabolites, which
+      offers only cobra''s destructive flag (delete every reaction touching the metabolite outright, however
+      many other metabolites it still has) --- a much more aggressive removal than RAVEN''s "prune only what
+      ended up with nothing left", not a renamed version of it. Both sides run at their shared non-destructive
+      default; destructive=true and removeUnusedRxns=true are one-sided options not exercised here.'
   - matlab: removeReactions
     status: via-dependency
     reason: 'cobrapy covers this: model.remove_reactions(remove_orphans=...). IMPROVEMENTS.md records the
@@ -700,7 +923,14 @@ entries:
   - matlab: scoreComplexModel
     python: raven_toolbox.init.score_reactions_from_genes
     status: parity
-    notes: Gene scores to reaction scores via the GPR.
+    scenarios:
+      - init_scores_smallyeast
+    notes: 'Gene scores to reaction scores via the GPR. Scope differs: scoreComplexModel also derives the gene
+      scores from HPA or array data and returns them, where the Python side splits that off into
+      gene_scores_from_expression. Cross-validated on smallYeast against RAVEN''s expression.txt at threshold
+      0.1: identical gene scores including both clamps, identical reaction scores including the no-gene default
+      and the one gene with no expression value (YCR073W-A, in an OR with three others, ignored by both).
+      Only the arrayData path is covered; the HPA path and the median/average aggregators are not.'
   - matlab: scoreModel
     python: raven_toolbox.omics.hpa_gene_scores
     status: parity
@@ -716,8 +946,15 @@ entries:
   - matlab: setParam
     python: raven_toolbox.manipulation.set_variance_bounds
     status: parity
-    notes: 'from migration.md. ±% band around measured values. Other modes (lb/ub/eq/obj/unc): 🗒️ cobra one-liners
-      (reaction.bounds, model.objective, Configuration().bounds).'
+    scenarios:
+      - set_variance_bounds_smallyeast
+    notes: 'from migration.md. ±% band around measured values. Other modes (lb/ub/eq/obj/unc): cobra one-liners
+      (reaction.bounds, model.objective, Configuration().bounds) --- only "var" has a raven_toolbox wrapper to
+      compare, which is all this row and its scenario cover. Cross-validated on smallYeast: three reactions with
+      distinct measured values (positive, negative, zero) at one percent, plus a single value broadcast across
+      two more reactions at a different percent. Identical bounds on all five, including the sign-dependent swap
+      for the negative value and the zero value collapsing both bounds to exactly zero regardless of percent;
+      48 untouched reactions confirmed unchanged.'
   - matlab: setRavenProgress
     status: internal
     reason: Toggles the console progress display.
@@ -725,17 +962,34 @@ entries:
     status: via-dependency
     reason: 'cobrapy covers this: model.solver = "gurobi".'
   - matlab: simplifyModel
-    python: raven_toolbox.manipulation.remove_dead_end_reactions
+    python: raven_toolbox.manipulation.simplify_model
     status: parity
-    notes: from migration.md. Cobra-covered modes (no-flux→find_blocked_reactions, zero-interval, unconstrained)
-      are 🗒️ cheatsheeted. group_linear is lossy (drops genes), per RAVEN.
+    scenarios:
+      - model_simplification_smallyeast
+    notes: 'Was paired with remove_dead_end_reactions, which is one of simplifyModel''s modes rather than its
+      counterpart; simplify_model is the umbrella entry point mirroring the same boolean-flag interface, and the
+      per-mode functions are subsumed rows below it. Cross-validated on smallYeast for the two solver-free modes:
+      deleteZeroInterval alone, and deleteZeroInterval + deleteInaccessible on both an intact and a stranded
+      model, agree reaction for reaction and metabolite for metabolite. DIVERGENCE when deleteInaccessible runs
+      *alone*: RAVEN reads dead ends off the sign pattern of S with reversible reactions counted both ways, while
+      the Python side also consults the bounds, so a reaction locked at zero flux is not counted as a producer.
+      On smallYeast, whose exchanges ship shut, that is 5 reactions against 0 (21 against 2 on the stranded
+      model). Composed in the documented order the difference disappears, so it is a precondition rather than a
+      disagreement about the pass. deleteMinMax and constrainReversible need FVA and are untested;
+      deleteDuplicates is the contractModel divergence; deleteUnconstrained has no Python analogue (cobra models
+      carry boundary reactions, not an unconstrained field).'
   - matlab: solveLP
     status: via-dependency
     reason: 'cobrapy covers this: model.optimize().'
   - matlab: sortIdentifiers
     python: raven_toolbox.utils.sort_identifiers
     status: parity
-    notes: from migration.md. Model-wide alphabetical sort; also via sort_ids= on write_yaml_model.
+    scenarios:
+      - model_manipulation_smallyeast
+    notes: 'from migration.md. Model-wide alphabetical sort; also via sort_ids= on write_yaml_model.
+      Cross-validated on smallYeast, comparing the resulting order rather than a re-sorted copy of it. RAVEN also
+      sorts model.comps; the Python side has compartments as a plain dict and emits them in key order, which
+      comes to the same thing.'
   - matlab: sortModel
     status: subsumed
     reason: Field-and-entity sorting; utils.sort_identifiers covers the identifier ordering that matters in
@@ -769,7 +1023,18 @@ entries:
   - matlab: writeYAMLmodel
     python: raven_toolbox.io.write_yaml_model
     status: parity
-    notes: 'migration.md says ported, but no matching export found: raven_toolbox.io.read_yaml_model, raven_toolbox.write_yaml_model'
+    issue: SysBioChalmers/raven-gecko-parity#6
+    scenarios:
+      - yaml_roundtrip_smallyeast
+    notes: 'DIVERGENCE in layout, not in content. Both writers preserve the model --- a read-write-read round
+      trip is lossless on either side, and the models the two produce agree field for field --- but they do not
+      write the same file, so the byte-stability writeYAMLmodel.m claims in its own docstring does not hold
+      today. writeYAMLmodel reproduces the historical RAVEN layout (4-space sequence indent, long scalars inline
+      in double quotes) and emits an empty "version:" line into metaData; write_yaml_model dumps through cobra''s
+      ruamel instance at its defaults (2-space indent, scalars folded at 80 columns) and quotes the date. On
+      smallYeast that is 1415 lines against 1571. Asserted by yaml_roundtrip_smallyeast, which compares the two
+      written files line by line. Analysed in docs/yaml-reconciliation.md, which also records that
+      readYAMLmodel cannot read cobrapy-written YAML at all --- a separate and larger problem than the layout.'
   - python: raven_toolbox.analysis.find_good_reactions
     status: python-only
     reason: The non-loop flux screen randomSampling performs inline when choosing random objectives.
@@ -879,8 +1144,14 @@ entries:
     reason: Result type. RAVEN returns several parallel outputs; raven-toolbox returns one dataclass, so this
       has no MATLAB counterpart by design.
   - python: raven_toolbox.init.gene_scores_from_expression
-    status: python-only
-    reason: RAVEN's 5*ln(level/reference) scoring, split out of the INIT entry points.
+    status: subsumed
+    scenarios:
+      - init_scores_smallyeast
+    reason: 'RAVEN has the same computation, but inside scoreComplexModel rather than as its own entry point:
+      aScores = 5*log(current./average), clamped to [-5, 10] with NaN mapped to -5. Was filed as python-only,
+      which put it in the divergence register; it is a packaging difference, not a divergence. Covered by
+      init_scores_smallyeast, whose gene_scores checkpoint compares this function against the geneScores
+      scoreComplexModel returns.'
   - python: raven_toolbox.init.InitModelResult
     status: python-only
     reason: Result type. RAVEN returns several parallel outputs; raven-toolbox returns one dataclass, so this
@@ -1000,25 +1271,33 @@ entries:
     status: matlab-pending
     notes: Turns a certification report into a reviewable triage list. No RAVEN counterpart.
   - python: raven_toolbox.manipulation.constrain_reversible_reactions
-    status: python-only
-    reason: One mode of RAVEN's simplifyModel, split into its own function. migration.md records that the
-      cobra-covered modes were cheatsheeted rather than wrapped.
+    status: subsumed
+    reason: One mode of RAVEN's simplifyModel, split out into its own function. RAVEN has the same capability,
+      inside simplifyModel rather than as its own entry point --- so this is a packaging difference, not a
+      divergence. Was filed as python-only, which put it in the divergence register.
   - python: raven_toolbox.manipulation.group_linear_reactions
-    status: python-only
-    reason: One mode of RAVEN's simplifyModel, split into its own function. migration.md records that the
-      cobra-covered modes were cheatsheeted rather than wrapped.
+    status: subsumed
+    reason: One mode of RAVEN's simplifyModel, split out into its own function. RAVEN has the same capability,
+      inside simplifyModel rather than as its own entry point --- so this is a packaging difference, not a
+      divergence. Was filed as python-only, which put it in the divergence register.
   - python: raven_toolbox.manipulation.remove_no_flux_reactions
-    status: python-only
-    reason: One mode of RAVEN's simplifyModel, split into its own function. migration.md records that the
-      cobra-covered modes were cheatsheeted rather than wrapped.
+    status: subsumed
+    reason: One mode of RAVEN's simplifyModel, split out into its own function. RAVEN has the same capability,
+      inside simplifyModel rather than as its own entry point --- so this is a packaging difference, not a
+      divergence. Was filed as python-only, which put it in the divergence register.
   - python: raven_toolbox.manipulation.remove_zero_interval_reactions
-    status: python-only
-    reason: One mode of RAVEN's simplifyModel, split into its own function. migration.md records that the
-      cobra-covered modes were cheatsheeted rather than wrapped.
-  - python: raven_toolbox.manipulation.simplify_model
-    status: python-only
-    reason: Umbrella entry point over the individual simplify passes, which RAVEN exposes only as simplifyModel
-      modes.
+    status: subsumed
+    reason: One mode of RAVEN's simplifyModel, split out into its own function. RAVEN has the same capability,
+      inside simplifyModel rather than as its own entry point --- so this is a packaging difference, not a
+      divergence. Was filed as python-only, which put it in the divergence register.
+  - python: raven_toolbox.manipulation.remove_dead_end_reactions
+    status: subsumed
+    scenarios:
+      - model_simplification_smallyeast
+    reason: 'simplifyModel''s deleteInaccessible mode, split out into its own function. RAVEN has the same
+      capability, inside simplifyModel rather than as its own entry point. Covered by
+      model_simplification_smallyeast as part of the composed simplification; see the simplifyModel row for the
+      difference that shows up when it is run alone.'
   - python: raven_toolbox.omics.HPA_LEVEL_SCORES
     status: python-only
     reason: Default-value constant, exported so callers can inspect and override it. RAVEN hard-codes the

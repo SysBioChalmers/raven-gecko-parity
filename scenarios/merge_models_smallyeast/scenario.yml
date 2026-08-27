@@ -1,0 +1,45 @@
+id: merge_models_smallyeast
+pair: raven
+description: >-
+  Merging two related models into one: which reactions get renamed because
+  their id collided, which metabolites and genes are recognised as the same
+  entity, and where each reaction came from.
+
+entries:
+  - mergeModels
+
+inputs:
+  # smallYeast and the deliberately broken variant RAVEN ships beside it. They
+  # are the right pair for this: the ids collide on almost every reaction, so
+  # the renaming convention is exercised on real data rather than on a model
+  # merged with itself, while the metabolite names and gene names still line up
+  # so that unification is exercised too. 53 + 54 reactions in, and none of
+  # them deduplicated --- mergeModels adds reactions without checking, which is
+  # the documented behaviour on both sides.
+  first: "{matlab_repo}/tutorial/smallYeast.yml"
+  second: "{matlab_repo}/tutorial/smallYeastBad.yml"
+
+  # The id of the second model, needed to state the expected rename suffix
+  # without either side reading it out of its own model struct. Declared here
+  # so a fixture swap cannot leave the two sides disagreeing about it silently.
+  second_id: smallYeastBad
+
+# What is being compared, and why each part is worth comparing:
+#
+#   * the renaming convention. Both sides rename a colliding reaction id to
+#     "<id>_<source model id>". They diverge on a *second* collision --- the
+#     Python side goes on to "<id>_<source>_2" while RAVEN would emit the same
+#     id twice --- which this fixture deliberately does not reach, since two
+#     models cannot collide twice. Recorded on the ledger row.
+#   * unification. Metabolites are matched by name and compartment (RAVEN's
+#     metParam="metNames" default, the Python side's match_by="name"), genes by
+#     name. 52 metabolites and 61 genes out of two models that have 52 and 61
+#     each is the whole of that claim.
+#   * provenance. RAVEN records it in rxnFrom/metFrom/geneFrom, the Python side
+#     in notes["origin"]. Different storage, same concept, so it is compared as
+#     a plain reaction-to-origin mapping.
+
+tolerance:
+  # Stoichiometric coefficients are copied, never summed.
+  rel: 1.0e-12
+  abs: 1.0e-15

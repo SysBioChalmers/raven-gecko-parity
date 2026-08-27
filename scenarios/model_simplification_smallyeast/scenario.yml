@@ -1,0 +1,75 @@
+id: model_simplification_smallyeast
+pair: raven
+description: >-
+  Reducing a model to what can carry flux, by the two topological modes of
+  simplifyModel: dropping reactions locked at zero flux, and iteratively
+  dropping dead ends until nothing more falls out.
+
+entries:
+  - simplifyModel
+
+inputs:
+  model: "{matlab_repo}/tutorial/smallYeast.yml"
+
+  # Removed before the third checkpoint. PGI and ZWF are the only two ways out
+  # of glucose 6-phosphate, so taking both out strands central metabolism and
+  # the dead-end pass has to iterate: 21 reactions and 20 metabolites come out,
+  # against 5 and 2 on the intact model. A single pass would stop far short of
+  # that, which is the point of the checkpoint.
+  cascade_removed_reactions:
+    - PGI
+    - ZWF
+
+# Three checkpoints, all solver-free:
+#
+#   zero_interval     reactions with lb = ub = 0 only. smallYeast ships glcIN,
+#                     o2IN and ethIN shut, so all three go.
+#   composed          zero-interval then dead-end, which is the order RAVEN
+#                     documents and the order ftINIT composes them in. Six
+#                     reactions out.
+#   composed_cascade  the same pair on the stranded model, where the dead-end
+#                     iteration actually matters: 22 reactions and 20
+#                     metabolites, against six and none on the intact model. A
+#                     single pass would stop far short of that.
+#
+# The dead-end mode is deliberately not run *alone*, because the two sides do
+# not agree when it is, and the disagreement is about a precondition rather
+# than about the pass. RAVEN decides whether a metabolite is a dead end from
+# the sign pattern of S, with reversible reactions counted in both directions;
+# the Python side additionally consults the bounds, so a reaction locked at
+# zero flux does not count as a producer. Run on its own against smallYeast,
+# whose exchanges ship shut, the Python pass therefore removes glcIN, o2IN and
+# their cascade (5 reactions, or 21 on the stranded model) where RAVEN removes
+# nothing (or 2). Run after deleteZeroInterval --- which is how RAVEN documents
+# it and how ftINIT uses it --- the two agree exactly, reaction for reaction
+# and metabolite for metabolite. Recorded on the ledger row.
+#
+# What simplifyModel's other modes do, and why they are not here:
+#
+#   deleteMinMax          FVA, so it belongs with the solver scenarios.
+#   constrainReversible   FVA likewise.
+#   deleteDuplicates      contractModel / remove_duplicate_reactions is a
+#                         declared divergence (MATLAB merges the duplicates'
+#                         grRules with "or", the Python side drops the others'
+#                         gene associations). A scenario over it belongs with
+#                         the divergence work, not here, where it would only
+#                         make this one permanently red.
+#   groupLinear           the same contraction ftINIT's mergeLinear does, and
+#                         already covered by init_merge_linear_smallyeast.
+#   deleteUnconstrained   RAVEN's boundary-*metabolite* removal. It defaults to
+#                         true and is turned off explicitly here: a cobra model
+#                         has boundary reactions instead, so the Python side has
+#                         no analogue and leaving RAVEN's default on would
+#                         compare a mode against nothing.
+#
+# Deletions are compared as the difference between the model before and after,
+# not as the lists the functions return: RAVEN's simplifyModel reports
+# deletedReactions and deletedMetabolites, and the Python umbrella entry point
+# reports nothing (its per-mode functions do). Taking the difference on both
+# sides keeps the comparison symmetric and still catches a mode that removed
+# the wrong thing.
+
+tolerance:
+  # Bounds are copied, never computed.
+  rel: 1.0e-12
+  abs: 1.0e-15
