@@ -370,8 +370,13 @@ entries:
       way. Left in the queue rather than declared a divergence, so the choice stays visible.
   - matlab: fitTasks
     status: matlab-only
-    reason: Niche; tasks are normally consumed via checkTasks / ftINIT's task layer.
-    notes: 'no confident pairing; closest Python exports: fill_tasks'
+    reason: 'No dedicated Python entry point: fill_tasks implements essentially the same algorithm (task by
+      task, add the minimum-cost reference-model reactions that restore an infeasible task) but is already
+      the tracked parity counterpart of the closely related ftINITFillGapsForAllTasks --- see that entry''s
+      notes for the two behavioral differences (MILP formulation; whether task equations extend the reference
+      candidate pool) that would need checking before treating fitTasks itself as covered too.'
+    notes: 'Not a case of "no plausible match" --- fill_tasks is a real candidate, just already claimed by
+      ftINITFillGapsForAllTasks in this ledger''s one-python-function-per-row model.'
   - matlab: followChanged
     status: python-pending
     notes: Walks reactions whose flux changed between two solutions. No port decision is recorded either way.
@@ -399,7 +404,14 @@ entries:
   - matlab: ftINITFillGapsForAllTasks
     python: raven_toolbox.init.fill_tasks
     status: parity
-    notes: Task-aware gap-filling within ftINIT.
+    notes: 'Task-aware gap-filling within ftINIT. gapfilling/fitTasks.m (tracked separately as matlab-only,
+      since fill_tasks is already claimed here) implements closely related logic --- same task-by-task,
+      add-minimum-cost-reference-reactions shape --- but is not validated against this pairing. Two known
+      differences would need checking before treating it as covered too: fitTasks calls generic
+      fillGaps/getMinNrFluxes (a different MILP formulation than the ftINITFillGapsMILP-style one fill_tasks
+      uses, which can produce different degenerate optima), and fill_tasks extends the reference-model
+      candidate pool with each task''s own temporary equations while fitTasks does not (a real gap for tasks
+      with custom equations).'
   - matlab: ftINITFillGapsMILP
     status: subsumed
     reason: The inner MILP of the ftINIT task gap-fill; inside init.fill_tasks.
@@ -622,8 +634,16 @@ entries:
     reason: Production probe used inside the gap analysis; not a separate Python entry point.
   - matlab: mapCompartments
     status: matlab-only
-    reason: Overlaps with comparison.compare_models on the reaction-id intersection.
-    notes: 'no confident pairing; closest Python exports: load_compartments'
+    reason: 'No Python counterpart: mapCompartments post-processes a gene x compartment prediction-score
+      table (merging/splitting/renaming columns per user rule, used as input to the old predictLocalization),
+      not a built model''s reaction set. raven-toolbox''s localization pipeline (predict.py) scores
+      compartments per gene directly instead of pre-merging predictor columns; mergeCompartments /
+      copy_to_compartment (tracked separately) cover the model-level compartment-merging use case. The
+      previous reason (overlap with comparison.compare_models on a reaction-id intersection) was inaccurate:
+      compare_models diffs reaction/metabolite/gene sets across built cobra models and has no connection to
+      gene-score-table compartment merging; mapCompartments never touches reactions at all.'
+    notes: 'no confident pairing; closest Python exports: load_compartments (also not a real match --- a
+      COMPARTMENTS-database loader, not a score-table post-processor)'
   - matlab: mergeCompartments
     python: raven_toolbox.manipulation.merge_compartments
     status: parity
@@ -937,7 +957,12 @@ entries:
     notes: migration.md maps parseHPA/parseHPArna/scoreModel onto the omics module.
   - matlab: setExchangeBounds
     status: matlab-only
-    reason: 'cobra''s model.medium = {ex_id: uptake} covers it.'
+    reason: 'cobra''s model.medium covers the common single-direction, close-the-rest use case, but not
+      everything setExchangeBounds does: independent lb and ub per metabolite (medium is reaction-id-keyed
+      and sets only whichever one bound is "active" for that reaction, from a single scalar), the mediaOnly
+      compartment filter, or the cross-reaction direction-consistency check that auto-disables closeOthers
+      with a warning when exchanges are inconsistently oriented. No raven_toolbox function fills that gap
+      either.'
     notes: no obvious Python counterpart; decide whether one is needed
   - matlab: setGAM
     python: raven_toolbox.biomass.set_gam
@@ -1309,8 +1334,15 @@ entries:
     status: python-only
     reason: Parsed-data type. RAVEN passes structs and parallel cell arrays instead.
   - python: raven_toolbox.omics.rna_gene_scores
-    status: python-only
-    reason: The RNA-seq half of RAVEN's scoreModel, split from the HPA half.
+    status: subsumed
+    reason: 'RAVEN has the same computation, but inside scoreModel/scoreComplexModel''s arrayData branch
+      rather than as its own entry point: mean-across-tissues reference, aScores = 5*log(current./average),
+      clamped to [-5, 10] with NaN mapped to -5 --- the identical formula already cross-validated for
+      gene_scores_from_expression (see that entry, covered by init_scores_smallyeast), which rna_gene_scores
+      is a thin wrapper over. Was filed as python-only, which put it in the divergence register; it is a
+      packaging difference, not a divergence, same as gene_scores_from_expression. The wrapper itself
+      (reference-threshold defaulting to a per-gene mean TPM, matching arrayData.threshold''s default) is not
+      directly covered by a scenario yet, only the computation it delegates to.'
   - python: raven_toolbox.reconstruction.homology.blast_from_table
     status: python-only
     reason: Adapter for a pre-computed hit table; listed under 'new in raven-toolbox' in migration.md.
