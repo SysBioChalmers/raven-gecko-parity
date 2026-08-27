@@ -7,6 +7,49 @@ way it should be resolved, and in what order.
 
 Tracked as [SysBioChalmers/raven-gecko-parity#6](https://github.com/SysBioChalmers/raven-gecko-parity/issues/6).
 
+## Status: resolved (Tiers 1 and 2), Tier 3 outstanding
+
+The analysis below (evidence, the four mechanical causes, Options A/B/C) is left as written
+because it is still an accurate record of what was investigated and why --- but the recommended
+direction it lands on ("Option B: Python adopts RAVEN's layout") is **not what was implemented**.
+Once RAVEN's reader could actually load a cobrapy-written file, the real question stopped being
+"which existing layout wins" and became "does either writer need to match cobrapy's layout at
+all" --- and the answer turned out to be no: nothing outside this project's own two writers reads
+these files as a matched pair, so the two of them only ever need to agree with *each other*.
+
+That reframing changes the folding trade-off in particular. Matching ruamel's line-folding would
+have meant hand-porting its column-by-column wrap algorithm into MATLAB (a fragile piece of
+logic neither side owns or can debug independently) for a purely cosmetic gain, and folding is
+actively worse for the model repositories' diffs than not folding: a one-word edit to a long note
+reflows several lines instead of changing one. So RAVEN and raven-toolbox now share their own
+layout, close to cobrapy's structural shape (same keys, same `!!omap` tags, same nesting, so
+plain cobrapy still reads a file written here) but not byte-identical to it:
+
+- 2-space indentation throughout (this part *does* match ruamel's own defaults, so it cost
+  nothing on the Python side).
+- Single-quoting only where YAML requires it (also already ruamel's default behaviour).
+- Every number formatted as an explicit float (`2.0`, never `2`) --- one rule for every numeric
+  field, rather than tracking which fields cobra happens to treat as int vs float, which RAVEN's
+  model struct (everything stored as `double`) cannot see anyway.
+- Annotation keys sorted alphabetically (already cobra's own dict-conversion behaviour).
+- Optional fields omitted entirely when empty, including `subsystem` --- dropping cobra's
+  round-trip preservation of older RAVEN files' "single blank list entry" convention for "no
+  subsystem" in favour of just not emitting the key. A reaction that does carry a subsystem is
+  always written as a list, even a single one, since a reaction can have more than one.
+- **No line folding, regardless of scalar length.** The one deliberate, largest-magnitude
+  departure from cobrapy's own output, for the reasons above.
+
+Implementation: [readYAMLmodel.m fix](https://github.com/SysBioChalmers/RAVEN/commit/dda689b0)
+(Tier 1, the three reader bugs), `writeYAMLmodel.m`'s rewrite (Tier 2, RAVEN side) and
+`raven_toolbox/io/yaml.py`'s corresponding changes (Tier 2, Python side). Verified byte-identical
+between the two writers on both a plain model and one exercising every optional field
+(notes, ec-code, references, deltaG, confidence_score, protein, smiles, charge), with each
+side's full test suite passing.
+
+**Tier 3 (rewriting yeast-GEM / Human-GEM to the agreed format) has not been done** --- it is a
+one-time, do-it-once corpus change that should happen deliberately, in a commit that does
+nothing else, once this decision has had a chance to settle.
+
 ## The short answer
 
 **No --- "cobrapy uses ruamel" does not mean MATLAB has to adopt ruamel's output.** ruamel is a
@@ -168,7 +211,11 @@ the eventual corpus rewrite a single event.
 
 ## Recommended sequence
 
-**Tier 1 --- the readers. Do this regardless of any layout decision.** In RAVEN:
+This section is left as originally written, for the reasoning trail. See "Status" above for what
+actually happened at Tier 2: not the specific `raven_toolbox`-only, RAVEN-matching config
+described below, but a layout shared by (and now implemented on) both sides.
+
+**Tier 1 --- the readers. Do this regardless of any layout decision. (Done.)** In RAVEN:
 
 1. Accept folded scalars: join a continuation line to the value being read, stripping the
    indentation, instead of raising `Unknown entry in yaml file`.
@@ -179,7 +226,8 @@ the eventual corpus rewrite a single event.
 Until (1) and (2) land, RAVEN cannot open a model produced by any cobrapy-based tool, which is a
 larger problem than the writer disagreement.
 
-**Tier 2 --- the writers.** In `raven_toolbox`, in two steps:
+**Tier 2 --- the writers. (Done, but see "Status" above --- not this specific plan.)** In
+`raven_toolbox`, in two steps:
 
 1. **Stop folding.** Give `io/yaml.py` its own ruamel instance rather than importing cobra's
    module-level one --- mutating the shared instance would change `cobra.io.save_yaml_model` for
