@@ -42,7 +42,9 @@ entries:
     notes: 'Was blocked: MATLAB develop4 crashed adding a reversible, isozyme-catalysed reaction
       (or any two reactions in one call each needing isozyme expansion) --- an index-drift
       bug in the split loop, fixed in GECKO#427 (merged). Behind the fix, matches geckopy exactly:
-      reactions added, enzymes added, and every field of the resulting model.'
+      reactions added, enzymes added, and every field of the resulting model. Separately: MATLAB''s
+      missing-gene error path called dispEM, a RAVEN utility RAVEN#659 deleted (already on develop3) ---
+      crashed with "Undefined function ''dispEM''" instead of reporting the missing gene. [GECKO #454], open.'
   - matlab: applyComplexData
     python: geckopy.apply_complex_data
     status: parity
@@ -343,7 +345,9 @@ entries:
   - matlab: getSubsetEcModel
     python: geckopy.get_subset_ec_model
     status: parity
-    notes: '[Py] returns a new EcModel; the input is not mutated.'
+    notes: '[Py] returns a new EcModel; the input is not mutated. MATLAB''s same-starting-GEM mismatch
+      error path called dispEM, a RAVEN utility RAVEN#659 deleted (already on develop3) --- crashed with
+      "Undefined function ''dispEM''" instead of naming the mismatched reactions. [GECKO #454], open.'
   - matlab: loadBayesianData
     status: internal
     reason: Helper of bayesianSensitivityTuning, not a standalone entry point. It will be absorbed into the
@@ -363,9 +367,11 @@ entries:
     notes: Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5.
   - matlab: loadDatabases
     status: subsumed
-    reason: geckopy loads databases implicitly at point of use rather than through one entry point. The download
+    reason: 'geckopy loads databases implicitly at point of use rather than through one entry point. The download
       halves MATLAB performs inline (urlwrite for UniProt, a local downloadKEGG subfunction) are exposed separately
-      in Python as geckopy.databases.download_kegg / download_uniprot.
+      in Python as geckopy.databases.download_kegg / download_uniprot. Separately: MATLAB''s duplicate-UniProt-entry
+      error path called dispEM, a RAVEN utility RAVEN#659 deleted (already on develop3) --- crashed with "Undefined
+      function ''dispEM''" instead of reporting the duplicates. [GECKO #454], open.'
   - matlab: loadEcModel
     python: geckopy.load_ec_model
     status: parity
@@ -456,7 +462,9 @@ entries:
       read_dlkcat_output.py MATLAB-COMPAT note already documented this exact gap ("geckopy uses
       case-insensitive matching, which is more lenient and avoids false-positive failures when SBML loaders
       differ in capitalization"). Ported the same case-insensitive match to readDLKcatOutput.m. [GECKO #452],
-      open.'
+      open. Separately: both of MATLAB''s "not found" error paths (substrates, reactions) called dispEM, a
+      RAVEN utility RAVEN#659 deleted (already on develop3) --- crashed with "Undefined function ''dispEM''"
+      instead of reporting the unrecognised names. [GECKO #454], open.'
   - matlab: readOpenKineticsPredictorOutput
     python: geckopy.gather_kcats.open_kinetics_predictor.parse_okp_output
     status: parity
