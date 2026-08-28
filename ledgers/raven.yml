@@ -1083,14 +1083,17 @@ entries:
       per-entry keys (inchis/deltaG/metFrom/notes, confidence_score/references/rxnFrom/deltaG, protein) into
       .notes, plus version/metaData/GECKO ec-*. cobra-readable output verified. readYAMLmodel now unescapes a
       quoted scalar''s wrapping-style escaping (doubled '''' -> '' for single quotes, backslash \\/\" for double
-      quotes) rather than leaving it untouched --- exercised for real once writeYAMLmodel switched from single
-      to double quotes to match Prettier''s default (SysBioChalmers/RAVEN#710, SysBioChalmers/raven-toolbox#107).
-      That switch also exposed a real regression, caught by testing against yeast-GEM: a quoted *list item*
-      (e.g. a pubmed id under an annotation block) kept its wrapping quotes, because the list-marker strip ran
-      after quote detection instead of before, so the anchored quote check never matched with "- " still
-      attached --- silently breaking exportForGit''s SBML attribute quoting and dropping the whole
-      <annotation> block for every affected reaction. Fixed by reordering the two steps
-      (SysBioChalmers/RAVEN#712). Cross-validated on smallYeast:
+      quotes) rather than leaving it untouched, so it correctly reads either style regardless of which one the
+      writer currently emits --- added when writeYAMLmodel briefly switched from single to double quotes
+      (SysBioChalmers/RAVEN#710, SysBioChalmers/raven-toolbox#107), then reverted back to single quotes
+      (SysBioChalmers/RAVEN#713, SysBioChalmers/raven-toolbox#108) at the same byte-identical output as before
+      either PR (verified: same SHA256). That work also exposed a real, permanent regression, caught by testing
+      against yeast-GEM and kept regardless of quote character: a quoted *list item* (e.g. a pubmed id under an
+      annotation block) kept its wrapping quotes, because the list-marker strip ran after quote detection
+      instead of before, so the anchored quote check never matched with "- " still attached --- silently
+      breaking exportForGit''s SBML attribute quoting and dropping the whole <annotation> block for every
+      affected reaction. Fixed by reordering the two steps (SysBioChalmers/RAVEN#712), independent of the
+      quote-character reversion. Cross-validated on smallYeast:
       the two readers produce the same model down to bounds, formulae, compartments, gene sets and
       stoichiometry. FIXED two position-dependent RAVEN reader bugs found while re-verifying this row
       (SysBioChalmers/RAVEN#709): a metabolite missing charge or compartment resolved differently
@@ -1400,9 +1403,11 @@ entries:
       aspirational. Verified against a model exercising every optional field (inchis, deltaG, notes, references,
       confidence_score, rxnFrom, protein, multi-item subsystem, singleton and multi-value annotations), not just
       smallYeast, and against raven-toolbox''s own parity suite run for real against a live RAVEN checkout
-      (parity vs MATLAB RAVEN CI job, 4/4 passed). Also switched from single to double quotes when a scalar
+      (parity vs MATLAB RAVEN CI job, 4/4 passed). Briefly switched from single to double quotes when a scalar
       needs quoting, matching Prettier''s YAML default rather than ruamel''s (SysBioChalmers/RAVEN#710,
-      SysBioChalmers/raven-toolbox#107) --- byte-identity with smallYeast re-verified after the switch.'
+      SysBioChalmers/raven-toolbox#107), then reverted back to single quotes on request
+      (SysBioChalmers/RAVEN#713, SysBioChalmers/raven-toolbox#108) --- byte-identity with smallYeast
+      re-verified after each change, ending at the same output as before either PR.'
   - python: raven_toolbox.analysis.find_good_reactions
     status: python-only
     reason: The non-loop flux screen randomSampling performs inline when choosing random objectives.
