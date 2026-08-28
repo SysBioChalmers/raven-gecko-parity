@@ -290,11 +290,10 @@ entries:
   - matlab: loadDatabases
     status: subsumed
     reason: 'geckopy loads databases implicitly at point of use rather than through one entry point. The
-      download halves MATLAB performs inline (urlwrite for UniProt, a local downloadKEGG subfunction) are
-      exposed separately in Python as geckopy.databases.download_kegg / download_uniprot (see those two
-      python-only rows below). Separately: MATLAB''s duplicate-UniProt-entry error path calls dispEM, a RAVEN
-      utility RAVEN#659 deleted (already on develop3) --- crashes with "Undefined function ''dispEM''" instead
-      of reporting the duplicates.'
+      download halves are standalone functions on both sides now (downloadKEGG/downloadUniProt, tracked in
+      their own rows), called by loadDatabases only when the expected TSV is missing. Separately: MATLAB''s
+      duplicate-UniProt-entry error path calls dispEM, a RAVEN utility RAVEN#659 deleted (already on
+      develop3) --- crashes with "Undefined function ''dispEM''" instead of reporting the duplicates.'
   - matlab: loadEcModel
     python: geckopy.load_ec_model
     status: parity
@@ -332,6 +331,10 @@ entries:
     scenarios:
       - model_edits_ectestgem
   - matlab: mergeDLKcatAndFuzzyKcats
+    status: internal
+    reason: Deprecated thin wrapper around mergeKcats, kept for the legacy two-input call shape and emitting
+      a deprecation warning. The canonical name carries the parity row.
+  - matlab: mergeKcats
     python: geckopy.merge_kcats
     status: parity
     scenarios:
@@ -537,18 +540,18 @@ entries:
     status: python-only
     reason: Loaded-data type. MATLAB GECKO passes parallel cell arrays and structs; geckopy wraps them in
       a dataclass.
-  - python: geckopy.databases.download_kegg
-    status: matlab-pending
-    issue: SysBioChalmers/GECKO#456
-    notes: 'MATLAB currently downloads KEGG from a local subfunction inside loadDatabases.m rather than
-      exposing an entry point. A PR extracting a standalone downloadKEGG.m is open: [GECKO #456]. Once
-      merged, reclassify to matlab: downloadKEGG, status: parity.'
-  - python: geckopy.databases.download_uniprot
-    status: matlab-pending
-    issue: SysBioChalmers/GECKO#456
-    notes: 'MATLAB currently downloads UniProt inline (urlwrite) inside loadDatabases.m rather than exposing
-      an entry point. A PR extracting a standalone downloadUniProt.m is open: [GECKO #456]. Once merged,
-      reclassify to matlab: downloadUniProt, status: parity.'
+  - matlab: downloadKEGG
+    python: geckopy.databases.download_kegg
+    status: parity
+    notes: Direct port; same output columns (uniprot, gene, kegg_gene, ec, mw, pathway, sequence) and the
+      same drop-if-missing-AASEQ-or-UniProt filtering. Called by loadDatabases when its expected kegg.tsv
+      is missing, and directly callable to refresh one organism's snapshot on either side.
+  - matlab: downloadUniProt
+    python: geckopy.databases.download_uniprot
+    status: parity
+    notes: Direct port; same default query fields (taxonomy_id, gene_oln, reviewed=true) and output TSV
+      schema. Called by loadDatabases when its expected uniprot.tsv is missing, and directly callable to
+      refresh one organism's snapshot on either side.
   - python: geckopy.databases.KeggDB
     status: python-only
     reason: Loaded-data type. MATLAB GECKO passes parallel cell arrays and structs; geckopy wraps them in

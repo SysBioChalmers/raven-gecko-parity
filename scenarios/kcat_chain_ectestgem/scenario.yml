@@ -13,7 +13,7 @@ entries:
   - loadBRENDAdata
   - writeDLKcatInput
   - readDLKcatOutput
-  - mergeDLKcatAndFuzzyKcats
+  - mergeKcats
   - selectKcatValue
   - applyCustomKcats
   - getKcatAcrossIsozymes
