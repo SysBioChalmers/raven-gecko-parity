@@ -130,31 +130,129 @@ Scenarios are for the places where the numbers matter --- ftINIT, gap-filling, l
 kcat matching, protein pool limits. Do not try to cover everything, and do not diff MATLAB
 against Python at line level.
 
-Twenty-five cover the raven pair today, over thirty-three `parity` rows; `parity scenarios` lists
-them with what each one claims to cover. Twenty-three agree. Two report a difference on purpose, each with an open question
+Thirty-four cover the raven pair today, over forty-three `parity` rows; `parity scenarios` lists
+them with what each one claims to cover. Twenty-nine agree. Five report a difference on purpose, each with an open question
 behind it: `yaml_roundtrip_smallyeast` (the two YAML writers preserve the same model but do not
-produce the same file) and `task_checking_smallyeast` (the two build a different LP for a
-metabolic task, so one of six task verdicts flips). See
+produce the same file), `task_checking_smallyeast` (the two build a different LP for a
+metabolic task, so one of six task verdicts flips), `apply_condition_smallyeast` (a
+condition's exchange-reset direction is honoured by RAVEN and ignored by raven-toolbox, which
+resets every exchange regardless), `delta_g_csv_smallyeast` (yeast-GEM's own "no
+measurement" ΔG sentinel is stored as a literal number by RAVEN and treated as absent by
+raven-toolbox), and `export_to_excel_smallyeast` (RAVEN leaves a bound blank in its Excel export
+when it matches the model's own default; raven-toolbox always writes it literally). See
 [docs/behaviour-parity-plan.md](docs/behaviour-parity-plan.md) for both and for what is queued
 next.
 
-Five cover the gecko pair, over fourteen of its `parity` rows, all on GECKO's own unit-test
-model. Four agree on content: `ec_model_expansion_ectestgem`, `enzyme_annotation_ectestgem`,
-`protein_pool_ectestgem` and `ec_model_io_ectestgem`. The second was blocked until recently
---- GECKO `develop4` called RAVEN's `progressbar`, which RAVEN `develop3` had replaced with
-`progressReport` ([GECKO#424](https://github.com/SysBioChalmers/GECKO/issues/424), fixed by
-[GECKO#425](https://github.com/SysBioChalmers/GECKO/pull/425), merged). The other two are red
-on purpose. `molecular_weight_sequences`: eighteen sequences chosen to isolate one variable
-each, and all eighteen differ --- the two mass tables agree on the twenty standard residues
-but not on `X` or `B`, and the two functions disagree on case-sensitivity and on what an
-empty sequence is worth
+Thirteen cover the gecko pair, over forty-five of its `parity` rows, all on GECKO's own
+unit-test model. Eleven agree on content: `ec_model_expansion_ectestgem`,
+`enzyme_annotation_ectestgem`, `protein_pool_ectestgem`, `ec_model_io_ectestgem`,
+`model_edits_ectestgem`, `kcat_chain_ectestgem`, `okp_kcat_ectestgem`, `enzyme_usage_ectestgem`,
+`ec_fva_ectestgem`, `flexibilize_concs_ectestgem` and `sensitivity_tuning_ectestgem` ---
+the whole solver tier (Tier 3 of the gecko plan) is now done. Several were blocked until
+recently by real GECKO bugs the scenarios themselves found: GECKO `develop4`
+called RAVEN's `progressbar`, which RAVEN `develop3` had replaced with `progressReport`
+([GECKO#424](https://github.com/SysBioChalmers/GECKO/issues/424), fixed by
+[GECKO#425](https://github.com/SysBioChalmers/GECKO/pull/425), merged); `addNewRxnsToEC`
+crashed whenever more than one new reaction in a call needed isozyme expansion
+([GECKO#427](https://github.com/SysBioChalmers/GECKO/pull/427), merged); `kcat_chain_ectestgem`
+found four more --- `writeDLKcatInput` silently wrote zero rows for any non-trivial reaction
+subset, the ordinary, documented way to call it
+([GECKO#428](https://github.com/SysBioChalmers/GECKO/pull/428), merged);
+`TestGEMAdapter`'s spontaneous-reaction detection was broken twice over, first by an undefined
+variable and then, once that was fixed, by a hardcoded position that didn't survive the
+reaction being renumbered by ecModel expansion
+([GECKO#429](https://github.com/SysBioChalmers/GECKO/pull/429), merged); and two enzyme rows
+sharing a `prot_<accession>` metabolite overwrote instead of summed in `applyKcatConstraints`
+([GECKO#430](https://github.com/SysBioChalmers/GECKO/issues/430), fixed by
+[GECKO#431](https://github.com/SysBioChalmers/GECKO/pull/431), merged); and `enzyme_usage_ectestgem`
+found a fifth --- `reportEnzymeUsage`'s default `topAbsUsage` (10) indexed past the end of any
+model with fewer enzymes than that, ecTestGEM included
+([GECKO#432](https://github.com/SysBioChalmers/GECKO/pull/432), merged); and
+`sensitivity_tuning_ectestgem` found a sixth --- `sigmaFitter`'s 100-point grid-search loop
+reassigns the model on every iteration and never re-applies the best-fitting sigma
+afterward, so it returned a model sized for whichever sigma was tried last, not the one it
+reported
+([GECKO#433](https://github.com/SysBioChalmers/GECKO/pull/433), merged); and `okp_kcat_ectestgem`
+found a seventh --- `writeOpenKineticsPredictorInput` indexed its enzyme-coupling matrix by
+position within the caller's requested reaction subset instead of the matrix's own absolute
+indexing, so any subset skipping an earlier reaction silently dropped a later one's enzyme and
+duplicated an earlier one's instead --- the same family of bug as `writeDLKcatInput`'s own, above
+([GECKO#437](https://github.com/SysBioChalmers/GECKO/pull/437), merged). `okp_kcat_ectestgem` also
+started from a ledger-audit finding: `writeOpenKineticsPredictorInput` and
+`readOpenKineticsPredictorOutput` were filed as having no Python counterpart at all, while their
+real counterparts (`build_okp_input_csv`, `parse_okp_output`) sat separately filed the same way
+--- four ledger rows each independently claiming isolation from the very function its own reason
+text named. See [docs/gecko-behaviour-parity-plan.md](docs/gecko-behaviour-parity-plan.md) for
+all seven bugs and the ledger correction.
+`model_edits_ectestgem` also confirmed four smaller, already-documented API-shape
+divergences on its other four functions --- case-sensitivity, an unknown-id lookup that raises
+instead of returning empty, a kcat-source string, and whether overwriting with an empty value
+clobbers an existing one --- `kcat_chain_ectestgem` confirmed three more: MATLAB's
+`applyCustomKcats` leaves a reaction's source/notes untouched when it's identified by reaction
+id alone, where geckopy always overwrites them; `selectKcatValue`'s `criteria='median'`/`'mean'`
+is dead code in MATLAB (a two-output call `median`/`mean` don't support, confirmed to error
+unconditionally); and `applyKcatConstraints`'s light formulation silently zeroes a reaction's
+enzyme cost when only some of its isozymes have a kcat, rather than using the one that does ---
+and `enzyme_usage_ectestgem` confirmed one more: `reportEnzymeUsage`'s `topAbsUsage` table
+always pads to the requested row count with a placeholder for any enzyme that carries no flux,
+where `report_enzyme_usage`'s equivalent table just leaves that enzyme out, so the two can
+return a different number of rows for the same request
+([raven-gecko-parity#18](https://github.com/SysBioChalmers/raven-gecko-parity/issues/18)).
+`ec_fva_ectestgem` confirmed one more, already documented in geckopy's own source before this
+scenario existed: on ecTestGEM's one isozyme-split reaction, MATLAB's `ecFVA` reduces each
+split variant's own bound independently across every canonical reaction's LP solve and then
+sums forward and subtracts reverse (an "envelope" that can combine bounds from solves that
+never occurred together), where `ec_fva` reads the combined value straight off the one solve
+that actually optimised it (the "diagonal", always a value some feasible flux distribution
+attains) --- every other reaction in the model has at most one enzyme, so nothing about their
+bounds depends on which algorithm combines them.
+`flexibilize_concs_ectestgem` found one more, but only in `flexibilizeEnzConcs`'s *refinement*
+pass, not in the iterative loop before it (which agrees exactly): MATLAB's refinement solve
+pins growth into a narrow +/-0.25% band around the target and settles at the band's low edge
+while minimising protein-pool usage; geckopy's pins growth to the target exactly, a deliberate,
+already-documented choice. `loadFluxData`/`constrainFluxData`, this scenario's other two
+functions, turned out to match exactly in every mode tested, correcting a more cautious
+suspicion in geckopy's own source comments.
+`sensitivity_tuning_ectestgem` confirmed two more, both in `findMaxValue` --- a function grep
+confirms has no callers anywhere in GECKO, so documented rather than fixed: its wildcard
+matching can never actually match anything (the EC-prefix slice it builds is always the
+literal string `".-"`, never a substring of a real EC code), and when nothing matches at all
+it mislabels the empty result as `'SA*Mw'` rather than leaving the label blank.
+`sensitivityTuning` and `truncateValues`, this scenario's other two functions, matched
+exactly --- the former also correcting a stale MATLAB-COMPAT note in geckopy's own source,
+obsoleted by an intervening GECKO change (usage/pool reactions switched to the forward
+direction in [GECKO#419](https://github.com/SysBioChalmers/GECKO/pull/419)) rather than
+confirming a still-current one.
+The other three scenarios are red on purpose. `ec_fseof_ectestgem` on nearly everything it
+reports, the widest gap in either pair: `geckopy.ec_fseof` is a thin wrapper over
+`raven_toolbox.analysis.fseof`, not a port of `ecFSEOF.m` at all, and diverges from it on
+three independent axes --- the enforced production-flux levels themselves (a different
+formula, not just different numbers), the candidate search space (MATLAB considers only
+gene-associated reactions, geckopy considers every reaction), and the selection criterion
+(strict monotonicity + top-quartile-by-slope vs correlation + slope regression, the same
+divergence already recorded on the RAVEN pair for `FSEOF` itself). On ecTestGEM: MATLAB
+finds one target, geckopy finds six. `molecular_weight_sequences`: eighteen sequences
+chosen to isolate one variable each, and all eighteen differ --- the two mass tables agree on
+the twenty standard residues but not on `X` or `B`, and the two functions disagree on
+case-sensitivity and on what an empty sequence is worth
 ([raven-gecko-parity#11](https://github.com/SysBioChalmers/raven-gecko-parity/issues/11)).
 `ec_model_io_ectestgem`: a save/load round trip agrees on every field, on both sides, but the
 written *file* does not lay out the same way --- the same divergence already tracked for
 RAVEN's plain-GEM writers
 ([raven-gecko-parity#6](https://github.com/SysBioChalmers/raven-gecko-parity/issues/6)), one
-layer down. See [docs/gecko-behaviour-parity-plan.md](docs/gecko-behaviour-parity-plan.md) for the
-programme behind these and for what the rest of the 47 gecko `parity` rows need.
+layer down. All thirteen above run on ecTestGEM, GECKO's own 7-reaction unit-test model; one more,
+`ec_model_full_yeastgem`, runs the same `makeEcModel` + BRENDA kcat-assignment pipeline on the
+real yeast-GEM model (4102 conventional reactions) instead, in its own weekly workflow
+(`gecko-genome-scale.yml`) rather than the nightly. It found and fixed two real MATLAB bugs
+that no fixture small enough to write by hand could have reached --- `sigmaFitter.m` returning
+a model sized for the wrong sigma
+([GECKO#433](https://github.com/SysBioChalmers/GECKO/pull/433), merged), and `fuzzyKcatMatching.m`'s
+wildcard EC search matching a substring instead of a prefix, so a query for one enzyme class
+could also match an unrelated one whose code happened to contain the same characters elsewhere
+([GECKO#434](https://github.com/SysBioChalmers/GECKO/pull/434), merged). See
+[docs/gecko-behaviour-parity-plan.md](docs/gecko-behaviour-parity-plan.md) (Tier 4) for what
+still diverges even with both fixed, for the programme behind all of this, and for what the
+rest of the 49 gecko `parity` rows need.
 
 See [docs/scenarios.md](docs/scenarios.md) for how to write one, including the conventions
 that avoid false differences.
@@ -163,11 +261,17 @@ that avoid false differences.
 
 `ci.yml` checks out all four repos and runs `parity check` on every push and nightly.
 
-`nightly.yml` runs the behaviour scenarios against both implementations, using
+`nightly.yml` runs the behaviour scenarios against both implementations, for both pairs, using
 `matlab-actions/setup-matlab` --- which is licence-free for public repositories, and the
-reason this repo needs to be public. It only does the work when a tracked branch has moved
-since the last comparison, and it commits [`nightly/report.md`](nightly/report.md) so drift
-has a history instead of an artefact that expires.
+reason this repo needs to be public. Raven and gecko are two matrix entries, one at a time
+rather than in parallel so that one entry's commit back to this repo cannot race the other's;
+each does the work only when its own tracked branches have moved since its last comparison,
+and each commits its own report --- [`nightly/report.md`](nightly/report.md) for raven,
+[`nightly/gecko-report.md`](nightly/gecko-report.md) for gecko --- so drift has a history
+instead of an artefact that expires. The gecko entry is a four-repo checkout: GECKO needs
+RAVEN on the MATLAB path and geckopy depends on raven-toolbox, so both are checked out and
+raven-toolbox installed from that checkout before geckopy, rather than letting geckopy's own
+metadata pull a revision this repo never recorded.
 
 Both take the branch to compare from `parity.toml`, not from each repo's default:
 
@@ -195,7 +299,7 @@ pairs and every public function on all four sides carries a declared status.
 | | rows | parity | queued | one-sided | not API |
 |---|---:|---:|---:|---:|---:|
 | raven | 301 | 73 | 32 | 158 | 38 |
-| gecko | 138 | 47 | 6 | 61 | 24 |
+| gecko | 136 | 49 | 6 | 57 | 24 |
 
 What remains between here and `parity check --strict` is tracking issues: the queued rows
 warn until each carries an `issue`. See [docs/triage.md](docs/triage.md) for how the
