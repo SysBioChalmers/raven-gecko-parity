@@ -182,7 +182,12 @@ entries:
   - matlab: findECInDB
     python: geckopy.find_ec_in_db
     status: parity
-    notes: Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5.
+    notes: 'Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5. Found and fixed a real MATLAB
+      bug while mining the long-abandoned feat/geckopy-compat branch for content relevant to this project:
+      the private intersection() helper did not dedupe its output, so a specific EC code and its own
+      wildcard parent (e.g. "1.1.1.1" and "1.1.1.-") could both resolve to the same code and get appended
+      twice, e.g. "1.1.1.1;1.1.1.1" instead of "1.1.1.1". find_ec_in_db.py already documents this exact gap
+      as a deliberate MATLAB-COMPAT divergence and applies a final dedupe pass geckopy-side. [GECKO #446], open.'
   - matlab: findGECKOroot
     status: internal
     reason: Path helper. pathlib.Path(__file__) covers it; nothing to port.
@@ -239,7 +244,12 @@ entries:
       instead of a prefix, so a query for enzyme class 1 could also match an unrelated class-4 code
       that merely contained the same two characters elsewhere in its string --- not reachable through
       any hand-built fixture small enough to avoid the collision by chance. Filed and fixed:
-      [GECKO #434], merged.'
+      [GECKO #434], merged. Found and fixed a second, unrelated MATLAB bug while mining the long-abandoned
+      feat/geckopy-compat branch: iterativeMatch''s wildcard-escalation loop had no termination guard, so an
+      EC class with zero BRENDA coverage even at full wildcard (''-.-.-.-'') crashed instead of reporting no
+      match --- reproduced the crash directly against current develop4 before fixing it. geckopy''s
+      escalate_wildcard/iterative_match_one_ec already terminate cleanly and return a "no match" sentinel in
+      this case. [GECKO #446], open.'
   - matlab: GECKOInstaller
     status: internal
     reason: Installer. Python installs with pip.
@@ -271,13 +281,18 @@ entries:
     scenarios:
       - enzyme_annotation_ectestgem
       - ec_model_full_yeastgem
-    notes: 'DIVERGENCE, now measured at genome scale (ec_model_full_yeastgem, Tier 4):
+    notes: 'DIVERGENCE, measured at genome scale (ec_model_full_yeastgem, Tier 4):
       fill_eccodes_from_gem validates each EC string against a strict pattern (four
       purely-numeric-or-''-'' levels) and drops the whole string, including any other
       valid EC code joined to it, on a single failure --- yeast-GEM''s own annotations
       include real "new/undefined subclass" codes like 1.1.1.n12 that fail this pattern.
-      getECfromGEM.m has no equivalent validation and keeps them. Affects 36 of 4671
-      reactions on this model. See scenarios/ec_model_full_yeastgem/scenario.yml.'
+      getECfromGEM.m had no equivalent validation and kept them (36 of 4671 reactions on
+      this model). Root cause found while mining the long-abandoned feat/geckopy-compat
+      branch: the MATLAB validation regex used \w (any word character) instead of \d+ per
+      EC component, so codes containing letters or underscores passed through unrejected.
+      Tightening the character classes closes this divergence rather than just documenting
+      it --- [GECKO #446], open; re-run ec_model_full_yeastgem after merge to confirm 0 of
+      4671 differ on this axis. See scenarios/ec_model_full_yeastgem/scenario.yml.'
   - matlab: getECstring
     status: subsumed
     reason: EC-string formatting, inlined on the Python side inside fill_eccodes_from_database and fill_eccodes_from_gem.
@@ -317,7 +332,15 @@ entries:
       by ecTestGEM either. Was blocked from having any MATLAB test at all: TestGEMAdapter.getSpontaneousReactions
       referenced an undefined variable, then (once that was fixed) used a hardcoded reaction-list position
       that broke once called against the already-expanded ecModel getStandardKcat actually passes it --- both
-      fixed in GECKO#429, alongside this scenario.'
+      fixed in GECKO#429, alongside this scenario. Found and fixed a separate, plain MATLAB logic bug while
+      mining the long-abandoned feat/geckopy-compat branch, on top of (not a replacement for) the mean/median
+      and eligibility-count divergences above: kcatSubSystemIdx is a one-hot vector, and
+      all(kcatSubSystemIdx) --- instead of any() --- only ever succeeds for a model with exactly one
+      subSystem in total, so on any model with more than one, every reaction silently fell back to the
+      model-wide standardKcat regardless of its own subSystem. geckopy''s assign_standard_kcat is structured
+      differently (a dict lookup with a fallback default, not a boolean-mask-plus-all() check) so has no
+      direct code-shape equivalent of this bug, but its intended behaviour (apply the subsystem kcat whenever
+      the reaction''s subsystem has one) is what any() now gives MATLAB too. [GECKO #446], open.'
   - matlab: getSubsetEcModel
     python: geckopy.get_subset_ec_model
     status: parity
