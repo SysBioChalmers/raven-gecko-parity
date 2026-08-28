@@ -257,6 +257,18 @@ rest of the 49 gecko `parity` rows need.
 See [docs/scenarios.md](docs/scenarios.md) for how to write one, including the conventions
 that avoid false differences.
 
+## Shared artefacts
+
+Large downloadable data --- KEGG reference tables and HMM libraries, and the
+BLAST+/DIAMOND/HMMER binaries both toolboxes shell out to --- lives outside either code
+repo, in [`raven-data`](https://github.com/SysBioChalmers/raven-data) releases, described
+by one manifest both sides read: how that's hosted, versioned and published is in
+[docs/artefact_hosting.md](docs/artefact_hosting.md), and the manifest format itself in
+[docs/data_manifest.md](docs/data_manifest.md). Building the KEGG artefacts is
+[docs/maintaining_kegg_data.md](docs/maintaining_kegg_data.md), with the storage-format
+decision behind them in [docs/kegg_data_format.md](docs/kegg_data_format.md); building the
+binary bundles is [docs/maintaining_binaries.md](docs/maintaining_binaries.md).
+
 ## CI
 
 `ci.yml` checks out all four repos and runs `parity check` on every push and nightly.
