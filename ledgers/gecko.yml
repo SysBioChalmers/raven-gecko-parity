@@ -769,11 +769,23 @@ entries:
     status: internal
     reason: Deprecated alias of fill_eccodes_from_gem, kept for backwards compatibility and emitting a DeprecationWarning.
       The canonical name carries the parity row.
-  - python: geckopy.get_enzyme_bottlenecks
-    status: python-only
-    reason: 'New in geckopy: per-enzyme dual-based bottleneck ranker. Confirmed genuinely new, not a port
-      artefact --- no trace of it (by name or by concept) anywhere in GECKO''s MATLAB source on develop4.
-      Not scheduled for a MATLAB back-port.'
+  - matlab: getEnzymeBottlenecks
+    python: geckopy.get_enzyme_bottlenecks
+    status: parity
+    issue: SysBioChalmers/raven-gecko-parity#22
+    notes: 'Per-enzyme dual-based bottleneck ranker: top-N enzymes by |shadow price| of their prot_<id>
+      mass-balance constraint. Was genuinely new (confirmed: no trace of it, by name or by concept, anywhere in
+      GECKO''s MATLAB source on develop4); ported to getEnzymeBottlenecks.m. [GECKO #438], merged. Found while
+      building the regression test: an enzyme that carries zero flux at the optimum has a genuinely
+      LP-dual-degenerate shadow price --- confirmed across three independent environments (this repo''s own
+      local Windows run, geckopy''s Python/gurobipy run, and this same MATLAB test on GitHub Actions'' Linux
+      runner) that which value comes back (an exact 0, or the shared protein pool''s own nonzero dual
+      propagated uniformly to it) depends on the solver build/platform/presolve path --- NOT on the calling
+      language. All three environments solve the byte-identical LP; none is "wrong", and it is not a stable
+      MATLAB-vs-Python split (the Linux MATLAB run and geckopy agreed with each other; only the local Windows
+      run differed). The regression test asserts only what is stable everywhere checked: every primal-derived
+      value (flux, capUsage, upperBound, all confirmed identical on both sides) and that results are sorted by
+      non-increasing |shadowPrice| --- not a specific shadow-price value for any zero-flux enzyme.'
   - python: geckopy.get_kcat_across_isozymes
     status: internal
     reason: Deprecated alias of fill_kcats_from_isozymes, kept for backwards compatibility and emitting a
@@ -822,11 +834,18 @@ entries:
     status: python-only
     reason: Return type. MATLAB GECKO returns several parallel outputs ([model, a, b] = f(...)); geckopy returns
       one dataclass instead, so this has no MATLAB counterpart by design.
-  - python: geckopy.pfba_enzymes
-    status: python-only
-    reason: 'New in geckopy: pFBA variant minimising total usage_prot_* flux instead of all fluxes. Confirmed
-      genuinely new, not a port artefact --- no trace of it (by name or by concept, e.g. "pFBA") anywhere in
-      GECKO''s MATLAB source on develop4. Not scheduled for a MATLAB back-port.'
+  - matlab: pfbaEnzymes
+    python: geckopy.pfba_enzymes
+    status: parity
+    issue: SysBioChalmers/raven-gecko-parity#23
+    notes: 'pFBA variant minimising total usage_prot_* flux (enzyme mass) instead of all fluxes. Was genuinely
+      new (confirmed: no trace of it, by name or by concept, e.g. "pFBA", anywhere in GECKO''s MATLAB source on
+      develop4); ported to pfbaEnzymes.m. [GECKO #439], merged. Cross-verified against geckopy on an identical
+      ecTestGEM fixture (exact match on which enzymes are used, up to a deliberate ~1e-6 relative safety margin
+      borrowed from solveLP''s own minFlux=1 technique) --- this function reports a primal solution (fluxes),
+      which stayed stable across repeated verification runs, unlike getEnzymeBottlenecks'' dual-degeneracy
+      finding on its own row above. usage_prot_<id> reactions with lb<0 (reverse flux) are rejected rather than
+      silently minimised incorrectly --- not reachable through any real GECKO 3 ecModel today.'
   - python: geckopy.PhylDist
     status: python-only
     reason: Loaded-data type. MATLAB GECKO passes parallel cell arrays and structs; geckopy wraps them in
@@ -835,12 +854,19 @@ entries:
     status: python-only
     reason: Loaded-data type. MATLAB GECKO passes parallel cell arrays and structs; geckopy wraps them in
       a dataclass.
-  - python: geckopy.relax_proteomics_greedy
-    status: python-only
-    reason: 'New in geckopy: relaxes a fixed top-k of measured concentrations in a greedy loop until a target
-      growth is reached --- an alternative to flexibilize_enz_concs. Confirmed genuinely new, not a port
-      artefact --- no trace of it (by name or by concept) anywhere in GECKO''s MATLAB source on develop4. Not
-      scheduled for a MATLAB back-port.'
+  - matlab: relaxProteomicsGreedy
+    python: geckopy.relax_proteomics_greedy
+    status: parity
+    issue: SysBioChalmers/raven-gecko-parity#24
+    notes: 'Relaxes a shadow-price-ranked constrained enzyme in a greedy loop until a target growth is reached
+      --- an alternative to flexibilize_enz_concs. Was genuinely new (confirmed: no trace of it, by name or by
+      concept, anywhere in GECKO''s MATLAB source on develop4); ported to relaxProteomicsGreedy.m. [GECKO #440],
+      merged. Cross-verified against geckopy on an identical ecTestGEM fixture across all three code paths
+      (converges; exhausts candidates, returns converged=false; exceeds maxIterations, raises) --- exact match
+      on every value in each, stable across repeated runs in separate processes. Not exposed to
+      getEnzymeBottlenecks'' own dual-degeneracy finding above: this fixture uses constrainEnzConcs to give the
+      relaxed enzymes their own individual usage bounds, a genuinely binding, non-degenerate constraint, rather
+      than relying on the shared, freely-interchangeable protein pool.'
   - python: geckopy.RelaxationStep
     status: python-only
     reason: Return type. MATLAB GECKO returns several parallel outputs ([model, a, b] = f(...)); geckopy returns
