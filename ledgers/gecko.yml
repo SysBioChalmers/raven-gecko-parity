@@ -405,7 +405,7 @@ entries:
     notes: '[3->4] ec.genes/enzymes/mw/sequence sorted alphabetically for stable order: geckopy''s own
       pipeline/populate_ec.py MATLAB-COMPAT note confirms this was a real divergence (MATLAB iterated
       model.genes in original model order) --- closed by porting the sort to makeEcModel.m. [GECKO #452],
-      open. KEGG fallback for unmatched genes (opt-in via kegg_db=) is NOT closed: geckopy''s own docstring
+      merged. KEGG fallback for unmatched genes (opt-in via kegg_db=) is NOT closed: geckopy''s own docstring
       calls this "extended with a KEGG fallback that MATLAB does not have" --- a real, still-open,
       user-facing capability gap (a gene UniProt can''t match currently gets no enzyme data at all in
       MATLAB; geckopy can still recover MW/sequence/accession from KEGG). A draft of this fallback exists
@@ -462,7 +462,7 @@ entries:
       read_dlkcat_output.py MATLAB-COMPAT note already documented this exact gap ("geckopy uses
       case-insensitive matching, which is more lenient and avoids false-positive failures when SBML loaders
       differ in capitalization"). Ported the same case-insensitive match to readDLKcatOutput.m. [GECKO #452],
-      open. Separately: both of MATLAB''s "not found" error paths (substrates, reactions) called dispEM, a
+      merged. Separately: both of MATLAB''s "not found" error paths (substrates, reactions) called dispEM, a
       RAVEN utility RAVEN#659 deleted (already on develop3) --- crashed with "Undefined function ''dispEM''"
       instead of reporting the unrecognised names. [GECKO #454], open.'
   - matlab: readOpenKineticsPredictorOutput
