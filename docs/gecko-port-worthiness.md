@@ -8,17 +8,19 @@ language-idiom difference, not missing functionality. This is a pass over all 57
 
 ## The short answer
 
-Almost none of it is worth porting as literal, symmetrical translation. Two things are worth
-doing, one of them for free:
+Almost none of it is worth porting as literal, symmetrical translation.
 
-1. **Merge `feat/geckopy-compat`'s `submitOpenKineticsPredictor.m` / `fetchOpenKineticsPredictor.m`
-   into `develop4`.** These already exist, written, on a branch 84 commits ahead of `develop4`
-   (see the ledger's `matlab-pending` rows for `geckopy.submit_open_kinetics_predictor` /
-   `geckopy.fetch_open_kinetics_predictor`). Closes two ledger rows with zero new code.
-2. **Consider extracting `makeEcModel.m`'s build steps into standalone functions**, matching
-   `geckopy.ec_model.pipeline`'s 10 exported steps. This is the one category with a real,
-   user-facing capability gap behind it (see below) --- and the one genuinely expensive item on
-   this list.
+1. ~~Merge `feat/geckopy-compat`'s `submitOpenKineticsPredictor.m` /
+   `fetchOpenKineticsPredictor.m` into `develop4`.~~ **Done**: rebuilt against current `develop4`
+   rather than merging that branch wholesale (it turned out to also be 99 commits *behind*
+   `develop4`, not just 84 ahead), refactored during the port to delegate to
+   `writeOpenKineticsPredictorInput` / `readOpenKineticsPredictorOutput` for CSV
+   building/parsing instead of each carrying its own separate, since-drifted reimplementation.
+   [GECKO #441], open.
+2. **`makeEcModel.m`'s build steps into standalone functions**, matching
+   `geckopy.ec_model.pipeline`'s 10 exported steps --- the one category with a real, user-facing
+   capability gap behind it (see below). Explicitly declined: not worth the disruption to a
+   function this central for the extensibility gain on offer.
 
 Everything else below is either a language feature MATLAB has no equivalent for (dataclasses,
 pydantic validation, a class-based model object), or genuinely dead/legacy code better removed
@@ -103,7 +105,7 @@ smaller scope: each is one helper geckopy exports alongside an already-parity-ma
 same logic inline. Low effort, low value --- nice-to-have if touching the surrounding file for
 another reason.
 
-## Worth doing, real effort (11 rows)
+## Considered and declined (11 rows)
 
 **`ec_model.pipeline`'s 10 `make_ec_model` build steps** --- `add_protein_pool_exchange_reaction`,
 `add_protein_pool_pseudometabolite`, `add_protein_pseudometabolites`,
@@ -115,16 +117,17 @@ capability gap behind it: `makeEcModel.m` is one large function, and a MATLAB us
 customize ecModel construction --- skip a step, reorder two of them, substitute their own
 enzyme-coupling logic --- has to fork the whole thing. A geckopy user can already do this by
 calling the pipeline steps directly. Splitting `makeEcModel.m` into composable pieces without
-changing its external behaviour is real engineering work (11 extraction points, each needing its
-own regression coverage), not a quick win --- worth scoping as its own effort if MATLAB-side
-pipeline extensibility is something the project wants, not something to fold into an unrelated PR.
+changing its external behaviour would be real engineering work (11 extraction points, each
+needing its own regression coverage) --- **explicitly declined**: not worth the disruption to a
+function this central for the extensibility gain on offer.
 
 ## Infrastructure, correctly one-sided (3 rows)
 
-**`gather_kcats.OKPClient` / `OKPError`** --- an HTTP client wrapper. Not worth porting on its
-own terms (MATLAB's file-based OKP flow doesn't need an HTTP client), and the real gap here
-isn't "port the client" --- it's that MATLAB's own REST-capable equivalents
-(`submitOpenKineticsPredictor.m` / `fetchOpenKineticsPredictor.m`) already exist, unmerged, on
-`feat/geckopy-compat`. See the short answer above.
+**`gather_kcats.OKPClient` / `OKPError`** --- an HTTP client wrapper. Not worth porting on its own
+terms: MATLAB's `submitOpenKineticsPredictor.m` / `fetchOpenKineticsPredictor.m` call
+`matlab.net.http` / `webread` directly rather than through a reusable client class, so there's no
+equivalent object to port to. See the short answer above --- the functions themselves are done
+([GECKO #441]).
 
 [GECKO #436]: https://github.com/SysBioChalmers/GECKO/pull/436
+[GECKO #441]: https://github.com/SysBioChalmers/GECKO/pull/441

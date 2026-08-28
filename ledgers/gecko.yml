@@ -733,11 +733,16 @@ entries:
     status: python-only
     reason: Return type. MATLAB GECKO returns several parallel outputs ([model, a, b] = f(...)); geckopy returns
       one dataclass instead, so this has no MATLAB counterpart by design.
-  - python: geckopy.fetch_open_kinetics_predictor
-    status: matlab-pending
+  - matlab: fetchOpenKineticsPredictor
+    python: geckopy.fetch_open_kinetics_predictor
+    status: parity
     issue: SysBioChalmers/raven-gecko-parity#25
-    notes: MATLAB fetchOpenKineticsPredictor.m exists on the unmerged feat/geckopy-compat branch but not on
-      develop4 or develop. Merging that branch closes this row.
+    notes: 'MATLAB fetchOpenKineticsPredictor.m existed only on the unmerged feat/geckopy-compat branch (84
+      commits ahead of develop4, but also 99 behind it); rebuilt against current develop4 rather than merging
+      that branch wholesale. [GECKO #441], open. Refactored during the port to delegate to
+      readOpenKineticsPredictorOutput for CSV parsing instead of its own separate reimplementation --- the
+      feat/geckopy-compat version had drifted from it (missing the "OKP-" kcatSource prefix, a different
+      kcatList.source convention), which delegation now removes.'
   - python: geckopy.FlexEnzResult
     status: python-only
     reason: Return type. MATLAB GECKO returns several parallel outputs ([model, a, b] = f(...)); geckopy returns
@@ -757,11 +762,13 @@ entries:
     reason: Helper exported alongside merge_kcats; MATLAB keeps it inline in mergeDLKcatAndFuzzyKcats.m.
   - python: geckopy.gather_kcats.OKPClient
     status: python-only
-    reason: HTTP client backing submit_open_kinetics_predictor / fetch_open_kinetics_predictor. MATLAB's develop4
-      code is file-based.
+    reason: 'HTTP client backing submit_open_kinetics_predictor / fetch_open_kinetics_predictor. MATLAB''s
+      submitOpenKineticsPredictor.m / fetchOpenKineticsPredictor.m (GECKO #441) call matlab.net.http /
+      webread directly rather than through a reusable client object --- no equivalent class to port.'
   - python: geckopy.gather_kcats.OKPError
     status: python-only
-    reason: Exception type for the OKP client. MATLAB signals with error().
+    reason: 'Exception type for the OKP client. MATLAB signals with error(), including from its own OKP REST
+      calls (GECKO #441).'
   - python: geckopy.get_ec_from_database
     status: internal
     reason: Deprecated alias of fill_eccodes_from_database, kept for backwards compatibility and emitting
@@ -884,11 +891,16 @@ entries:
     status: python-only
     reason: Return type. MATLAB GECKO returns several parallel outputs ([model, a, b] = f(...)); geckopy returns
       one dataclass instead, so this has no MATLAB counterpart by design.
-  - python: geckopy.submit_open_kinetics_predictor
-    status: matlab-pending
+  - matlab: submitOpenKineticsPredictor
+    python: geckopy.submit_open_kinetics_predictor
+    status: parity
     issue: SysBioChalmers/raven-gecko-parity#25
-    notes: MATLAB submitOpenKineticsPredictor.m exists on the unmerged feat/geckopy-compat branch (84 commits
-      ahead of develop4) but not on develop4 or develop. Merging that branch closes this row.
+    notes: 'MATLAB submitOpenKineticsPredictor.m existed only on the unmerged feat/geckopy-compat branch (84
+      commits ahead of develop4, but also 99 behind it); rebuilt against current develop4 rather than merging
+      that branch wholesale. [GECKO #441], open. Refactored during the port to delegate to
+      writeOpenKineticsPredictorInput for CSV building instead of its own separate reimplementation --- the
+      feat/geckopy-compat version had forked that logic before GECKO #437''s fix and inherited the identical
+      reaction-subset indexing bug, which delegation now removes.'
   - python: geckopy.TunedKcatsResult
     status: python-only
     reason: Return type. MATLAB GECKO returns several parallel outputs ([model, a, b] = f(...)); geckopy returns
