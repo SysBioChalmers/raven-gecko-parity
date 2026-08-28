@@ -1203,16 +1203,29 @@ entries:
     status: parity
     notes: migration.md maps parseHPA/parseHPArna/scoreModel onto the omics module.
   - matlab: setExchangeBounds
-    status: matlab-only
+    python: raven_toolbox.manipulation.set_exchange_bounds
+    status: parity
     issue: SysBioChalmers/raven-gecko-parity#19
-    reason: 'cobra''s model.medium covers the common single-direction, close-the-rest use case, but not
+    notes: 'cobra''s model.medium covers the common single-direction, close-the-rest use case, but not
       everything setExchangeBounds does: independent lb and ub per metabolite (medium is reaction-id-keyed
       and sets only whichever one bound is "active" for that reaction, from a single scalar), the mediaOnly
       compartment filter, or the cross-reaction direction-consistency check that auto-disables closeOthers
-      with a warning when exchanges are inconsistently oriented. No raven_toolbox function fills that gap
-      either. Tracked in #19 as a real, self-contained port candidate, pending a decision on whether it''s
-      worth it.'
-    notes: no obvious Python counterpart; decide whether one is needed
+      with a warning when exchanges are inconsistently oriented. Filed as #19 and ported: set_exchange_bounds
+      matches metabolites against the model''s exchanged set by id or name, reports unused ones, and
+      replicates the direction-consistency check and the mediaOnly filter (via model.compartments, matching
+      a compartment named "extracellular"). Cross-validated directly against setExchangeBounds.m on
+      smallYeast: explicit bounds plus closeOthers under RAVEN''s own mixed-direction warning path (smallYeast
+      genuinely has both +1 and -1 coefficient exchanges, so this path exercises for real, not synthetically),
+      unusedMets reporting, the no-metabolites-given default, and the mediaOnly error path (smallYeast has no
+      extracellular compartment) --- all four cases matched bound-for-bound. INCIDENTAL FINDING, not scored
+      here: setExchangeBounds''s own "metabolite in more than one exchange reaction" diagnostic warning has a
+      latent bug (unique(metInd,''first'') returns indices into the original array, then
+      ismember(1:numel(tbl), i) compares that against a range sized to the number of *unique* values --- two
+      differently-sized index spaces, so the check can never find a real overlap) and never actually fires;
+      confirmed in isolation with a minimal repro. Purely diagnostic --- does not affect which bounds get set
+      --- so left as a documented curiosity rather than filed as its own bug. set_exchange_bounds implements
+      the equivalent warning correctly rather than replicating the bug, and it does fire correctly on
+      smallYeast (ethanol has both ethIN and ethOUT).'
   - matlab: setGAM
     python: raven_toolbox.biomass.set_gam
     status: parity
@@ -1471,35 +1484,36 @@ entries:
     notes: Cytoscape SIF export (rc / rr / cc graphs). migration.md lists this under I/O as a port of exportModelToSIF,
       but MATLAB RAVEN has no such function on any branch --- so it is new functionality, not a port.
   - python: raven_toolbox.localization.annotate_proteome
-    status: python-only
+    status: matlab-pending
     issue: SysBioChalmers/raven-gecko-parity#20
-    reason: Runs a predictor over a whole proteome; the loaders carry the parity rows. Part of the
-      transporter-evidence subsystem tracked as a whole in #20.
+    notes: 'Runs a predictor over a whole proteome; the loaders carry the parity rows. Part of the
+      transporter-evidence subsystem, decided in issue #20 to be worth porting eventually --- not queued as
+      near-term work, just no longer marked as deliberately excluded.'
   - python: raven_toolbox.localization.annotate_transporters
     status: matlab-pending
     issue: SysBioChalmers/raven-gecko-parity#20
-    notes: Transport-protein annotation, the entry point of the transport-evidence subsystem. No RAVEN counterpart;
-      todo.md lists it among the Python-only subsystems worth documenting, but it is a capability MATLAB could
-      gain. Tracked as a whole, with the rest of the subsystem, in #20.
+    notes: 'Transport-protein annotation, the entry point of the transport-evidence subsystem. No RAVEN
+      counterpart; todo.md lists it among the Python-only subsystems worth documenting, but it is a
+      capability MATLAB could gain. Tracked as a whole, with the rest of the subsystem, in issue #20.'
   - python: raven_toolbox.localization.apply_assignment
-    status: python-only
+    status: matlab-pending
     issue: SysBioChalmers/raven-gecko-parity#20
-    reason: Materialises an AssignmentProposal; RAVEN's predictLocalization always applies in place. Part of
-      the transporter-evidence subsystem tracked as a whole in #20.
+    notes: 'Materialises an AssignmentProposal; RAVEN''s predictLocalization always applies in place. Part
+      of the transporter-evidence subsystem, decided in issue #20 to be worth porting eventually.'
   - python: raven_toolbox.localization.apply_localization
-    status: python-only
+    status: matlab-pending
     issue: SysBioChalmers/raven-gecko-parity#20
-    reason: Materialises a LocalizationProposal; RAVEN always applies in place. Part of the transporter-evidence
-      subsystem tracked as a whole in #20.
+    notes: 'Materialises a LocalizationProposal; RAVEN always applies in place. Part of the
+      transporter-evidence subsystem, decided in issue #20 to be worth porting eventually.'
   - python: raven_toolbox.localization.AssignmentProposal
     status: python-only
     reason: Result type. RAVEN returns several parallel outputs; raven-toolbox returns one dataclass, so this
       has no MATLAB counterpart by design.
   - python: raven_toolbox.localization.combine_scores
-    status: python-only
+    status: matlab-pending
     issue: SysBioChalmers/raven-gecko-parity#20
-    reason: Merges evidence from several predictors, which RAVEN's single-source parseScores never needs. Part
-      of the transporter-evidence subsystem tracked as a whole in #20.
+    notes: 'Merges evidence from several predictors, which RAVEN''s single-source parseScores never needs.
+      Part of the transporter-evidence subsystem, decided in issue #20 to be worth porting eventually.'
   - python: raven_toolbox.localization.curation_priority
     status: matlab-pending
     notes: Ranks genes by how much a curation decision would change the placement. No RAVEN counterpart.
@@ -1508,20 +1522,20 @@ entries:
     reason: Default-value constant, exported so callers can inspect and override it. RAVEN hard-codes the
       equivalent.
   - python: raven_toolbox.localization.default_metabolite_chebi
-    status: python-only
+    status: matlab-pending
     issue: SysBioChalmers/raven-gecko-parity#20
-    reason: Default ChEBI lookup behind the transport-evidence scoring. Part of the transporter-evidence
-      subsystem tracked as a whole in #20.
+    notes: 'Default ChEBI lookup behind the transport-evidence scoring. Part of the transporter-evidence
+      subsystem, decided in issue #20 to be worth porting eventually.'
   - python: raven_toolbox.localization.default_substrate_of
-    status: python-only
+    status: matlab-pending
     issue: SysBioChalmers/raven-gecko-parity#20
-    reason: Default substrate lookup behind the transport-evidence scoring. Part of the transporter-evidence
-      subsystem tracked as a whole in #20.
+    notes: 'Default substrate lookup behind the transport-evidence scoring. Part of the transporter-evidence
+      subsystem, decided in issue #20 to be worth porting eventually.'
   - python: raven_toolbox.localization.evidence_aware_transport_cost
     status: matlab-pending
     issue: SysBioChalmers/raven-gecko-parity#20
-    notes: Evidence-weighted transport cost used by assign_compartments. Pairs with annotate_transporters;
-      back-port alongside it. Tracked as a whole, with the rest of the subsystem, in #20.
+    notes: 'Evidence-weighted transport cost used by assign_compartments. Pairs with annotate_transporters;
+      back-port alongside it. Tracked as a whole, with the rest of the subsystem, in issue #20.'
   - python: raven_toolbox.localization.fetch_protein_sequences
     status: python-only
     reason: Fetches model gene sequences from UniProtKB for the predictors.
