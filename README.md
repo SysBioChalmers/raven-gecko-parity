@@ -298,8 +298,8 @@ pairs and every public function on all four sides carries a declared status.
 
 | | rows | parity | queued | one-sided | not API |
 |---|---:|---:|---:|---:|---:|
-| raven | 301 | 73 | 32 | 158 | 38 |
-| gecko | 137 | 54 | 1 | 57 | 25 |
+| raven | 302 | 75 | 38 | 169 | 20 |
+| gecko | 137 | 54 | 1 | 63 | 19 |
 
 What remains between here and `parity check --strict` is tracking issues: the queued rows
 warn until each carries an `issue`. See [docs/triage.md](docs/triage.md) for how the

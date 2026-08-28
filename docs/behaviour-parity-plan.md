@@ -1,6 +1,6 @@
 # Plan: behavioural parity for RAVEN ↔ raven-toolbox
 
-The ledger carries **74 rows marked `parity`** — both sides implement this and are intended to
+The ledger carries **75 rows marked `parity`** — both sides implement this and are intended to
 behave the same — and the repository holds **thirty-four raven-pair scenarios**, covering **43 of
 those rows**.
 Matching names prove nothing, as the README says. This is the plan to make the claim real, and

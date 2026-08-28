@@ -814,6 +814,28 @@ entries:
   - matlab: getModelFromKEGG
     status: subsumed
     reason: Building the model from KO assignments is a stage inside reconstruction.kegg.get_kegg_model_for_organism.
+  - matlab: buildGlobalGPR
+    status: internal
+    reason: 'Helper behind getModelFromKEGG''s (RAVEN #707) rebuilt implementation: joins every KEGG
+      organism''s genes onto the reference reactions via KO ids, replacing the old pre-built
+      keggModel.mat this data used to ship as. Not a standalone entry point; same tracking issue as
+      getKEGGModelForOrganism (SysBioChalmers/RAVEN#704).'
+  - matlab: buildGlobalKEGGModel
+    status: internal
+    reason: 'Helper behind getModelFromKEGG''s (RAVEN #707) rebuilt implementation: downloads and
+      assembles the global KEGG model from raven-data''s relational KEGG tables. Not a standalone
+      entry point; same tracking issue as getKEGGModelForOrganism (SysBioChalmers/RAVEN#704).'
+  - matlab: keggDataVersion
+    status: internal
+    reason: 'Helper behind getModelFromKEGG''s (RAVEN #707) rebuilt implementation: reads the
+      raven-data KEGG release tag from reconstruction/kegg/KEGG_VERSION.md so every KEGG-downloading
+      function stays in sync. Not a standalone entry point; same tracking issue as
+      getKEGGModelForOrganism (SysBioChalmers/RAVEN#704).'
+  - matlab: readKEGGTable
+    status: internal
+    reason: 'Helper behind getModelFromKEGG''s (RAVEN #707) rebuilt implementation: reads one of
+      raven-data''s gzipped KEGG relational tables into a cellstr-typed table. Not a standalone entry
+      point; same tracking issue as getKEGGModelForOrganism (SysBioChalmers/RAVEN#704).'
   - matlab: getPhylDist
     python: raven_toolbox.reconstruction.kegg.phyl_dist
     status: parity
