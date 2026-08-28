@@ -1050,10 +1050,6 @@ entries:
   - matlab: printOrange
     status: internal
     reason: Coloured console output. Python uses the logging module.
-  - matlab: processProteinFastaFile
-    status: python-pending
-    notes: Normalises a proteome FASTA before homology search. No port decision is recorded either way. Left
-      in the queue rather than declared a divergence, so the choice stays visible.
   - matlab: progressReport
     status: internal
     reason: Console progress display. Python uses logging / tqdm.
@@ -1085,7 +1081,16 @@ entries:
       - yaml_roundtrip_smallyeast
     notes: 'from migration.md. Aligned to cobra''s !!omap writer (RAVEN fa281a1). Adds the RAVEN-only top-level
       per-entry keys (inchis/deltaG/metFrom/notes, confidence_score/references/rxnFrom/deltaG, protein) into
-      .notes, plus version/metaData/GECKO ec-*. cobra-readable output verified. Cross-validated on smallYeast:
+      .notes, plus version/metaData/GECKO ec-*. cobra-readable output verified. readYAMLmodel now unescapes a
+      quoted scalar''s wrapping-style escaping (doubled '''' -> '' for single quotes, backslash \\/\" for double
+      quotes) rather than leaving it untouched --- exercised for real once writeYAMLmodel switched from single
+      to double quotes to match Prettier''s default (SysBioChalmers/RAVEN#710, SysBioChalmers/raven-toolbox#107).
+      That switch also exposed a real regression, caught by testing against yeast-GEM: a quoted *list item*
+      (e.g. a pubmed id under an annotation block) kept its wrapping quotes, because the list-marker strip ran
+      after quote detection instead of before, so the anchored quote check never matched with "- " still
+      attached --- silently breaking exportForGit''s SBML attribute quoting and dropping the whole
+      <annotation> block for every affected reaction. Fixed by reordering the two steps
+      (SysBioChalmers/RAVEN#712). Cross-validated on smallYeast:
       the two readers produce the same model down to bounds, formulae, compartments, gene sets and
       stoichiometry. FIXED two position-dependent RAVEN reader bugs found while re-verifying this row
       (SysBioChalmers/RAVEN#709): a metabolite missing charge or compartment resolved differently
@@ -1369,15 +1374,13 @@ entries:
   - matlab: writeExcel
     status: subsumed
     reason: Sheet writer; inside io.export_to_excel.
-  - matlab: writeFasta
-    python: raven_toolbox.localization.write_fasta
-    status: parity
-    issue: SysBioChalmers/raven-gecko-parity#26
-    notes: 'DIVERGENCE, five ways: default wrap width (80 vs 60), an empty sequence emits a trailing blank
-      line in Python but not MATLAB, Python rejects whitespace in a header/id where MATLAB accepts it,
-      max_records_per_file chunking is Python-only, and MATLAB writes platform line endings (CRLF on Windows)
-      while Python forces LF everywhere. Not wrong on either side individually, but not the same output for
-      the same input.'
+  - python: raven_toolbox.localization.write_fasta
+    status: python-only
+    reason: 'writeFasta.m was removed from RAVEN (SysBioChalmers/RAVEN#711): it was reachable only from its
+      own documented example, never from another function or tutorial, and a broader audit of every top-level
+      .m file for the same pattern found no other genuine dead-code candidates. The five format divergences
+      this row used to describe (SysBioChalmers/raven-gecko-parity#26) are moot now that there is no MATLAB
+      side to diverge from.'
   - matlab: writeYAMLmodel
     python: raven_toolbox.io.write_yaml_model
     status: parity
@@ -1397,7 +1400,9 @@ entries:
       aspirational. Verified against a model exercising every optional field (inchis, deltaG, notes, references,
       confidence_score, rxnFrom, protein, multi-item subsystem, singleton and multi-value annotations), not just
       smallYeast, and against raven-toolbox''s own parity suite run for real against a live RAVEN checkout
-      (parity vs MATLAB RAVEN CI job, 4/4 passed).'
+      (parity vs MATLAB RAVEN CI job, 4/4 passed). Also switched from single to double quotes when a scalar
+      needs quoting, matching Prettier''s YAML default rather than ruamel''s (SysBioChalmers/RAVEN#710,
+      SysBioChalmers/raven-toolbox#107) --- byte-identity with smallYeast re-verified after the switch.'
   - python: raven_toolbox.analysis.find_good_reactions
     status: python-only
     reason: The non-loop flux screen randomSampling performs inline when choosing random objectives.
