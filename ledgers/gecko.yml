@@ -739,7 +739,7 @@ entries:
     issue: SysBioChalmers/raven-gecko-parity#25
     notes: 'MATLAB fetchOpenKineticsPredictor.m existed only on the unmerged feat/geckopy-compat branch (84
       commits ahead of develop4, but also 99 behind it); rebuilt against current develop4 rather than merging
-      that branch wholesale. [GECKO #441], open. Refactored during the port to delegate to
+      that branch wholesale. [GECKO #441], merged. Refactored during the port to delegate to
       readOpenKineticsPredictorOutput for CSV parsing instead of its own separate reimplementation --- the
       feat/geckopy-compat version had drifted from it (missing the "OKP-" kcatSource prefix, a different
       kcatList.source convention), which delegation now removes.'
@@ -897,7 +897,7 @@ entries:
     issue: SysBioChalmers/raven-gecko-parity#25
     notes: 'MATLAB submitOpenKineticsPredictor.m existed only on the unmerged feat/geckopy-compat branch (84
       commits ahead of develop4, but also 99 behind it); rebuilt against current develop4 rather than merging
-      that branch wholesale. [GECKO #441], open. Refactored during the port to delegate to
+      that branch wholesale. [GECKO #441], merged. Refactored during the port to delegate to
       writeOpenKineticsPredictorInput for CSV building instead of its own separate reimplementation --- the
       feat/geckopy-compat version had forked that logic before GECKO #437''s fix and inherited the identical
       reaction-subset indexing bug, which delegation now removes.'
