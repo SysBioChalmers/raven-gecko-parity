@@ -375,25 +375,12 @@ entries:
   - matlab: loadDatabases
     status: subsumed
     reason: 'geckopy loads databases implicitly at point of use rather than through one entry point. The download
-      halves MATLAB used to perform inline (urlwrite for UniProt, a local downloadKEGG subfunction) are now
-      exposed as their own standalone matlab: rows below (downloadKEGG, downloadUniProt), matching Python''s
-      existing geckopy.databases.download_kegg / download_uniprot split --- [GECKO #456], open. Separately:
-      MATLAB''s duplicate-UniProt-entry error path called dispEM, a RAVEN utility RAVEN#659 deleted (already on
-      develop3) --- crashed with "Undefined function ''dispEM''" instead of reporting the duplicates.
-      [GECKO #454], merged.'
-  - matlab: downloadKEGG
-    python: geckopy.databases.download_kegg
-    status: parity
-    notes: 'Was inlined as a private local subfunction of loadDatabases.m; extracted to its own file so a
-      user can refresh one organism''s KEGG snapshot without re-running loadDatabases for everything else,
-      matching the standalone Python function this already had no MATLAB counterpart for. Not unit-tested:
-      almost entirely a live KEGG REST API call, the same category as runDLKcat.m''s Docker dependency.
-      [GECKO #456], open.'
-  - matlab: downloadUniProt
-    python: geckopy.databases.download_uniprot
-    status: parity
-    notes: 'Was inlined directly in loadDatabases.m (not even its own subfunction); extracted to its own
-      file for the same reason and with the same caveat as downloadKEGG above. [GECKO #456], open.'
+      halves MATLAB performs inline (urlwrite for UniProt, a local downloadKEGG subfunction) are exposed separately
+      in Python as geckopy.databases.download_kegg / download_uniprot (see those two python-only rows below) ---
+      a PR extracting matching standalone downloadKEGG.m / downloadUniProt.m functions is open, not yet merged:
+      [GECKO #456]. Separately: MATLAB''s duplicate-UniProt-entry error path called dispEM, a RAVEN utility
+      RAVEN#659 deleted (already on develop3) --- crashed with "Undefined function ''dispEM''" instead of
+      reporting the duplicates. [GECKO #454], merged.'
   - matlab: loadEcModel
     python: geckopy.load_ec_model
     status: parity
@@ -446,24 +433,20 @@ entries:
       behaviourally by model_edits_ectestgem, on a synthetic per-reaction flux vector keyed
       by id: mapped conventional-reaction fluxes and enzyme-usage fluxes match exactly.'
   - matlab: mergeDLKcatAndFuzzyKcats
-    status: subsumed
-    reason: 'Deprecated as of [GECKO #457] (open): now a thin, warning-emitting wrapper around mergeKcats
-      (the new matlab: row below), kept only for the legacy two-input call shape. The parity row for this
-      capability is now mergeKcats -> geckopy.merge_kcats.'
-  - matlab: mergeKcats
     python: geckopy.merge_kcats
     status: parity
     scenarios:
       - kcat_chain_ectestgem
-    notes: 'Generalizes mergeDLKcatAndFuzzyKcats from two fixed inputs to any number of kcatLists, each of
-      which may itself mix several sources (e.g. an OpenKineticsPredictor result carrying BRENDA/Sabio-RK/
-      CataPro rows). Confirmed against geckopy''s actual merge_kcats.py, not just the design sketched on the
-      long-abandoned feat/geckopy-compat branch (commit 54ff092) this was adapted from: matching three tier
-      tokens (database_exact/database_top/database_bottom), matching default database source set
-      (brenda, sabio_rk), matching source-label normalisation to lowercase snake_case. Verified against
-      kcat_chain_ectestgem''s existing testKcats_tc0011-equivalent fixture that the tier-based
-      reimplementation reproduces the pre-existing mergeDLKcatAndFuzzyKcats algorithm''s row selection
-      exactly. [GECKO #457], open.'
+    notes: 'A PR generalizing this to N sources (matching geckopy''s own merge_kcats, which already accepts
+      any number of kcatLists) is open, not yet merged: [GECKO #457]. The new mergeKcats.m becomes the
+      parity-row owner once merged; mergeDLKcatAndFuzzyKcats.m becomes a thin, deprecated wrapper around it
+      kept for the legacy two-input call shape --- reclassify this row to status: subsumed at that point.
+      Confirmed against geckopy''s actual merge_kcats.py ahead of merging, not just the design sketched on
+      the long-abandoned feat/geckopy-compat branch (commit 54ff092) the MATLAB side was adapted from:
+      matching three tier tokens (database_exact/database_top/database_bottom), matching default database
+      source set (brenda, sabio_rk), matching source-label normalisation to lowercase snake_case. Verified
+      against kcat_chain_ectestgem''s existing testKcats_tc0011 fixture that the tier-based reimplementation
+      reproduces this function''s current algorithm''s row selection exactly.'
   - matlab: ModelAdapter
     python: geckopy.ModelAdapter
     status: parity
@@ -720,13 +703,17 @@ entries:
     reason: Loaded-data type. MATLAB GECKO passes parallel cell arrays and structs; geckopy wraps them in
       a dataclass.
   - python: geckopy.databases.download_kegg
-    status: python-only
-    reason: MATLAB downloads KEGG from a local subfunction inside loadDatabases.m rather than exposing an
-      entry point; geckopy makes it callable on its own.
+    status: matlab-pending
+    issue: SysBioChalmers/GECKO#456
+    notes: 'MATLAB currently downloads KEGG from a local subfunction inside loadDatabases.m rather than
+      exposing an entry point. A PR extracting a standalone downloadKEGG.m is open: [GECKO #456]. Once
+      merged, reclassify to matlab: downloadKEGG, status: parity.'
   - python: geckopy.databases.download_uniprot
-    status: python-only
-    reason: MATLAB downloads UniProt inline (urlwrite) inside loadDatabases.m rather than exposing an entry
-      point; geckopy makes it callable on its own.
+    status: matlab-pending
+    issue: SysBioChalmers/GECKO#456
+    notes: 'MATLAB currently downloads UniProt inline (urlwrite) inside loadDatabases.m rather than exposing
+      an entry point. A PR extracting a standalone downloadUniProt.m is open: [GECKO #456]. Once merged,
+      reclassify to matlab: downloadUniProt, status: parity.'
   - python: geckopy.databases.KeggDB
     status: python-only
     reason: Loaded-data type. MATLAB GECKO passes parallel cell arrays and structs; geckopy wraps them in
