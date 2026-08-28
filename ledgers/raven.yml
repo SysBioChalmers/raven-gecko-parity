@@ -1099,7 +1099,10 @@ entries:
       - yaml_roundtrip_smallyeast
     notes: 'Byte-identical output on both a minimal model and one exercising every optional field (inchis,
       deltaG, notes, references, confidence_score, rxnFrom, protein, multi-item subsystem, singleton and
-      multi-value annotations).'
+      multi-value annotations). A gene-less model writes `genes: []` (matching cobra''s own required-key
+      convention) rather than a bare `genes:`, which would otherwise parse as null and crash the reader. A
+      reaction with no GPR omits `gene_reaction_rule` entirely on both sides --- a deliberate divergence from
+      cobra''s own writer, which always includes it; nothing on either read side needs the key present.'
   - python: raven_toolbox.analysis.find_good_reactions
     status: python-only
     reason: The non-loop flux screen randomSampling performs inline when choosing random objectives.
