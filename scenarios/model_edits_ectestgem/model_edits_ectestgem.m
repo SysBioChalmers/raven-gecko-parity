@@ -248,13 +248,27 @@ end
 
 
 function out = ec_data(ec)
-out.rxns    = reshape(ec.rxns(:), 1, []);
+% rxns/kcat/source/eccodes sorted by reaction id here, unlike ec_model_expansion_ectestgem's
+% ec.rxns: *that* scenario's order is makeEcModel's own expansion order, which MATLAB's own
+% unit tests pin exactly. The order addNewRxnsToEC appends new isozyme/reversibility variants
+% in has no such contract on either side --- neither implementation's tests assert it --- so
+% leaving it unsorted here would report an incidental loop-order difference as a finding.
+[rxnIds, order] = sort(ec.rxns(:));
+% Index the column form first, in the same shape as `order`, and only convert to blanks
+% / reshape to a row afterwards --- indexing a row vector with a column index vector (or
+% vice versa) returns a result shaped like the index, not like the thing indexed, which
+% would silently do the wrong thing here.
+kcat = double(ec.kcat(:)); kcat = kcat(order);
+source = ec.source(:); source = source(order);
+eccodes = ec.eccodes(:); eccodes = eccodes(order);
+
+out.rxns    = reshape(rxnIds, 1, []);
 out.genes   = reshape(ec.genes(:), 1, []);
 out.enzymes = reshape(ec.enzymes(:), 1, []);
 out.mw      = reshape(double(ec.mw(:)), 1, []);
-out.eccodes = reshape(blanks_for_empty(ec.eccodes), 1, []);
-out.kcat    = reshape(double(ec.kcat(:)), 1, []);
-out.source  = reshape(blanks_for_empty(ec.source), 1, []);
+out.eccodes = reshape(blanks_for_empty(eccodes), 1, []);
+out.kcat    = reshape(kcat, 1, []);
+out.source  = reshape(blanks_for_empty(source), 1, []);
 out.coupling = pairs(ec.rxnEnzMat, ec.rxns, ec.enzymes, {'reaction', 'enzyme'}, true);
 end
 

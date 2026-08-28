@@ -755,6 +755,12 @@ entries:
     status: python-only
     reason: Return type. MATLAB GECKO returns several parallel outputs ([model, a, b] = f(...)); geckopy returns
       one dataclass instead, so this has no MATLAB counterpart by design.
+  - matlab: resolveOkpApiKey
+    status: internal
+    reason: 'Shared helper extracted from submitOpenKineticsPredictor.m / fetchOpenKineticsPredictor.m
+      during the GECKO #441 port (resolution order: explicit arg, then OKP_API_KEY env var, then
+      data/okpApiKey.txt), not a standalone entry point. geckopy''s equivalent resolution lives inline
+      in OKPClient rather than as a separate function.'
   - matlab: fetchOpenKineticsPredictor
     python: geckopy.fetch_open_kinetics_predictor
     status: parity

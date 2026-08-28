@@ -71,6 +71,11 @@ ids are not always valid MATLAB struct field names.
 **Watch `jsonencode` on a 1×1 struct array** --- MATLAB writes a bare object where you meant
 a one-element array. Build such lists as cell arrays of structs.
 
+**The same thing happens to a 1×1 numeric array.** A one-condition `fluxData.Ptot` or any
+other length-1 double vector writes as a bare number, not a one-element array --- found while
+building `flexibilize_concs_ectestgem`, whose fixture has exactly one condition. `num2cell`
+before assigning, the same fix as the struct case above.
+
 **Declare epsilons in the scenario, not in the code.** MATLAB's matrix arithmetic leaves
 ~1e-15 dust where terms cancel exactly. Without a shared `zero_tolerance` the two sides
 disagree about which elements are even *present* in a residual. Put the number in

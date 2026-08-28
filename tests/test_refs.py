@@ -53,7 +53,21 @@ def test_a_side_without_a_ref_falls_back_to_main(tmp_path: Path):
 def test_shell_format_is_consumable_by_github_output(tmp_path, capsys):
     assert main(["-c", str(_config(tmp_path)), "refs", "--format", "shell"]) == 0
     lines = capsys.readouterr().out.split()
-    assert lines == ["demo_matlab_ref=develop3", "demo_python_ref=main"]
+    assert lines == [
+        "demo_matlab_repo=org/DEMO",
+        "demo_matlab_ref=develop3",
+        "demo_python_repo=org/demopy",
+        "demo_python_ref=main",
+    ]
+
+
+def test_shell_format_names_the_repo_too(tmp_path, capsys):
+    """So a workflow can check out or `git ls-remote` a pair without hard-coding its repo
+    name --- the nightly matrix needs this for whichever pair a given entry runs."""
+    assert main(["-c", str(_config(tmp_path)), "refs", "--format", "shell", "--pair", "demo"]) == 0
+    lines = capsys.readouterr().out.split()
+    assert "demo_matlab_repo=org/DEMO" in lines
+    assert "demo_python_repo=org/demopy" in lines
 
 
 def test_text_format_names_the_repo_as_well_as_the_ref(tmp_path, capsys):

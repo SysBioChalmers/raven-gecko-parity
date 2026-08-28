@@ -1,0 +1,88 @@
+id: ec_fseof_ectestgem
+pair: gecko
+description: >-
+  Flux-Scanning with Enforced Objective Function on ecTestGEM's ecModel:
+  enforcing an increasing flux toward a production target while maximising
+  growth, to find reactions worth over-expressing, knocking down, or
+  removing entirely. Red on purpose --- see below.
+
+entries:
+  - ecFSEOF
+
+# The fifth and last scenario in this pair that needs an LP solver; same reasoning as
+# the rest of Tier 3 for declaring it explicitly.
+inputs:
+  adapter_matlab: "{matlab_repo}/test/unit_tests/ecTestGEM/TestGEMAdapter.m"
+  adapter_python: "{python_repo}/examples/ecTestGEM"
+  fixture_dir: "{matlab_repo}/test/unit_tests/ecTestGEM"
+
+  matlab_solver: gurobi
+  python_solver: gurobi
+
+  bio_rxn: R5
+
+  # R3 as the production target rather than an exchange reaction (the docstring's own
+  # suggestion, not a requirement): ecTestGEM's only exit pathway is R5->S2, so there is
+  # no separate byproduct to enforce that is not just growth itself under another name.
+  # R3 is a real, independent degree of freedom instead --- one of three parallel
+  # m1->m2 routes (alongside R2's two isozymes and the uncatalysed R4), competing with
+  # them for the same upstream precursor and the same protein-pool budget, so enforcing
+  # its flux upward has a real, visible effect on the rest of the network to scan.
+  prod_target_rxn: R3
+  cs_rxn: S1
+
+  # Distinct kcats for R2's two isozymes, the same values ec_fva_ectestgem already
+  # verified give a real, non-degenerate trade-off; R3 and R5 kcats chosen so R3 is not
+  # the cheapest route (R2_EXP_1 is), which is what makes R3 need to be *enforced* to
+  # carry flux at all rather than being used voluntarily.
+  kcats:
+    R2_EXP_1: 50.0
+    R2_EXP_2: 10.0
+    R2_REV_EXP_1: 50.0
+    R2_REV_EXP_2: 10.0
+    R3: 20.0
+    R5: 100.0
+
+  n_steps: 6
+
+# Red on purpose --- three separate, confirmed-by-execution divergences, not one, all
+# rooted in the same fact: geckopy's ec_fseof is a thin wrapper over raven-toolbox's own
+# fseof (already flagged in this repo's RAVEN-pair plan as "slope of |flux| vs endpoint
+# comparison" between RAVEN's FSEOF and raven-toolbox's fseof --- see
+# docs/behaviour-parity-plan.md), not a port of ecFSEOF.m's own algorithm. geckopy's own
+# MATLAB-COMPAT notes in ec_fseof.py already name most of this; this scenario is the
+# first time any of it was measured on an actual model rather than read off the two
+# sources.
+#
+# 1. The enforced-flux levels themselves differ, before any target selection happens.
+#    MATLAB's alpha runs from the *biomass-optimal* production flux (`iniTarget`,
+#    whatever R3 carries when growth alone is maximised --- 0 here, since R2 is the
+#    cheaper route and nothing forces R3 to be used) up to 90% of R3's theoretical
+#    maximum. raven-toolbox's levels instead run from `target_max/n_steps` to
+#    `target_max`, with no reference to the biomass-optimal starting point at all.
+#    Confirmed by direct execution: MATLAB's six levels are
+#    [0, 259.2, 518.4, 777.6, 1036.8, 1296.0]; geckopy's are
+#    [216, 432, 648, 864, 1080, 1296] --- the same top end, a different everything else.
+# 2. MATLAB restricts the *search space* for targets to genes-associated reactions only
+#    (`withGR = ~cellfun(@isempty,model.grRules)`, applied before anything else) ---
+#    R1, R4, and the exchange reactions are never even considered. raven-toolbox's
+#    classifier iterates every reaction in the model with no such filter. On this
+#    fixture that difference alone is enough to change the target list from one
+#    reaction to six: MATLAB reports only R5 (knockdown, essential); geckopy reports
+#    R4, R1, R5, S1, S2 and R3 itself.
+# 3. Even restricted to the same candidate reactions, the selection *criterion* differs:
+#    MATLAB requires |flux| to be strictly monotonic across every one of the n_steps,
+#    then keeps only the top quartile by slope; geckopy regresses flux against the
+#    enforced level and keeps reactions whose correlation and slope both clear a
+#    threshold --- deliberately more tolerant of one noisy step, per raven-toolbox's own
+#    IMPROVEMENTS notes (FS1-FS4).
+#
+# Output shape differs further still and is not asserted here at all, since there is
+# nothing to compare it against: MATLAB additionally computes a per-gene essentiality
+# column (one knockout LP per gene) and splits results into rxnTargets vs
+# transportTargets; geckopy's ec_fseof does neither (its own MATLAB-COMPAT notes point
+# callers at cobra.flux_analysis.single_gene_deletion and a subsystem/metabolite check
+# instead).
+tolerance:
+  rel: 1.0e-6
+  abs: 1.0e-9

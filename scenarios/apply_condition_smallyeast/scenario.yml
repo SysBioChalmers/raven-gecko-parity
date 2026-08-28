@@ -1,0 +1,76 @@
+id: apply_condition_smallyeast
+pair: raven
+description: >-
+  A condition's exchange-reset prelude, given a specific direction ("out")
+  rather than a blanket toggle --- RAVEN scopes the reset to exactly that
+  direction; raven-toolbox cannot tell RAVEN's directions apart at all and
+  resets every exchange regardless, silently re-opening uptake reactions
+  the condition never named.
+
+entries:
+  - applyCondition
+
+inputs:
+  model: "{matlab_repo}/tutorial/smallYeast.yml"
+
+  # The one condition key this scenario exercises. "out" specifically,
+  # rather than a bare `true`: it is the value both docstrings use as
+  # their own worked example, and a bare truthy value would not
+  # distinguish the two implementations at all --- apply_condition treats
+  # every truthy value identically ("reset everything"), so the
+  # divergence only shows up when a real direction is named.
+  reset_exchanges: "out"
+
+  # Solved with Gurobi on both sides, named here rather than inherited ---
+  # see gapfill_connect_smallyeast for why. Needed for the growth_after
+  # number to mean anything as a cross-implementation comparison.
+  matlab_solver: gurobi
+  python_solver: gurobi
+
+# applyCondition forwards cond.prelude.reset_exchanges straight through to
+# getExchangeRxns as its reactionType argument (confirmed by reading
+# conditions/applyCondition.m and queries/getExchangeRxns.m in full):
+# 'out' selects reactions where the boundary metabolite is the reaction's
+# product --- smallYeast's five *OUT reactions (acOUT, biomassOUT,
+# co2OUT, ethOUT, glyOUT) --- and leaves every other reaction, including
+# the three *IN reactions (glcIN, ethIN, o2IN), completely untouched.
+# apply_condition's own docstring is explicit that it cannot do this:
+# "cobrapy doesn't distinguish RAVEN's in / out directions; we reset
+# every exchange reaction" it can find via cobra's own model.exchanges,
+# whatever direction string was actually passed, as long as it is
+# truthy.
+#
+# Confirmed on the Python side before this scenario's MATLAB half was
+# written: applying reset_exchanges: "out" to a fresh smallYeast (whose
+# three *IN reactions ship shut, lb=ub=0) resets all eight reactions to
+# (0, 1000) and takes maximum growth from unreachable to ~90 --- glucose
+# and oxygen uptake that the condition never asked to touch, opened
+# anyway. exchange_bounds_after is expected to show exactly this split:
+# the five *OUT reactions matching on both sides (both mechanisms agree
+# on "out"), the three *IN reactions matching each other only on the
+# Python side (both open) while RAVEN's stay at (0, 0), and growth_after
+# showing the real consequence as one number --- RAVEN still unable to
+# grow at all, Python growing freely.
+#
+# This is not a one-off toy divergence: yeast-GEM condition files are the
+# stated first consumer of this exact schema (applyCondition's own
+# docstring), and choosing "out" specifically --- to reset secretion
+# capacity while leaving a separate, later `bounds` block in sole control
+# of uptake --- is a plausible, ordinary way to write one. Ported through
+# raven-toolbox as it stands, that condition would silently blow open
+# whatever uptake constraints the model shipped with, with no error and
+# no warning, before the `bounds` block gets anywhere near it.
+#
+# NOT COMPARABLE, and not attempted here: cofactor_pseudoreaction and
+# biomass_stoichiometry_delta both need a metCharges-bearing fixture (see
+# check_model_struct_smallyeast and diff_models_smallyeast --- fresh
+# smallYeast has none) and are left for a fixture that wants to build
+# one. One difference worth flagging from reading rather than running,
+# for whoever does: applyCondition's charge_balance_met step raises if any
+# remaining metabolite's charge is unknown (isnan(model.metCharges(...))),
+# where apply_condition's equivalent (m.charge or 0) silently treats a
+# missing charge as neutral and carries on.
+
+tolerance:
+  rel: 1.0e-6
+  abs: 1.0e-9

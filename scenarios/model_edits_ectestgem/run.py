@@ -85,14 +85,23 @@ def _ec_data(ec) -> dict:
         for j in range(len(ec.enzymes))
         if matrix[i][j] != 0
     ]
+    # rxns/kcat/source/eccodes sorted by reaction id here, unlike ec_model_expansion_ectestgem's
+    # ec.rxns: *that* scenario's order is makeEcModel's own expansion order, which MATLAB's own
+    # unit tests pin exactly. The order addNewRxnsToEC appends new isozyme/reversibility variants
+    # in has no such contract on either side --- neither implementation's tests assert it --- so
+    # leaving it unsorted here would report an incidental loop-order difference as a finding.
+    rxn_rows = sorted(
+        zip(ec.rxns, ec.kcat, ec.source, ec.eccodes),
+        key=lambda row: row[0],
+    )
     return {
-        "rxns": [str(r) for r in ec.rxns],
+        "rxns": [str(r) for r, _, _, _ in rxn_rows],
         "genes": [str(g) for g in ec.genes],
         "enzymes": [str(e) for e in ec.enzymes],
         "mw": [float(m) for m in ec.mw],
-        "eccodes": [str(c) if c else "" for c in ec.eccodes],
-        "kcat": [float(k) for k in ec.kcat],
-        "source": [str(s) for s in ec.source],
+        "eccodes": [str(c) if c else "" for _, _, _, c in rxn_rows],
+        "kcat": [float(k) for _, k, _, _ in rxn_rows],
+        "source": [str(s) for _, _, s, _ in rxn_rows],
         "coupling": sorted(coupling, key=lambda e: (e["reaction"], e["enzyme"])),
     }
 

@@ -1,0 +1,64 @@
+id: export_to_excel_smallyeast
+pair: raven
+description: >-
+  Writing a model to RAVEN's five-sheet Excel format --- a faithful,
+  deliberate port on layout, but not on whether a reaction's bound gets
+  written at all when it equals the model's own declared default.
+
+entries:
+  - exportToExcelFormat
+
+inputs:
+  model: "{matlab_repo}/tutorial/smallYeast.yml"
+
+  # PGI, FBA: reversible, bounds exactly (-1000, 1000) --- both default,
+  # both hidden by RAVEN. HXK: irreversible, bounds exactly (0, 1000) ---
+  # lower hidden by the irreversible-zero rule, upper hidden because it
+  # equals the default. glcIN, o2IN: irreversible, bounds (0, 0) --- lower
+  # still hidden (irreversible-zero rule), upper NOT hidden (0 differs
+  # from the default 1000), so these are the two reactions where RAVEN
+  # actually prints something in the UPPER BOUND column.
+  reaction_ids: [PGI, FBA, HXK, glcIN, o2IN]
+
+# smallYeast's own metaData declares defaultLB: -1000.0 and defaultUB:
+# 1000.0 (confirmed by reading the file directly), so
+# exportToExcelFormat's hiding logic is live, not dormant, on this model:
+#
+#   if reversible: print LB only if LB ~= defaultLB; else (irreversible):
+#     print LB only if LB ~= 0
+#   print UB only if UB ~= defaultUB
+#
+# export_to_excel has no equivalent logic at all --- it always writes
+# rxn.lower_bound / rxn.upper_bound literally (confirmed by reading
+# raven_toolbox/io/excel.py in full). Since every one of smallYeast's
+# bounds is drawn from exactly {-1000, 0, 1000} (checked directly), this
+# is not a corner case reachable only by an unusual value: it is the fate
+# of nearly every reaction's LOWER BOUND cell and most of its UPPER BOUND
+# cells. PGI and FBA (reversible, at the default on both sides) come back
+# with both cells blank from RAVEN and both cells filled with -1000/1000
+# from raven_toolbox. HXK (irreversible, at 0/default) comes back fully
+# blank from RAVEN and fully filled (0/1000) from raven_toolbox. glcIN and
+# o2IN are the partial case: the irreversible-zero rule still blanks
+# LOWER BOUND, but UPPER BOUND (0) differs from the default and RAVEN
+# prints it --- the one column, of the five reactions tested, where both
+# sides actually agree.
+#
+# Neither side provides a reader for its own export --- "Excel import is
+# intentionally excluded", stated in both docstrings --- so this reads the
+# freshly written file back with openpyxl (Python) / readcell (MATLAB)
+# purely as test scaffolding to inspect what each writer produced; nothing
+# under test here is either side's own reader, because there isn't one.
+#
+# NOT COMPARABLE, and not attempted: METS/COMPS/GENES/MODEL sheets, the
+# MIRIAM column's cross-namespace join order (RAVEN preserves whatever
+# order editMiriam happened to build; raven_toolbox sorts by namespace ---
+# a real, separate risk on a model with more than one MIRIAM namespace
+# per entity, not exercised by smallYeast's minimal annotations), and the
+# ENZYMES/ENZRXNS sheets (GECKO-only, smallYeast has no model.ec).
+
+tolerance:
+  # A hidden cell is compared as an exact JSON-null-vs-null match (see
+  # cell_to_value's comment in the .m file); a printed cell is a bound
+  # drawn from {-1000, 0, 1000}, not solver output, so exact is exact.
+  rel: 0.0
+  abs: 0.0

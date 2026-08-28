@@ -1,0 +1,94 @@
+id: enzyme_usage_ectestgem
+pair: gecko
+description: >-
+  Post-solve enzyme-usage reporting on ecTestGEM: enzymeUsage's per-protein
+  usage/capacity readout, reportEnzymeUsage's high-capacity and top-usage
+  summaries, and getConcControlCoeffs's growth-sensitivity coefficients.
+
+entries:
+  - enzymeUsage
+  - reportEnzymeUsage
+  - getConcControlCoeffs
+
+# The first scenario in this pair that needs an LP solver, and both sides are told
+# which one to use rather than inheriting it, for the same reason task_checking_smallyeast
+# gives (RAVEN's own default is glpk, cobrapy's is whatever the machine has configured).
+# Both nightly matrix entries provision Gurobi.
+inputs:
+  adapter_matlab: "{matlab_repo}/test/unit_tests/ecTestGEM/TestGEMAdapter.m"
+  adapter_python: "{python_repo}/examples/ecTestGEM"
+  fixture_dir: "{matlab_repo}/test/unit_tests/ecTestGEM"
+
+  matlab_solver: gurobi
+  python_solver: gurobi
+
+  # R2 and R4 are both m1->m2 routes parallel to R3, ecTestGEM's only single-gene,
+  # single-isozyme reaction. Left open, either one gives the solver more than one way
+  # to reach the same optimal growth rate --- confirmed by direct execution: with R2
+  # and R4 both open, MATLAB and geckopy each land on a *different*, equally optimal
+  # vertex (same objective value to nine significant figures, different per-protein
+  # usage and a different capacity-saturated enzyme), which is a real LP degeneracy in
+  # this fixture, not a bug on either side. Blocking both leaves R3 as the only route,
+  # which removes the degeneracy structurally rather than by tie-breaking kcats: with
+  # only one path, there is nothing left for the two solvers to disagree about.
+  blocked_reactions:
+    - R2
+    - R4
+
+  # R3 and R5 are the only two reactions left with any flux available to them.
+  # Distinct values only so the two usage figures below are easy to tell apart; with a
+  # single remaining route neither figure is at risk of the tie that motivated
+  # kcat_chain_ectestgem's distinct choices.
+  kcats:
+    R3: 15.0
+    R5: 200.0
+
+  # reportEnzymeUsage's own thresholds, declared explicitly rather than left at their
+  # defaults. topAbsUsage's MATLAB default (10) crashes outright on any model with
+  # fewer than 10 enzymes --- ecTestGEM has 5 --- filed as [GECKO #432]; passing the
+  # model's own enzyme count here keeps this scenario green on the unpatched checkout
+  # the nightly runs today, not only after that PR merges.
+  high_cap_usage: 0.9
+  top_abs_usage: 5
+
+# Real ecTestGEM proteomics (protein_pool_ectestgem's own fixture, data/proteomics.tsv),
+# loaded the same way: loadProtData/load_prot_data with one replicate, then
+# fillEnzConcs/fill_enz_concs + constrainEnzConcs/constrain_enz_concs. P5's measured
+# concentration (the tightest of the five) ends up the sole binding constraint on
+# growth once R2 and R4 are blocked, which is what gives getConcControlCoeffs
+# something real to report: relaxing P5's cap raises growth, relaxing any other
+# protein's does not, and the coefficient is the same number on both sides.
+#
+# getConcControlCoeffs itself carries a documented algorithmic difference between the
+# two implementations (MATLAB always runs the 2x finite-difference probe;
+# geckopy's default instead reads the LP shadow price of the binding prot_<id>
+# constraint, see geckopy's own MATLAB-COMPAT note in get_conc_control_coeffs.py) that
+# can differ by up to 4x at an LP active-set breakpoint. This fixture does not sit on
+# one --- P5's constraint is the only one binding, cleanly, with no other constraint
+# becoming active within the probe's 2x range --- so both methods agree here; the
+# difference is a real one but not one this scenario's fixture happens to expose.
+
+# Growth is a genuine LP solve on both sides (RAVEN's Gurobi call vs. cobrapy's), so
+# the tolerance is looser than the purely-arithmetic kcat_chain_ectestgem scenario, but
+# still tight: this fixture has a unique optimum (see blocked_reactions above), so nothing
+# solver-dependent should be hiding behind it.
+tolerance:
+  rel: 1.0e-6
+  abs: 1.0e-9
+
+# One confirmed, asserted divergence: report.top_abs_usage. reportEnzymeUsage.m always
+# returns exactly topAbsUsage rows (here, the model's own enzyme count, 5) --- for any
+# enzyme with no reaction actually carrying flux, MATLAB's isscalar(find(carriedFlux))
+# check is false (zero elements is not scalar, same as more-than-one), so it falls into
+# the "combined usage, multiple rxns" branch and emits one placeholder row (kcat=NaN,
+# source/rxnID='===') even though the enzyme is not, in fact, involved in multiple
+# reactions --- it is involved in none carrying flux. geckopy's report_enzyme_usage
+# instead skips any enzyme with no flux-carrying reaction outright, so its top_abs_usage
+# table returns fewer than topAbsUsage rows whenever fewer than that many enzymes are
+# actually active (here: 2, P4 and P5, against a requested 5). Confirmed by direct
+# execution: the two enzymes that do carry flux agree exactly between the two tables;
+# the extra three MATLAB rows are placeholders for enzymes report_enzyme_usage leaves
+# out. Not reachable through the shared ecTestGEM fixture without also leaving the
+# broader LP degeneracy in (see blocked_reactions above), so filed as
+# [raven-gecko-parity #18] rather than fixed --- which of the two behaviours is
+# "correct" is a real design question, not a bug.

@@ -1,0 +1,85 @@
+id: kcat_chain_ectestgem
+pair: gecko
+description: >-
+  The full kcat pipeline on ecTestGEM, one flowing ecModel through five checkpoints:
+  fuzzy BRENDA matching, DLKcat read + merge, kcat selection (max-aggregation,
+  isozyme fill, custom overrides), the standard-kcat fallback, and applying the
+  final kcats as enzyme-usage constraints. Two reactions are added to the stock
+  ecTestGEM model --- R2a (no EC code, needs DLKcat) and R6 (no GPR, needs the
+  standard-kcat pseudo-protein) --- so every stage has something real to do.
+
+entries:
+  - fuzzyKcatMatching
+  - loadBRENDAdata
+  - writeDLKcatInput
+  - readDLKcatOutput
+  - mergeDLKcatAndFuzzyKcats
+  - selectKcatValue
+  - applyCustomKcats
+  - getKcatAcrossIsozymes
+  - getStandardKcat
+  - removeStandardKcat
+  - applyKcatConstraints
+
+inputs:
+  adapter_matlab: "{matlab_repo}/test/unit_tests/ecTestGEM/TestGEMAdapter.m"
+  adapter_python: "{python_repo}/examples/ecTestGEM"
+  fixture_dir: "{matlab_repo}/test/unit_tests/ecTestGEM"
+
+  # Hand-built BRENDA fixture, both formats --- see docs/brenda-reconciliation.md for
+  # why the two need separate files that assert the same triples. EC 1.1.1.1 (R2) and
+  # 1.1.2.1 (R3) get direct organism+substrate matches; 1.1.1.3 (R5) is deliberately
+  # absent and only reachable through wildcard escalation to '1.1.1.-', which happens
+  # to pick up the 1.1.1.1 rows --- exercising that path for free rather than by
+  # design. R2a carries no EC code at all, so it is untouched by BRENDA either way.
+  #
+  # mw.tsv / max_MW.txt each carry one inert row (an EC code and organism appearing
+  # nowhere else) rather than being genuinely empty: MATLAB's loadBRENDAdata.m builds
+  # a containers.Map from max_MW.txt unconditionally, before it even looks at whether
+  # the SA table has anything to join, and containers.Map refuses an empty key list.
+  # This scenario does not exercise the SA-derived-kcat path (see
+  # brenda-reconciliation.md); the row exists only so both loaders have something
+  # non-empty to index. Keep any comment header on these two files to exactly one
+  # line --- more than that shifts the real header row far enough down that at least
+  # one of the two loaders misreads it as a data row.
+  brenda_dir: "{scenario_dir}/data"
+  phyl_dist_path: "{matlab_repo}/test/unit_tests/ecTestGEM/data/PhylDist.mat"
+
+  # MATLAB's loadBRENDAdata and applyCustomKcats (with no explicit path/customKcats
+  # argument) and getStandardKcat's uniprot load all resolve their fixture through the
+  # adapter's own params.path --- unlike the Python entry points above, which each take
+  # an explicit path. The MATLAB side therefore redirects a *copy* of the adapter's
+  # params.path to this scenario's own data/ folder (ModelAdapter is a value class, so
+  # the copy cannot affect the original --- same pattern ec_model_io_ectestgem.m uses
+  # for saveEcModel/loadEcModel), which is why data/ also carries its own copies of
+  # PhylDist.mat and uniprot.tsv alongside the scenario-specific BRENDA/DLKcat/
+  # customKcats fixtures --- vendored rather than pointed-at, since the redirect moves
+  # the whole folder, not one file at a time.
+  scenario_root: "{scenario_dir}"
+
+  # Hand-built DLKcat.tsv-equivalent: only R2a_EXP_1's two subunit rows (G1, G2) carry
+  # a prediction. R2a_EXP_2 is deliberately uncovered, so isozyme-fill has something
+  # real to do; R2a's reverse isozymes are uncovered by *anything*, so the
+  # standard-kcat fallback has something real to do too. Carries a header line even
+  # though DLKcat's own real output does not, because readDLKcatOutput/
+  # read_dlkcat_output both unconditionally skip line 1.
+  dlkcat_output_path: "{scenario_dir}/data/DLKcat.tsv"
+  dlkcat_write_target: "{repo_root}/results/.kcat_chain_dlkcat_input.tsv"
+
+  # One customKcats.tsv row, mode A (reaction id only, no protein): targets R3, which
+  # already has a real BRENDA-derived kcat and source by this point in the pipeline.
+  # MATLAB's applyCustomKcats.m only ever writes ec.kcat in this branch, leaving
+  # ec.source/ec.notes at whatever they already were; geckopy's apply_custom_kcats
+  # shares one write path across all three modes and always sets source='custom' and
+  # appends the note. Confirmed by direct execution against GECKO develop4 --- asserted
+  # on purpose, not a bug on either side, see docs/gecko-behaviour-parity-plan.md.
+  custom_kcats_path: "{scenario_dir}/data/customKcats.tsv"
+
+  uniprot_path: "{matlab_repo}/test/unit_tests/ecTestGEM/data/uniprot.tsv"
+
+# Nothing here is summed except the enzyme-usage coefficients (MW/kcat/3600, a pure
+# division chain) and the standard MW/kcat medians --- rel: 1e-9 is honest for all
+# five checkpoints, tight enough that nothing real hides behind it.
+tolerance:
+  rel: 1.0e-9
+  abs: 1.0e-12

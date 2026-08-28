@@ -1,7 +1,7 @@
 # Plan: behavioural parity for RAVEN ↔ raven-toolbox
 
-The ledger carries **73 rows marked `parity`** — both sides implement this and are intended to
-behave the same — and the repository holds **twenty-five raven-pair scenarios**, covering **33 of
+The ledger carries **74 rows marked `parity`** — both sides implement this and are intended to
+behave the same — and the repository holds **thirty-four raven-pair scenarios**, covering **43 of
 those rows**.
 Matching names prove nothing, as the README says. This is the plan to make the claim real, and
 to keep it true nightly.
@@ -37,6 +37,15 @@ The scenarios, in the order they were written:
 | `change_gene_rules_smallyeast` | `changeGrRules` | match |
 | `remove_low_score_genes_smallyeast` | `removeLowScoreGenes` | match |
 | `set_variance_bounds_smallyeast` | `setParam` (var mode) | match |
+| `diff_models_smallyeast` | `diffModels` | match |
+| `compare_multiple_models_smallyeast` | `compareMultipleModels` | match |
+| `check_model_struct_smallyeast` | `checkModelStruct` | match |
+| `close_model_smallyeast` | `closeModel` | match |
+| `apply_condition_smallyeast` | `applyCondition` | **differs** — reset_exchanges direction, see below |
+| `assign_sbo_terms_smallyeast` | `assignSBOterms` | match |
+| `standardize_gr_rules_smallyeast` | `standardizeGrRules` | match |
+| `delta_g_csv_smallyeast` | `deltaGCSV` | **differs** — ΔG sentinel handling, see below |
+| `export_to_excel_smallyeast` | `exportToExcelFormat` | **differs** — default-bound hiding, see below |
 
 And the machinery around them, which the plan builds on rather than around:
 
@@ -166,8 +175,11 @@ A scenario should *assert* each difference, so a silent change to either side fa
 
 ### Divergences the scenarios found
 
-Three so far, all from the batch above. The first is asserted and currently red; the other two
-are recorded on their ledger rows because no fixture here reaches them.
+Eighteen so far. Five are asserted and currently red (`yaml_roundtrip_smallyeast`,
+`task_checking_smallyeast`, `apply_condition_smallyeast`, `delta_g_csv_smallyeast`,
+`export_to_excel_smallyeast`); the rest are recorded on their ledger rows because no fixture here
+reaches them, or because the scenario that does exist works around the divergence rather than
+asserting it.
 
 **`writeYAMLmodel` / `write_yaml_model` do not write the same file.** The *content* is at
 parity — the two readers produce the same model, and a read-write-read round trip is lossless
@@ -209,6 +221,14 @@ that do agree (replace outright; append onto an existing GPR) and does not asser
 `change_reaction_equations` share the same metabolite-matching machinery those two do, so the same gap
 shows up here rather than being a separate bug. Not re-filed; `change_reaction_equations_smallyeast`
 creates a metabolite as part of its fixture and does not compare its name, pointing at #9 instead.
+
+**`compareMultipleModels`'s similarity statistic is not `compare_models`'s.** RAVEN's `structComp` is
+`(1 - Hamming distance)`, counting "both models lack this reaction" as agreement; `compare_models`'s is
+Jaccard, counting only shared presence. Two models that mostly agree by both lacking most of a big
+universal reaction set score high on one, low on the other. RAVEN also has no metabolite/gene presence
+matrix at all (reaction-space only, by its own docstring) and reads only a reaction's first subsystem
+where Python joins every one with `;`. `compare_multiple_models_smallyeast` cross-validates the one thing
+that does line up — the reaction presence matrix, on three models covering every presence pattern.
 
 **`removeMets`'s cleanup flags have no Python counterpart, and cobra's `destructive` is not a
 substitute for them.** RAVEN never deletes a reaction just because a metabolite it needed is gone —
@@ -282,6 +302,46 @@ rather than raising. `gpr_dnf_rules` covers the syntax both accept and leaves th
 out on purpose: they are a difference in accepted input, not in behaviour, and asserting them
 would leave the scenario permanently red over a triviality.
 
+**`applyCondition` and `apply_condition` disagree about what a condition's exchange-reset
+direction means (raven-gecko-parity#15).** `applyCondition` forwards `prelude.reset_exchanges`
+straight through to `getExchangeRxns` as a direction filter — `"out"` resets only the reactions
+where the boundary metabolite is a product, leaving every other exchange, including uptakes,
+untouched. `apply_condition` cannot make this distinction at all (cobra has no concept of
+RAVEN's in/out split) and resets every exchange it finds for any truthy value, whatever
+direction was actually named. On smallYeast (three uptake reactions shipped shut), applying the
+identical condition takes maximum growth from unreachable on the RAVEN side to ~90 on the
+Python side — glucose and oxygen uptake silently reopened, neither of which the condition
+named. Not a toy case: `applyCondition`'s own docstring names yeast-GEM as its first consumer
+and uses `"out"`, not a bare boolean, as its own worked example — exactly the shape of condition
+a real yeast-GEM file plausibly writes. `apply_condition_smallyeast` asserts the split directly
+and is the third deliberately red scenario.
+
+**`deltaGCSV` and `load_delta_g_csv` disagree about yeast-GEM's ΔG "no measurement" sentinel
+(raven-gecko-parity#16).** Both match a CSV row to a model id and leave anything the CSV doesn't
+mention untouched — that much agrees. yeast-GEM's own side-car CSVs use `10000000.0` to mean "no
+measurement" (`load_delta_g_csv`'s own docstring cites yeast-GEM's `checkrxnDirection.m` gating on
+this exact value, true for 777 of its 4102 reaction rows). `deltaGCSV` has no concept of this
+sentinel and copies it verbatim into `metDeltaG`/`rxnDeltaG`, indistinguishable from a real
+measurement; `load_delta_g_csv` checks every matched value against it and leaves the entity
+unstamped when it matches, the same state a truly unmentioned id gets. Applying the identical CSV
+to the identical model leaves the two sides disagreeing about whether an entity has a ΔG value on
+record at all. `delta_g_csv_smallyeast` asserts the split directly and is the fourth deliberately
+red scenario.
+
+**`exportToExcelFormat` hides a bound that equals the model's own declared default;
+`export_to_excel` always writes it literally (raven-gecko-parity#17).** The two are a faithful,
+deliberate port on layout — same sheets, same headers, same column order, even RAVEN's own
+unusual "RXNS' ID column is the real id but METS' ID column is name[comp]" convention reproduced
+exactly. `exportToExcelFormat` hides a LOWER BOUND / UPPER BOUND cell when it equals
+`model.annotation.defaultLB`/`defaultUB`, and separately hides an irreversible reaction's lower
+bound whenever it is exactly 0; `export_to_excel` has no equivalent logic and always writes the
+literal bound. Not a corner case: smallYeast's bounds are drawn entirely from `{-1000, 0, 1000}`
+(its own declared defaults plus zero), so nearly every reaction's bound cells hit one of RAVEN's
+hiding rules — of five reactions tested, three come back fully blank from RAVEN and fully
+populated from raven-toolbox, and the other two agree only on the one bound that happens to
+differ from the default. `export_to_excel_smallyeast` asserts the split directly and is the fifth
+deliberately red scenario.
+
 ## How it runs
 
 ### Nightly, across all four repos, only when something moved
@@ -313,10 +373,13 @@ would leave the scenario permanently red over a triviality.
    named-user academic licence is tied to one machine --- so the step says which kind it
    found.
 
-Still open: extend it to the **gecko pair**. It now has scenarios --- see
-[gecko-behaviour-parity-plan.md](gecko-behaviour-parity-plan.md) --- but joining the nightly
-means checking out all four repos in one job, because geckopy installs raven-toolbox from git
-and would otherwise be compared against a revision the run never recorded.
+Done: the **gecko pair** joined the nightly as a second matrix entry --- see
+[gecko-behaviour-parity-plan.md](gecko-behaviour-parity-plan.md) for its own scenarios. Its
+entry checks out all four repos, because geckopy installs raven-toolbox from git and would
+otherwise be compared against a revision the run never recorded; RAVEN and raven-toolbox are
+resolved unconditionally in both entries so the gecko one can depend on them, and each pair
+writes its own `nightly/*state.json` / `nightly/*report.md` so a push from one entry cannot
+race a push from the other --- the matrix runs one entry at a time for the same reason.
 
 ### On demand, on any branch, locally
 

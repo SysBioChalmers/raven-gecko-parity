@@ -1,0 +1,75 @@
+id: ec_fva_ectestgem
+pair: gecko
+description: >-
+  Flux variability analysis on ecTestGEM's ecModel, mapped back to the
+  conventional model's reactions: the min/max flux each reaction can carry
+  while the rest of the enzyme-constrained network stays feasible.
+
+entries:
+  - ecFVA
+
+# The second scenario in this pair that needs an LP solver; same reasoning as
+# enzyme_usage_ectestgem for declaring it explicitly rather than inheriting a default.
+inputs:
+  adapter_matlab: "{matlab_repo}/test/unit_tests/ecTestGEM/TestGEMAdapter.m"
+  adapter_python: "{python_repo}/examples/ecTestGEM"
+  fixture_dir: "{matlab_repo}/test/unit_tests/ecTestGEM"
+
+  matlab_solver: gurobi
+  python_solver: gurobi
+
+  # geckopy's own parallelism knob, declared rather than left at its default (the
+  # machine's own core count): on a 6-reaction model the multiprocessing pool's own
+  # startup cost dwarfs the four tiny LP solves it would parallelise. MATLAB's ecFVA has
+  # no equivalent serial path --- it always starts a parpool --- so there is nothing to
+  # match this against; it only keeps the Python side fast and deterministic.
+  python_n_proc: 1
+
+  # R2 is ecTestGEM's only isozyme-split reaction (G1 and G2, forming a complex, or G3
+  # alone) --- everything else in the model has at most one enzyme per direction. Distinct
+  # kcats for the two isozymes (and their reverse counterparts) give the solver a real
+  # trade-off between them, which is what exposes ecFVA's one confirmed divergence (see
+  # tolerance below): R1, R3, R4, R5, S1 and S2 all have a single enzyme or none at all, so
+  # nothing about *their* bounds depends on how an isozyme choice is resolved.
+  kcats:
+    R2_EXP_1: 50.0
+    R2_EXP_2: 10.0
+    R2_REV_EXP_1: 50.0
+    R2_REV_EXP_2: 10.0
+    R3: 20.0
+    R5: 100.0
+
+  # Neither R2 nor R4 is blocked here, unlike enzyme_usage_ectestgem: that scenario needed
+  # a unique optimal *point*, which left-open parallel routes broke by giving the solver more
+  # than one equally-good vertex to land on. FVA has no such requirement --- variability is
+  # the entire point of the function --- so the parallel routes and the isozyme choice are
+  # left in deliberately, to give ecFVA something non-trivial to range over.
+
+# R2's min_flux/max_flux is a confirmed, asserted divergence, not a bug: MATLAB and geckopy
+# use genuinely different algorithms to combine an isozyme-split canonical reaction's bounds,
+# and geckopy's own source already documents this (MATLAB-COMPAT note, ec_fva.py):
+#
+#   MATLAB (ecFVA.m): for each canonical group, one LP maximises (then a second minimises)
+#   the group's combined forward-minus-reverse flux, but the *per-ec-reaction* result of
+#   every such solve --- not just the group being optimised --- is kept, one column per
+#   group. Every ec-reaction's own bound is then taken as the max (or min) across *all*
+#   those columns, mapRxnsToConv sums each canonical group's already-independently-reduced
+#   forward rows and subtracts its already-independently-reduced reverse rows. The forward
+#   and reverse variants of one canonical group are therefore each optimised against a
+#   *different* combination of the other, not necessarily one that is jointly achievable in
+#   any single feasible flux distribution.
+#
+#   geckopy (ec_fva.py): one LP maximises (then minimises) the group's own combined
+#   forward-minus-reverse flux directly, and reads the combined value straight off that one
+#   solve --- the "diagonal", always a value some single feasible flux distribution actually
+#   attains.
+#
+# Confirmed by direct execution on this fixture: R1, R3, R4, R5, S1 and S2 (every reaction
+# with no isozyme split) agree exactly between the two implementations; R2 (the one reaction
+# that has one) does not --- MATLAB reports [-3927.27, 0], geckopy reports [-6000, 3272.73].
+# Neither range is a subset or superset of the other in general (it happens to be one here,
+# but that is this fixture's arithmetic, not a general property of the two algorithms), so
+# this is recorded as a genuine algorithmic difference rather than "geckopy is tighter."
+tolerance:
+  rel: 1.0e-6
+  abs: 1.0e-6
