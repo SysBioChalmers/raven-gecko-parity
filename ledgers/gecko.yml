@@ -42,7 +42,9 @@ entries:
     notes: 'Was blocked: MATLAB develop4 crashed adding a reversible, isozyme-catalysed reaction
       (or any two reactions in one call each needing isozyme expansion) --- an index-drift
       bug in the split loop, fixed in GECKO#427 (merged). Behind the fix, matches geckopy exactly:
-      reactions added, enzymes added, and every field of the resulting model.'
+      reactions added, enzymes added, and every field of the resulting model. Separately: MATLAB''s
+      missing-gene error path called dispEM, a RAVEN utility RAVEN#659 deleted (already on develop3) ---
+      crashed with "Undefined function ''dispEM''" instead of reporting the missing gene. [GECKO #454], open.'
   - matlab: applyComplexData
     python: geckopy.apply_complex_data
     status: parity
@@ -343,7 +345,9 @@ entries:
   - matlab: getSubsetEcModel
     python: geckopy.get_subset_ec_model
     status: parity
-    notes: '[Py] returns a new EcModel; the input is not mutated.'
+    notes: '[Py] returns a new EcModel; the input is not mutated. MATLAB''s same-starting-GEM mismatch
+      error path called dispEM, a RAVEN utility RAVEN#659 deleted (already on develop3) --- crashed with
+      "Undefined function ''dispEM''" instead of naming the mismatched reactions. [GECKO #454], open.'
   - matlab: loadBayesianData
     status: internal
     reason: Helper of bayesianSensitivityTuning, not a standalone entry point. It will be absorbed into the
@@ -363,9 +367,11 @@ entries:
     notes: Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5.
   - matlab: loadDatabases
     status: subsumed
-    reason: geckopy loads databases implicitly at point of use rather than through one entry point. The download
+    reason: 'geckopy loads databases implicitly at point of use rather than through one entry point. The download
       halves MATLAB performs inline (urlwrite for UniProt, a local downloadKEGG subfunction) are exposed separately
-      in Python as geckopy.databases.download_kegg / download_uniprot.
+      in Python as geckopy.databases.download_kegg / download_uniprot. Separately: MATLAB''s duplicate-UniProt-entry
+      error path called dispEM, a RAVEN utility RAVEN#659 deleted (already on develop3) --- crashed with "Undefined
+      function ''dispEM''" instead of reporting the duplicates. [GECKO #454], open.'
   - matlab: loadEcModel
     python: geckopy.load_ec_model
     status: parity
@@ -396,11 +402,18 @@ entries:
     scenarios:
       - ec_model_expansion_ectestgem
       - ec_model_full_yeastgem
-    notes: '[3->4] ec.genes/enzymes/mw/sequence sorted alphabetically for stable order; KEGG fallback for
-      unmatched genes is opt-in via kegg_db=. [Py] single return; unmatched genes logged and annotated on
-      rxn.notes[''geckopy_warning'']. Confirmed matching in structure (reaction/gene/enzyme counts and
-      ID sets) at genome scale (ec_model_full_yeastgem, Tier 4) --- yeast-GEM''s 4102 conventional
-      reactions expand to 4671 ec.rxns identically on both sides.'
+    notes: '[3->4] ec.genes/enzymes/mw/sequence sorted alphabetically for stable order: geckopy''s own
+      pipeline/populate_ec.py MATLAB-COMPAT note confirms this was a real divergence (MATLAB iterated
+      model.genes in original model order) --- closed by porting the sort to makeEcModel.m. [GECKO #452],
+      merged. KEGG fallback for unmatched genes (opt-in via kegg_db=) is NOT closed: geckopy''s own docstring
+      calls this "extended with a KEGG fallback that MATLAB does not have" --- a real, still-open,
+      user-facing capability gap (a gene UniProt can''t match currently gets no enzyme data at all in
+      MATLAB; geckopy can still recover MW/sequence/accession from KEGG). A draft of this fallback exists
+      on the long-abandoned feat/geckopy-compat branch (commit a101812) but hasn''t been re-ported. [Py]
+      single return; unmatched genes logged and annotated on rxn.notes[''geckopy_warning'']. Confirmed
+      matching in structure (reaction/gene/enzyme counts and ID sets) at genome scale
+      (ec_model_full_yeastgem, Tier 4) --- yeast-GEM''s 4102 conventional reactions expand to 4671 ec.rxns
+      identically on both sides.'
   - matlab: mapRxnsToConv
     python: geckopy.map_rxns_to_conv
     status: parity
@@ -443,8 +456,15 @@ entries:
     notes: 'Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5. Not asserted by the scenario
       (its fixture avoids the trigger), but found by direct source reading and worth knowing --- an
       unrecognised substrate name is fatal in MATLAB (aborts the whole read, even for a row whose kcat would
-      otherwise be filtered out) but a non-fatal per-row drop in geckopy, which only the documented
-      case-sensitivity difference (§5, read_dlkcat_output.py) hints at.'
+      otherwise be filtered out) but a non-fatal per-row drop in geckopy. This is separate from, and not
+      addressed by, the case-sensitivity fix below --- still an open divergence. DIVERGENCE, fixed: MATLAB''s
+      substrate-name match against model.metNames was case-sensitive (ismember default); geckopy''s own
+      read_dlkcat_output.py MATLAB-COMPAT note already documented this exact gap ("geckopy uses
+      case-insensitive matching, which is more lenient and avoids false-positive failures when SBML loaders
+      differ in capitalization"). Ported the same case-insensitive match to readDLKcatOutput.m. [GECKO #452],
+      merged. Separately: both of MATLAB''s "not found" error paths (substrates, reactions) called dispEM, a
+      RAVEN utility RAVEN#659 deleted (already on develop3) --- crashed with "Undefined function ''dispEM''"
+      instead of reporting the unrecognised names. [GECKO #454], open.'
   - matlab: readOpenKineticsPredictorOutput
     python: geckopy.gather_kcats.open_kinetics_predictor.parse_okp_output
     status: parity
