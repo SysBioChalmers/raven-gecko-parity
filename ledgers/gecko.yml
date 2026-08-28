@@ -735,6 +735,7 @@ entries:
       one dataclass instead, so this has no MATLAB counterpart by design.
   - python: geckopy.fetch_open_kinetics_predictor
     status: matlab-pending
+    issue: SysBioChalmers/raven-gecko-parity#25
     notes: MATLAB fetchOpenKineticsPredictor.m exists on the unmerged feat/geckopy-compat branch but not on
       develop4 or develop. Merging that branch closes this row.
   - python: geckopy.FlexEnzResult
@@ -885,6 +886,7 @@ entries:
       one dataclass instead, so this has no MATLAB counterpart by design.
   - python: geckopy.submit_open_kinetics_predictor
     status: matlab-pending
+    issue: SysBioChalmers/raven-gecko-parity#25
     notes: MATLAB submitOpenKineticsPredictor.m exists on the unmerged feat/geckopy-compat branch (84 commits
       ahead of develop4) but not on develop4 or develop. Merging that branch closes this row.
   - python: geckopy.TunedKcatsResult
