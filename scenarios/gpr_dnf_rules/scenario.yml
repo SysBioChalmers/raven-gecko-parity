@@ -1,0 +1,93 @@
+id: gpr_dnf_rules
+pair: raven
+description: >-
+  GPR parsing and normalisation: for a fixed list of gene-reaction rules,
+  whether each is in disjunctive normal form and what its AND-clauses are.
+  No model, no solver, no floats --- the two parsers either agree or they
+  do not.
+
+entries:
+  - grRuleToDNF
+  - isDnfGrRule
+
+# The rules are the fixture. Deliberately chosen to separate the ways two
+# parsers can disagree rather than to look like a real model: precedence,
+# distributivity, bracket handling, operator spelling, and gene ids that
+# contain an operator as a substring.
+#
+# Two conventions matter here and are *not* normalised away, because both
+# implementations document them as behaviour:
+#   * clause order --- the order the disjuncts appear in the rule, with an
+#     AND over ORs expanded as a cross-product in reading order;
+#   * gene order within a clause --- the order the genes appear in the rule,
+#     duplicates kept ("G1 and G1" is a two-element clause on both sides).
+# Sorting either one would hide exactly the disagreement worth catching.
+inputs:
+  rules:
+    # Trivial shapes.
+    - ""
+    - "G1"
+    - "G1 and G2"
+    - "G1 or G2"
+
+    # Already DNF: an OR of complexes.
+    - "(G1 and G2) or G3"
+    - "(G1 and G2) or (G3 and G4)"
+
+    # Not DNF: an AND with an OR beneath it. Both sides must still expand
+    # these correctly --- `expandModel` / `expand_model` depend on it.
+    - "G1 and (G2 or G3)"
+    - "(G1 or G2) and (G3 or G4)"
+    - "G1 and (G2 or (G3 and G4))"
+    - "(G1 or G2) and G3 and (G4 or G5)"
+
+    # Precedence without brackets: AND binds tighter than OR, so this is an
+    # OR of two complexes, not an AND of anything.
+    - "G1 and G2 or G3 and G4"
+
+    # Bracket noise that must not change the answer.
+    - "((G1))"
+    - "((G1 and G2))"
+    - "(G1) or ((G2) and (G3))"
+
+    # Duplicates are kept rather than collapsed: dropping one would silently
+    # rewrite the rule, and a repeated subunit is a curation signal.
+    - "G1 and G1"
+    - "G1 or G1"
+
+    # Operator spelling: the word forms, all-uppercase, and the
+    # single-character symbol forms, all of which both sides accept.
+    #
+    # Two spellings are left out on purpose, because RAVEN accepts them and
+    # cobra does not --- it warns and yields an *empty* GPR, so the reaction
+    # silently loses its genes rather than failing:
+    #
+    #   * the doubled symbols "&&" and "||";
+    #   * mixed-case operators ("G1 Or G2"). cobra rewrites AND/OR only when
+    #     they are fully uppercase, as a whole word, so "Or" is a syntax error.
+    #
+    # Both are differences in accepted input syntax rather than in behaviour.
+    # They are recorded on the ledger row; asserting them here would leave the
+    # scenario permanently red and drown the differences worth acting on.
+    - "G1 AND G2"
+    - "G1 OR G2"
+    - "G1 & G2"
+    - "G1 | G2"
+
+    # Gene ids that contain an operator as a substring, or that are a prefix
+    # of one another. Token-based parsing gets these right; string
+    # replacement does not.
+    - "RAND1 or G2"
+    - "ORC1 and NANDA"
+    - "10 and 100"
+    - "100 or 10"
+
+    # One rule copied from RAVEN's smallYeast tutorial model, so the list is
+    # not made entirely of adversarial cases.
+    - "YFR053C or YGL253W or YCL040W"
+
+# No floats in the result, but a scenario without a tolerance would take the
+# 1e-6 default and say something untrue about what is being compared.
+tolerance:
+  rel: 0.0
+  abs: 0.0

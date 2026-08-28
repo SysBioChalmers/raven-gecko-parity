@@ -159,6 +159,13 @@ def cmd_refs(args: argparse.Namespace, config: Config) -> int:
 
     for pair_name, side, repo, ref in rows:
         if args.format == "shell":
+            # The repo slug too, not just the ref: a workflow that needs to
+            # `git ls-remote` or check out a pair it does not already know the
+            # name of (the nightly matrix, one entry per pair) would otherwise
+            # have to hard-code repo names that already live in parity.toml ---
+            # the same "one source of truth" this command exists to give the
+            # ref itself.
+            print(f"{pair_name}_{side}_repo={repo}")
             print(f"{pair_name}_{side}_ref={ref}")
         else:
             print(f"{pair_name:<8} {side:<7} {repo}@{ref}")

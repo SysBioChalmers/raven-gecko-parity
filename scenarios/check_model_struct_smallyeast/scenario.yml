@@ -1,0 +1,102 @@
+id: check_model_struct_smallyeast
+pair: raven
+description: >-
+  Curation checks on a model: metabolites and genes nothing references
+  any more, a reaction with nothing left in it, and a model with no
+  objective --- four ways a model can be structurally sound but
+  practically useless, on the four checks both sides actually share.
+
+entries:
+  - checkModelStruct
+
+inputs:
+  model: "{matlab_repo}/tutorial/smallYeast.yml"
+
+  # Four edits, each engineered from functions this suite has already
+  # cross-validated (change_reaction_equations / changeRxns,
+  # change_gene_reaction_rules / changeGrRules) or a single direct field
+  # edit, chosen so each lands in exactly one category and nowhere else:
+  #
+  #   GPP is rewritten from "GP_c <=> GLY_c + PI_c" to "GP_c => PI_c",
+  #   dropping GLY_c --- its only other reaction, glyOUT, is zeroed out in
+  #   the same breath (below), so this is the one edit that makes GLY_c a
+  #   metabolite with no reaction left to belong to. GLY_c itself is never
+  #   touched: it still exists, unused, exactly the state this check
+  #   exists to find.
+  rewritten_reaction:
+    reaction: GPP
+    equation: "GP_c => PI_c"
+
+  # glyOUT's one metabolite (GLY_c) is removed directly rather than through
+  # an equation string --- an equation with nothing on either side is not a
+  # case this suite has exercised elsewhere, and the effect wanted here is
+  # exactly "zero stoichiometry entries left", which a direct removal states
+  # without depending on how either parser treats an empty equation.
+  emptied_reaction: glyOUT
+
+  # smallYeast's only objective. Zeroed directly so the model has none.
+  objective_reaction: biomassOUT
+
+  # PGI's sole gene, replaced outright (changeGrRules / change_gene_reaction_rules,
+  # replace mode) with one that exists nowhere else in the model. YBR196C is
+  # used by no other reaction, so this orphans it without touching it directly.
+  gpr_replaced:
+    reaction: PGI
+    grRule: "YSWAP1"
+
+# Both sides return one flat list of typed issues --- category, the specific
+# entity, a message --- rather than the boolean pass/fail an SBML-export
+# gate would want; this scenario compares the (category, entity) pairs, never
+# the message text, for the same reason diffModels' comparison did not: each
+# side phrases it in its own sprintf/f-string, and that was never the claim.
+#
+# checkModelStruct's own `category` field is NOT what gets compared, and
+# that is itself a finding worth stating plainly: that field comes from
+# issueCategory(), a fixed elseif chain of substring checks over the
+# message, evaluated in a set order regardless of which check produced the
+# message. Two of the four checks this scenario exercises land under a
+# category name that does not describe them at all --- the empty-reaction
+# check ("...are empty (no involved metabolites)") is tagged 'empty_id'
+# purely because its message contains the word "empty", the same bucket a
+# blank-identifier check elsewhere in the function also falls into; the
+# no-objective check is tagged 'invalid_id' purely because its message
+# happens to mention "SBML" in an aside about export compliance, checked
+# before the 'objective' branch is ever reached. The two orphan checks
+# (metabolites, genes) both collapse into a single shared 'unused' category
+# rather than being told apart. None of this is a difference in what is
+# actually detected --- confirmed by direct inspection that all four
+# fixture edits are found, on both sides, for the right entities --- so the
+# MATLAB side reclassifies by the specific, stable message text each check
+# emits into the same four semantic names check_model already uses
+# (empty_reaction / orphan_metabolite / orphan_gene / objective), and it is
+# those semantic names that are compared, not checkModelStruct's own
+# category strings.
+#
+# Only four checks are exercised, and that is a scope decision, not an
+# oversight --- most of checkModelStruct's other categories (missing_field,
+# wrong_type, invalid_bounds, invalid_formula, cross_reference, other) check
+# RAVEN-struct properties a cobra.Model cannot even represent invalidly in
+# the first place (cobra enforces unique, non-empty reaction/metabolite/gene
+# ids and real field types at the object level), so check_model has nothing
+# analogous to compare against them.
+#
+# "gpr" is the one category left out despite both sides having *something*
+# under that name: checkModelStruct's gpr issues are grRule syntax/token
+# problems (a trailing "or", an unparseable rule); raven_toolbox's own GPR
+# linter is find_non_dnf_grrules, a different check (is the rule in DNF) with
+# no row of its own in this ledger yet.
+#
+# "duplicate" (duplicate metabolite name+compartment) and multiple-objective
+# are real, confirmed overlaps left unasserted rather than untested: RAVEN
+# reports one issue per offending entity (one per duplicate metabolite, one
+# per surplus objective reaction), where check_model reports one issue for
+# the whole group with the entity list folded into free text and object_id
+# left None. There is no structured field on the Python side to recover that
+# list from without parsing the message, so the two cannot be compared
+# without exactly the text-matching this scenario otherwise avoids. Recorded
+# on the ledger row.
+
+tolerance:
+  # Categorical facts, not floats.
+  rel: 0.0
+  abs: 0.0

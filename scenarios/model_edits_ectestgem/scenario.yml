@@ -1,0 +1,88 @@
+id: model_edits_ectestgem
+pair: gecko
+description: >-
+  Five small edits to a built ecModel: querying an enzyme's reactions, changing a kcat,
+  copying EC codes onto the base model, mapping a flux vector back to the conventional
+  model, and adding a brand new reaction and enzyme. Solver-free throughout --- the flux
+  vector for the mapping checkpoint is a fixed, declared array, not the result of an FBA.
+
+# All five entries take a full (non-light) ecModel already built by makeEcModel /
+# make_ec_model as their starting point, so this scenario builds one exactly as
+# ec_model_expansion_ectestgem does and then applies each edit to a fresh copy of it ---
+# never to the same mutated model twice, so no checkpoint depends on what order the others
+# ran in.
+entries:
+  - getReactionsFromEnzyme
+  - setKcatForReactions
+  - copyECtoGEM
+  - mapRxnsToConv
+  - addNewRxnsToEC
+
+inputs:
+  adapter_matlab: "{matlab_repo}/test/unit_tests/ecTestGEM/TestGEMAdapter.m"
+  fixture_dir: "{matlab_repo}/test/unit_tests/ecTestGEM"
+  adapter_python: "{python_repo}/examples/ecTestGEM"
+
+  # getReactionsFromEnzyme: a known enzyme, a case-swapped spelling of it, and an unknown
+  # one. MATLAB matches case-insensitively and returns empty outputs for an unknown
+  # protein; geckopy is case-sensitive and raises. Both are documented shape differences,
+  # not bugs --- this checkpoint asserts them rather than working around them.
+  known_enzyme: P1
+  case_variant_enzyme: p1
+  unknown_enzyme: NOSUCH
+
+  # setKcatForReactions: R2 in the full ecModel expands to two isozymes, R2_EXP_1 and
+  # R2_EXP_2 (see ec_model_expansion_ectestgem). Three cases: an explicit suffixed id (one
+  # reaction, unambiguous on both sides), the base name with a single scalar kcat
+  # (broadcasts to both isozymes on both sides), and the base name with a two-element kcat
+  # list --- MATLAB accepts this and assigns per ec.rxns order; geckopy refuses it and
+  # asks for the suffixed ids explicitly. A second, separately documented difference rides
+  # along for free: the string written to ec.source ('setKcatForReactions' vs 'manual').
+  kcat_suffixed:
+    rxn: R2_EXP_1
+    value: 12.5
+  kcat_base_scalar:
+    rxn: R2
+    value: 7.0
+  kcat_base_list:
+    rxn: R2
+    values: [3.0, 4.0]
+
+  # copyECtoGEM: R2_EXP_1 (one of R2's two isozyme copies) already carries an EC code from
+  # the SBML annotation (fill_eccodes_from_gem territory, not this scenario); R3 and R5
+  # have none until this checkpoint fills them. Three cases: fill an empty slot (both
+  # sides should agree), leave R2_EXP_1 alone under overwrite=false (both sides should
+  # agree), and overwrite R2_EXP_1 with an *empty* ec.eccodes entry under overwrite=true
+  # --- MATLAB clobbers the existing annotation with emptiness; geckopy treats an empty
+  # entry as nothing to propagate and leaves the existing one alone.
+  overwrite_target_rxn: R2_EXP_1
+
+  # mapRxnsToConv: one synthetic value per ecModel reaction, keyed by reaction id so
+  # neither side has to agree with the other on row order --- see run.py. Deterministic
+  # and solver-free: this is a pure reshape/sum, not a flux distribution.
+
+  # addNewRxnsToEC: a new reversible reaction reusing two of ecTestGEM's own metabolites
+  # (no new metabolite needed), catalysed by an OR of two brand-new enzymes --- so the
+  # addition exercises both splits addNewRxnsToEC performs (reversibility -> _REV,
+  # isozymes -> _EXP_n) in the one call, the same combination R2 itself already has.
+  # The GPR names genes (GNEW1, GNEW2), not the enzymes themselves --- ec.rxnEnzMat links
+  # a reaction to an enzyme *through* its gene, via ec.genes, exactly as it does for every
+  # reaction makeEcModel itself expands.
+  new_reaction:
+    id: RNEW
+    name: RNEW
+    equation: "m1[c] <=> e2[e]"
+    gr_rule: "GNEW1 or GNEW2"
+  new_enzymes:
+    - enzyme: ENEW1
+      gene: GNEW1
+      mw: 15000.0
+    - enzyme: ENEW2
+      gene: GNEW2
+      mw: 25000.0
+
+# Nothing here is summed except the flux mapping, which adds pre-declared integers with no
+# rounding involved --- zero tolerance is honest for all five checkpoints.
+tolerance:
+  rel: 0.0
+  abs: 0.0

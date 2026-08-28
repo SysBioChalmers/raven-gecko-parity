@@ -1,0 +1,78 @@
+id: compare_multiple_models_smallyeast
+pair: raven
+description: >-
+  Comparing three related models in reaction space: which reactions are
+  shared, which belong to only one or two of them, as a presence matrix
+  rather than a pairwise diff.
+
+entries:
+  - compareMultipleModels
+
+inputs:
+  model: "{matlab_repo}/tutorial/smallYeast.yml"
+
+  # Three models built from the same base by removal and (one) addition, so
+  # the union of reactions is known exactly and every presence pattern ---
+  # in all three, in exactly two, in exactly one --- is reachable and
+  # hand-checkable:
+  #
+  #   full                 smallYeast unchanged, 53 reactions.
+  #   minus_two             PGI and ZWF taken out, 51 reactions.
+  #   minus_one_plus_one    HXK taken out, PROBE_RXN (PYR_c => ACA_c, using
+  #                         only metabolites already in the model) added in
+  #                         its place, 53 reactions --- but not the same 53.
+  minus_two_removed:
+    - PGI
+    - ZWF
+  minus_one_plus_one_removed: HXK
+  minus_one_plus_one_added:
+    id: PROBE_RXN
+    equation: "PYR_c => ACA_c"
+    name: probe reaction
+
+# Reaction presence is the ONLY thing this scenario compares, and that is a
+# considered choice, not a shortcut --- everything else compareMultipleModels
+# / compare_models can do turned out not to line up closely enough to assert:
+#
+#   metabolites / genes   compareMultipleModels works in "the reaction-space"
+#                         only, by its own docstring; it has no metabolite or
+#                         gene presence matrix at all. compare_models does.
+#                         Not a divergence so much as a capability the Python
+#                         side has and RAVEN does not.
+#   similarity             compareMultipleModels' structComp is (1 - Hamming
+#                         distance) --- (B'*B + (1-B)'*(1-B)) / nRows, which
+#                         counts "both models lack this reaction" as
+#                         agreement. compare_models' similarity is a Jaccard
+#                         index over the same presence matrix, which counts
+#                         only shared presence. The two are different
+#                         statistics of the same matrix, confirmed by reading
+#                         both implementations, not merely suspected: they
+#                         would disagree on models that mostly agree by both
+#                         being absent from a big universal reaction set,
+#                         which is exactly the regime a real comparison
+#                         across many context-specific models sits in.
+#   subsystems             compareMultipleModels only reads a reaction's
+#                         first subsystem (its own comment: "additional
+#                         subSystems will be ignored") and skips the whole
+#                         comparison outright if any input model lacks the
+#                         field; compare_models joins every subsystem with
+#                         ';'. smallYeast carries no real subsystem data
+#                         (every reaction's subsystem is empty), so there is
+#                         no fixture here to exercise either convention
+#                         against the other, and asserting the "no
+#                         subsystem" bucket's label would test which string
+#                         each side spells "empty" as, not the comparison.
+#   tasks / funcComp       both support an optional functional comparison
+#                         against a task file; skipped here for the same
+#                         reason task_checking_smallyeast is red
+#                         (raven-gecko-parity#7) --- the two do not build the
+#                         same LP for a task, so a functional-comparison
+#                         mismatch would be that divergence again, not a new
+#                         one.
+#
+# All four are recorded on the ledger row.
+
+tolerance:
+  # A reaction is present or it is not; nothing here is computed.
+  rel: 0.0
+  abs: 0.0

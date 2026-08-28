@@ -31,6 +31,12 @@ repo = "SysBioChalmers/GECKO"
 ref = "develop4"
 path = "../GECKO"
 exclude = ["test", "tutorials", "doc", "docs"]
+# GECKO is built on RAVEN --- importModel, the model struct itself, getExchangeRxns ---
+# and ships no copy of it, so a scenario needs both toolboxes on the path. `{raven_matlab}`
+# is the RAVEN path this same file configures, so overriding that path in
+# `parity.local.toml` moves this too. RAVEN goes on first: addpath prepends, so GECKO wins
+# where the two define the same name.
+setup = "addpath(genpath('{raven_matlab}')); addpath(genpath('{path}'))"
 
 [pairs.gecko.python]
 repo = "SysBioChalmers/geckopy"

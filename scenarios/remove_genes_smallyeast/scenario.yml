@@ -1,0 +1,61 @@
+id: remove_genes_smallyeast
+pair: raven
+description: >-
+  Deleting genes from a model: how a reaction's GPR is rewritten when one of
+  its subunits goes, whether the reaction survives, and what happens to a
+  reaction that cannot survive under each of the two policies both sides
+  share.
+
+entries:
+  - removeGenes
+
+inputs:
+  model: "{matlab_repo}/tutorial/smallYeast.yml"
+
+  # Three genes chosen so removing them together exercises three different
+  # outcomes in one call:
+  #
+  #   YBR196C   PGI's only gene. The reaction cannot carry flux without it,
+  #             so PGI is the one this scenario's two policies disagree about.
+  #   YGR240C   one of PFK's two isozyme genes (YGR240C or YMR205C). PFK
+  #             survives, GPR shrinks from an OR to the remaining gene alone.
+  #   YFR053C   one of HXK's three isozyme genes. HXK survives, GPR shrinks
+  #             from a three-way OR to two.
+  #
+  # No reaction in smallYeast has an AND (complex) GPR, so the case where
+  # losing one subunit empties a multi-gene complex --- as opposed to emptying
+  # a single-gene rule --- is not reached by this fixture. Recorded on the
+  # ledger row.
+  removed_genes:
+    - YBR196C
+    - YGR240C
+    - YFR053C
+
+# Two checkpoints, one per policy that both sides actually share:
+#
+#   constrained   RAVEN's removeBlockedRxns=false --- PGI is bounded to (0, 0)
+#                 and kept, with an empty grRule.
+#   removed       RAVEN's removeBlockedRxns=true --- PGI is deleted outright.
+#
+# These are declared explicitly on both sides rather than left to each side's
+# default, because the defaults do not correspond: RAVEN's removeBlockedRxns
+# default (false) behaves like the Python side's blocked_reactions="constrain",
+# not like the Python default ("remove"). Comparing "each side's own default"
+# would therefore silently compare the constrain policy against the remove
+# policy and call a real difference a default. Both are named to say which
+# policy is under test.
+#
+# A third Python-only policy, blocked_reactions="keep" --- leave the reaction
+# with an empty GPR and its original bounds untouched --- has no RAVEN
+# equivalent at all and is not exercised here for that reason; it is a
+# genuinely one-sided option, not an unmapped default.
+#
+# remove_orphans / removeUnusedMets is set to true on both checkpoints. On
+# this fixture it removes nothing either way --- PGI's metabolites are shared
+# with other reactions --- so its value is asserted rather than assumed.
+
+tolerance:
+  # Bounds are set to declared constants or copied unchanged; nothing here is
+  # computed.
+  rel: 0.0
+  abs: 0.0

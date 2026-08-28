@@ -1,0 +1,54 @@
+id: add_reactions_from_model_smallyeast
+pair: raven
+description: >-
+  Copying reactions from a source model into a draft, bringing the
+  metabolites and genes they need with them, with and without their gene
+  associations.
+
+entries:
+  - addRxnsGenesMets
+
+inputs:
+  model: "{matlab_repo}/tutorial/smallYeast.yml"
+
+  # The oxidative pentose phosphate pathway. Removed from the draft *with*
+  # their now-unused metabolites and genes, so that adding them back has to
+  # create two metabolites (6-O-phosphono-D-glucono-1,5-lactone and
+  # 6-phospho-D-gluconate) and seven genes rather than just find them already
+  # there. A draft that still had them would exercise none of the interesting
+  # code: 50 reactions / 50 metabolites / 54 genes back to 53 / 52 / 61.
+  transferred_reactions:
+    - ZWF
+    - PGL
+    - GND
+
+  # Both stated, because the defaults are not the same and comparing them would
+  # test the defaults rather than the transfer: the note defaults to "Added via
+  # addRxnsAndMets()" on one side and "Added via add_reactions_from_model()" on
+  # the other, and the confidence score to 0 in RAVEN and to nothing at all in
+  # the Python signature.
+  note: restored from the source model
+  confidence: 2
+
+# Two checkpoints, differing only in whether gene associations come across:
+#
+#   with_genes     grRules copied from the source and the seven missing genes
+#                  created; the draft returns to exactly the model it started
+#                  as.
+#   without_genes  the same reactions and metabolites, no GPRs, gene count
+#                  unchanged at 54.
+#
+# The second is not padding. A reaction that arrives without its enzymes looks
+# right in every count except the gene one, and that is precisely the kind of
+# loss a reconstruction pipeline carries silently.
+#
+# The note and the confidence score are compared per added reaction. They live
+# in different places --- rxnNotes and rxnConfidenceScores on one side,
+# notes["note"] and notes["confidence_score"] on the other --- but they are the
+# same two values, and they are how a curator later tells a transferred
+# reaction from an original one.
+
+tolerance:
+  # Stoichiometric coefficients are copied verbatim from the source.
+  rel: 1.0e-12
+  abs: 1.0e-15

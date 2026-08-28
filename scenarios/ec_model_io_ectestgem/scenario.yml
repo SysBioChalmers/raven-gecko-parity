@@ -1,0 +1,41 @@
+id: ec_model_io_ectestgem
+pair: gecko
+description: >-
+  saveEcModel / loadEcModel round-trip on a freshly built ecModel: what the writer
+  produces, and what survives a write-read round trip.
+
+# The GECKO analogue of raven-toolbox's own yaml_roundtrip_smallyeast, and the same
+# question: saveEcModel and save_ec_model are both thin wrappers around RAVEN's
+# writeYAMLmodel / write_yaml_model (see their own docstrings), and that writer pair
+# already has a tracked layout divergence --- raven-gecko-parity#6, MATLAB's historical
+# 4-space/quoted layout against cobra's ruamel defaults. Expect this scenario to inherit
+# that divergence rather than to discover a new one at the `written` checkpoint; what it
+# adds is whatever the ecModel-specific sections (`ec-rxns` / `ec-enzymes` / `gecko_light`)
+# do on top of it.
+#
+# One difference from yaml_roundtrip_smallyeast worth stating: that scenario's `direct`
+# checkpoint is the tutorial fixture *read*, because a real smallYeast.yml already exists.
+# ecTestGEM ships no ecModel.yml --- an ecModel only exists once makeEcModel has built one
+# --- so `direct` here is the freshly built ecModel, not something read off disk. The
+# fixture is still shared: both sides build from the same SBML file and the same adapter
+# data, exactly as in ec_model_expansion_ectestgem.
+#
+# Scoped to the full ecModel only. The writer's job does not depend on how ec.* was
+# populated, and the full/light distinction is already covered by
+# ec_model_expansion_ectestgem; repeating it here would test the same expansion code
+# twice under a different name.
+
+entries:
+  - saveEcModel
+  - loadEcModel
+
+inputs:
+  adapter_matlab: "{matlab_repo}/test/unit_tests/ecTestGEM/TestGEMAdapter.m"
+  fixture_dir: "{matlab_repo}/test/unit_tests/ecTestGEM"
+  adapter_python: "{python_repo}/examples/ecTestGEM"
+
+# Nothing here is summed: every field is either copied through serialisation or a count.
+# A last-bit difference would be a real one, same as the other three gecko scenarios.
+tolerance:
+  rel: 0.0
+  abs: 0.0

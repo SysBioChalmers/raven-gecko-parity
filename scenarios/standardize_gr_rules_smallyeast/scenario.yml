@@ -1,0 +1,58 @@
+id: standardize_gr_rules_smallyeast
+pair: raven
+description: >-
+  Flagging a GPR that is not in disjunctive normal form --- an OR nested
+  inside an AND context --- on a real model rather than a synthetic
+  string, exercising the one output standardizeGrRules and
+  find_non_dnf_grrules actually have in common.
+
+entries:
+  - standardizeGrRules
+
+inputs:
+  model: "{matlab_repo}/tutorial/smallYeast.yml"
+
+  # smallYeast's own GPRs are all single genes or plain ORs --- none are
+  # non-DNF --- so HXK's rule ("YFR053C or YGL253W or YCL040W") is
+  # deliberately rewritten to one that is: two of its three isozyme genes
+  # regrouped behind an OR, then AND-ed with the third, exactly the
+  # "(G1 or G2) and G3" shape both docstrings use as their own worked
+  # example of what this catches.
+  non_dnf_rule:
+    reaction: HXK
+    grRule: "(YFR053C or YGL253W) and YCL040W"
+
+# standardizeGrRules returns three things: grRules (the standardized
+# string), rxnGeneMat (rebuilt to match), and indexes2check (reactions
+# findPotentialErrors flags as non-DNF). Only the third has anything to
+# compare against: cobra auto-normalises a GPR's brackets and operator
+# case the moment a grRule string is assigned to a reaction, so there is
+# no raven_toolbox equivalent of "the standardized string" or "the
+# rebuilt gene matrix" to hold up against grRules/rxnGeneMat --- comparing
+# either would be comparing RAVEN's own bracket-formatting convention
+# against cobra's, which was never the claim (the same reason GPRs are
+# always compared as DNF, never as raw text, throughout this suite).
+#
+# indexes2check comes from findPotentialErrors, which is itself a call to
+# isDnfGrRule per reaction (confirmed by reading manipulation/
+# findPotentialErrors.m); find_non_dnf_grrules calls the analogous is_dnf
+# per reaction. Both checks were already cross-validated directly, on
+# synthetic strings chosen to exercise the syntax both parsers accept, by
+# gpr_dnf_rules. This scenario is not re-testing that primitive; it is
+# checking that the WRAPPER around it --- the part that walks every
+# reaction in an actual model and reports which ones are flagged ---
+# has no off-by-one or field-mapping bug of its own, on a real fixture
+# rather than a hand-built one.
+#
+# NOT COMPARABLE, and not attempted: an unparseable grRule.
+# findPotentialErrors reports these too (a rule isDnfGrRule cannot parse
+# at all); find_non_dnf_grrules cannot reach the same case the same way,
+# because cobra's own parser has already turned an unparseable string
+# into an empty GPR at assignment time (rxn.gene_reaction_rule is then
+# empty and find_non_dnf_grrules skips it outright) --- the same
+# accepted-syntax gap gpr_dnf_rules already documents, not a new one.
+
+tolerance:
+  # Categorical facts, not floats.
+  rel: 0.0
+  abs: 0.0

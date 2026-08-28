@@ -1,0 +1,48 @@
+id: duplicate_reactions_smallyeast
+pair: raven
+description: >-
+  Finding reactions that share stoichiometry, with and without regard for
+  direction, on the tutorial model and on the same model after its isozymes
+  have been expanded.
+
+entries:
+  - findDuplicateRxns
+
+inputs:
+  model: "{matlab_repo}/tutorial/smallYeast.yml"
+
+# Four checkpoints, from two models and two settings of the direction flag.
+#
+# The plain model already contains two duplicate pairs --- ethIN against
+# ethOUT, and FRDS2 against SDH --- and both of them are duplicates only if
+# A->B and B->A count as the same reaction. So `ignoreDirection` is not a
+# knob being exercised for its own sake: it is the difference between two
+# groups and none, on a fixture neither implementation was written against.
+#
+# The expanded model is the second fixture, and it is built rather than
+# shipped: expandModel splits each isozyme rule into one reaction per
+# AND-clause, so HXK becomes HXK_EXP_1..3 with identical stoichiometry. That
+# manufactures duplicates the way a real pipeline does --- expand, then
+# contract --- and it is safe to build here because expandModel is itself
+# already compared, by model_manipulation_smallyeast.
+#
+# Results are compared as *groups*, which is neither side's own shape:
+# findDuplicateRxns returns every pairwise combination as reaction indices,
+# find_duplicate_reactions returns lists of reaction objects. Both are reduced
+# to sorted lists of reaction ids, ordered by their first member. Indices would
+# be meaningless across implementations, and pairs against groups is a shape
+# difference rather than a behavioural one.
+#
+# What this scenario does NOT cover, deliberately: contractModel /
+# remove_duplicate_reactions, which is the *merging* step and a declared
+# divergence --- MATLAB merges the duplicates' grRules with "or" while the
+# Python side keeps only the surviving reaction's, and the two also disagree on
+# whether bounds have to match for two reactions to count as duplicates.
+# Detection is a separate function on both sides and is at parity; the merge is
+# recorded on the contractModel ledger row.
+
+tolerance:
+  # Counts only. Stoichiometry is compared by the toolboxes, not by the
+  # harness, and neither side computes a float here.
+  rel: 0.0
+  abs: 0.0

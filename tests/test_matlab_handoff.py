@@ -14,6 +14,7 @@ from pathlib import Path
 import pytest
 
 from parity.cli import main
+from parity.config import ConfigError, load_config
 from parity.scenarios import ScenarioError, collect_matlab, load_scenario, prepare_matlab
 
 CONFIG = """
@@ -102,3 +103,71 @@ def test_collect_records_what_matlab_wrote(workspace: Path):
 
     written = json.loads((workspace / "results" / "matlab" / "demo_scenario.json").read_text("utf-8"))
     assert written["results"] == {"x": 1.0}
+
+
+# --------------------------------------------------------------------------- #
+# Path setup across pairs
+#
+# GECKO is built on RAVEN and ships no copy of it, so a gecko scenario needs
+# both toolboxes on the MATLAB path. Naming RAVEN's location literally in
+# GECKO's setup command would hard-code a path `parity.local.toml` is free to
+# move, so the command names the pair side instead.
+# --------------------------------------------------------------------------- #
+
+TWO_PAIRS = """
+[pairs.demo]
+ledger = "ledgers/demo.yml"
+
+[pairs.demo.matlab]
+repo = "org/DEMO"
+path = "DEMO"
+
+[pairs.demo.python]
+repo = "org/demopy"
+package = "demopy"
+path = "demopy"
+
+[pairs.other]
+ledger = "ledgers/other.yml"
+
+[pairs.other.matlab]
+repo = "org/OTHER"
+path = "OTHER"
+setup = "addpath(genpath('{demo_matlab}')); addpath(genpath('{path}'))"
+
+[pairs.other.python]
+repo = "org/otherpy"
+package = "otherpy"
+path = "otherpy"
+"""
+
+
+def test_a_setup_command_can_name_another_pairs_checkout(tmp_path: Path):
+    (tmp_path / "parity.toml").write_text(TWO_PAIRS, encoding="utf-8")
+    config = load_config(tmp_path / "parity.toml")
+
+    setup = config.pair("other").matlab.setup_command
+    assert setup == (
+        f"addpath(genpath('{(tmp_path / 'DEMO').resolve().as_posix()}')); "
+        f"addpath(genpath('{(tmp_path / 'OTHER').resolve().as_posix()}'))"
+    )
+
+
+def test_the_referenced_path_follows_a_local_override(tmp_path: Path):
+    """The reason for the indirection: a moved checkout must move here too."""
+    (tmp_path / "parity.toml").write_text(TWO_PAIRS, encoding="utf-8")
+    (tmp_path / "parity.local.toml").write_text(
+        '[pairs.demo.matlab]\npath = "elsewhere/DEMO"\n', encoding="utf-8"
+    )
+    config = load_config(tmp_path / "parity.toml")
+
+    assert (tmp_path / "elsewhere" / "DEMO").resolve().as_posix() in config.pair("other").matlab.setup_command
+
+
+def test_an_unknown_placeholder_is_refused(tmp_path: Path):
+    """Left unresolved it would reach MATLAB as a literal brace and fail there."""
+    (tmp_path / "parity.toml").write_text(
+        TWO_PAIRS.replace("{demo_matlab}", "{nosuch_matlab}"), encoding="utf-8"
+    )
+    with pytest.raises(ConfigError, match="nosuch_matlab"):
+        load_config(tmp_path / "parity.toml")

@@ -1,0 +1,130 @@
+id: ec_model_full_yeastgem
+pair: gecko
+description: >-
+  Tier 4: the full ecModel-building pipeline (makeEcModel, getECfromGEM,
+  fuzzyKcatMatching, selectKcatValue, applyKcatConstraints, setProtPoolSize)
+  run at real genome scale on GECKO's own yeast-GEM tutorial model, rather
+  than the 7-reaction ecTestGEM fixture every other scenario in this pair
+  uses. DLKcat is intentionally excluded --- see below.
+
+entries:
+  - makeEcModel
+  - getECfromGEM
+  - fuzzyKcatMatching
+  - selectKcatValue
+  - applyKcatConstraints
+  - setProtPoolSize
+
+# This is the slow job the plan (docs/gecko-behaviour-parity-plan.md, Tier 4) calls for,
+# run on its own schedule rather than in nightly.yml --- see
+# .github/workflows/gecko-genome-scale.yml. ecTestGEM proves the functions agree on
+# every behaviour MATLAB itself pins down; it does not prove they agree on yeast-GEM,
+# where 4102 conventional reactions and a 30000-row BRENDA snapshot leave a divergence
+# nowhere to hide the way 7 reactions do.
+#
+# DLKcat is deliberately out of scope: it is a separate neural-network tool (its own
+# PyTorch environment, not part of GECKO or geckopy), and the kcat pipeline covered here
+# --- BRENDA fuzzy matching --- is substantial enough on its own to be a genuine
+# genome-scale test of the shared logic, without taking on a second heavy external
+# dependency to do it.
+inputs:
+  adapter_matlab: "{scenario_dir}/YeastGEMAdapterParity.m"
+  adapter_python: "{python_repo}/examples/yeast-GEM"
+  fixture_dir: "{matlab_repo}/tutorials/full_ecModel"
+  databases_dir: "{matlab_repo}/databases"
+
+  matlab_solver: gurobi
+  python_solver: gurobi
+
+  # Neither loadConventionalGEM (MATLAB) nor load_conventional_gem (Python) needs a
+  # solver for anything this scenario runs --- fuzzy matching, kcat selection and
+  # constraint application are all deterministic data lookups and arithmetic, no LP
+  # solve anywhere in this pipeline. The solver names are still declared, matching every
+  # other scenario in this pair, since setProtPoolSize's caller conventionally expects
+  # one configured even when it is never invoked.
+
+  # examples/yeast-GEM/model_adapter.toml carries f=0.4461, a different value than
+  # YeastGEMAdapter.m's own f=0.5 --- not a bug on either side (each is presumably a
+  # deliberately calibrated value for that project), but setProtPoolSize's bound is
+  # directly proportional to f, so leaving them different would show up as a
+  # protein-pool mismatch that has nothing to do with either implementation's own
+  # behaviour. run.py overrides Python's adapter to 0.5 so this scenario compares the
+  # pipeline, not a stale example config value.
+
+# geckopy's fill_eccodes_from_gem reads model.reactions[i].annotation['ec-code'], a
+# cobrapy convention; cobra.io.load_yaml_model (what load_conventional_gem calls for a
+# .yml file) does not populate that field from yeast-GEM.yml's own `eccodes` reaction
+# key --- confirmed by direct execution: reaction.annotation and reaction.notes are both
+# empty of it. RAVEN's readYAMLmodel populates model.eccodes (its own top-level array)
+# from the same field natively; MATLAB's getECfromGEM.m needs no workaround. The Python
+# side of this scenario reads yeast-GEM.yml a second time with a plain YAML parse
+# (PyYAML's built-in `!!omap` handling; no additional dependency) to recover the
+# `eccodes` list per reaction id and writes it into `reaction.annotation['ec-code']`
+# before make_ec_model runs --- restoring parity input, not working around a divergence
+# in what is being compared.
+
+# BRENDA is vendored in two incompatible formats, same as kcat_chain_ectestgem found at
+# ecTestGEM scale: GECKO ships max_KCAT.txt / max_MW.txt / max_SA.txt, geckopy reads
+# kcat.tsv / mw.tsv / sa.tsv. At ecTestGEM's five rows both were hand-written; at
+# genome scale (30000 KCAT rows) the Python side of this scenario converts GECKO's own
+# files at run time instead --- same (EC, substrate, organism, value) triples, `EC`
+# prefix and `//taxonomy//abbrev` organism suffix stripped, `kcat_median` set equal to
+# `kcat_max` and `n=1` throughout (GECKO's own files carry only one value per triple,
+# already itself a maximum, so there is no underlying distribution to derive a true
+# median from --- the same simplification docs/brenda-reconciliation.md's ecTestGEM
+# fixture already uses). See docs/brenda-reconciliation.md for the full mapping.
+
+# fuzzyKcatMatching's organism-phylogenetic-distance escalation needs a real KEGG
+# taxonomy artefact (RAVEN's external/kegg/keggPhylDist.mat) that this repo does not
+# vendor or download --- see YeastGEMAdapterParity.m for why a small, two-organism
+# stand-in is enough to exercise the same code path without it. This means the
+# organism-closeness tier of fuzzy matching is not being exercised richly here (both
+# sides degrade to the same wildcard-organism fallback for almost every query); the EC
+# code / substrate matching tiers, which do not depend on it, are exercised at full
+# genome scale.
+
+# Found and fixed two real, generalizable MATLAB bugs while getting this scenario clean
+# (both confirmed by isolated regression tests, not just "differs on this real-world
+# row" observations):
+#
+#   - sigmaFitter.m returned a model sized for the wrong sigma (its 100-point grid-search
+#     loop never re-applies the best-fitting sigma after the loop ends) --- not exercised
+#     by this scenario directly (sigmaFitter is not in `entries` here), found while
+#     building sensitivity_tuning_ectestgem, [GECKO #433], merged.
+#   - fuzzyKcatMatching.m's wildcard EC search matched a substring instead of a prefix
+#     (`contains` instead of `startsWith` on the pre-built EC index), so a query for
+#     enzyme class 1 ('1.') could also match an unrelated class-4 code that merely
+#     contains the same two characters elsewhere in its string ('4.2.1.1'). Confirmed by
+#     direct execution against real BRENDA data: fixing this changed the matched kcat for
+#     hundreds of yeast-GEM reactions, mostly toward smaller, more plausible values.
+#     [GECKO #434], merged.
+#
+# Both are fixed in the develop4 branches these PRs target; this scenario's own MATLAB
+# result was generated against a worktree with both fixes applied ahead of merge, so it
+# already reflects the corrected behaviour.
+#
+# Two confirmed, asserted divergences remain even with both fixes applied:
+#
+#   1. EC-code validation strictness. fill_eccodes_from_gem validates each EC string
+#      against a strict `<n|-`.`<n|-`.`<n|-`.`<n|-` pattern (four purely-numeric-or-`-`
+#      levels); yeast-GEM's own annotations include BRENDA/KEGG "new/undefined subclass"
+#      codes like `1.1.1.n12` (a real, if unusual, EC convention), which fail that
+#      pattern and are dropped *entirely*, along with any other, valid EC code joined to
+#      them in the same `;`-separated string. getECfromGEM.m has no equivalent
+#      validation and keeps them. Confirmed by direct execution: 36 reactions get a kcat
+#      on the MATLAB side that geckopy's stricter validation excludes.
+#   2. A further ~119 reactions (of 4671) get a *different*, not-missing, kcat value on
+#      each side. The most likely explanation, consistent with (but not exhaustively
+#      confirmed for every one of these 119 cases): this scenario's own necessarily
+#      sparse two-organism PhylDist.mat stand-in (see YeastGEMAdapterParity.m) makes the
+#      organism-closeness escalation tier of fuzzy matching close to arbitrary at genome
+#      scale, where real BRENDA rows carry thousands of distinct real organism names that
+#      a real KEGG taxonomy tree would otherwise rank by phylogenetic distance --- both
+#      implementations' organism-filtering logic were read side by side and are faithful
+#      ports of each other (filter_by_organism / extract_indexes both drop any BRENDA row
+#      whose organism cannot be resolved against the (here, tiny) PhylDist struct), so the
+#      likely cause is fixture poverty rather than a third algorithmic difference. Left
+#      open rather than asserted as a specific mechanism.
+tolerance:
+  rel: 1.0e-9
+  abs: 1.0e-12

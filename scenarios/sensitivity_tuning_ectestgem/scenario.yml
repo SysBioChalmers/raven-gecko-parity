@@ -1,0 +1,128 @@
+id: sensitivity_tuning_ectestgem
+pair: gecko
+description: >-
+  Automated kcat and sigma tuning on ecTestGEM's ecModel (sensitivityTuning,
+  sigmaFitter), plus the two solver-free BRENDA/table utilities that share
+  their source folder (findMaxValue, truncateValues).
+
+entries:
+  - sensitivityTuning
+  - sigmaFitter
+  - findMaxValue
+  - truncateValues
+
+# The fourth scenario in this pair that needs an LP solver (sensitivityTuning,
+# sigmaFitter); findMaxValue and truncateValues are pure data manipulation and need
+# neither a solver nor an ecModel, so their checkpoints build nothing beyond a small
+# hand-written fixture.
+inputs:
+  adapter_matlab: "{matlab_repo}/test/unit_tests/ecTestGEM/TestGEMAdapter.m"
+  adapter_python: "{python_repo}/examples/ecTestGEM"
+  fixture_dir: "{matlab_repo}/test/unit_tests/ecTestGEM"
+
+  matlab_solver: gurobi
+  python_solver: gurobi
+
+  # R2 and R4 blocked, R3 left as the sole m1->m2 route: the same fixture shape
+  # enzyme_usage_ectestgem and flexibilize_concs_ectestgem both reuse, for the same
+  # reason -- a single, unambiguous catalysed route removes any risk of the two
+  # sides picking a different "most limiting" reaction at some step along an
+  # iterative loop.
+  bio_rxn: R5
+
+  # sensitivityTuning: kcat_R3 deliberately far too low for the desired growth rate,
+  # so the loop has real, multi-iteration work to do. Confirmed by direct execution:
+  # bumped exactly once (foldChange=10 applied twice --- iteration 1 doesn't reach the
+  # target, iteration 2 does), R3/P4 both times, matching exactly between MATLAB and
+  # geckopy. geckopy's own MATLAB-COMPAT note in sensitivity_tuning.py describes
+  # MATLAB as picking the *reverse*-direction usage reaction with the most *negative*
+  # flux ("MATLAB picks min(drawFluxes)") --- stale relative to the GECKO develop4 this
+  # scenario runs against: protein usage/pool reactions were switched to the forward
+  # direction in GECKO#419, after which MATLAB's own drawFluxes are non-negative and
+  # its code already reads `[~,sel] = max(drawFluxes)`, the same choice geckopy makes.
+  # Confirmed matching by direct execution, not merely by re-reading both sources.
+  sens_kcats:
+    R3: 0.05
+    R5: 200.0
+  sens_desired_growth: 50.0
+
+  # sigmaFitter: a completely separate kcat/model instance from sensitivityTuning
+  # above (its own fixture, not fed the tuned kcats), sized so the fitted sigma is
+  # comfortably inside (0, 1) rather than landing on a boundary.
+  sigma_kcats:
+    R3: 5.0
+    R5: 200.0
+  sigma_growth_rate: 100.0
+  sigma_p_tot: 0.5
+  sigma_f: 4.0
+
+  # findMaxValue: a hand-built BRENDA-shaped fixture (no file I/O --- both
+  # findMaxValue.m and find_max_value take the tables directly, not a path), with
+  # deliberately overlapping EC codes so the "K_cat vs SA*Mw, whichever is bigger, per
+  # queried EC number, then the overall max across every EC number in a multi-gene
+  # query" logic has something real to choose between:
+  #
+  #   EC        kcat_max   sa_max    winner
+  #   1.1.1.1   50 (org1)  30 (org5) K_cat --- exact match, kcat wins
+  #   1.1.1.2   200 (org3) --        (only reachable via the wildcard query below)
+  #   1.1.2.1   10 (org4)  25 (org6) SA*Mw --- exact match, SA wins
+  #
+  # Five queries exercise every branch: an exact kcat-wins match, an exact SA-wins
+  # match, a multi-EC query (the overall max across two exact matches), a wildcard
+  # query, and a query matching nothing at all.
+  find_max_value:
+    kcat_max:
+      - {ec_code: "1.1.1.1", substrate: a, organism: org1, kcat: 50.0}
+      - {ec_code: "1.1.1.2", substrate: b, organism: org3, kcat: 200.0}
+      - {ec_code: "1.1.2.1", substrate: c, organism: org4, kcat: 10.0}
+    sa_max:
+      - {ec_code: "1.1.1.1", organism: org5, kcat: 30.0}
+      - {ec_code: "1.1.2.1", organism: org6, kcat: 25.0}
+    queries:
+      - "1.1.1.1"
+      - "1.1.2.1"
+      - "1.1.1.-"
+      - "1.1.1.1 1.1.2.1"
+      - "9.9.9.9"
+
+  # truncateValues: one value per order-of-magnitude regime the function's own
+  # docstring describes, plus a negative value, plus a value small enough to round
+  # away to exactly zero under the "6 decimal places when order_magn=0" edge of the
+  # rounding rule (0 and NaN both fall through unchanged on both sides; this value
+  # rounds *to* zero, which is different and worth covering).
+  truncate_values:
+    - 0.0
+    - 1.234567891
+    - 123.456789
+    - 0.000123456789
+    - 1234567.891
+    - -55.5555555
+    - 1.0e-8
+
+# Two confirmed divergences, both found by direct execution rather than assumed from
+# either side's comments:
+#
+# sigmaFitter --- a genuine MATLAB bug, not a design choice: the 100-point grid-search
+# loop reassigns `model` on every iteration, so by the time it ends the returned model's
+# protein pool is sized for whichever sigma was tried *last* (sigma=1), not the
+# best-fitting sigma the function actually returns as its own second output. geckopy's
+# own MATLAB-COMPAT note already flags this; confirmed here with the actual numbers on
+# this fixture (returned sigma 0.11 on both sides; MATLAB's returned model pool bound
+# 2000, geckopy's 220 = Ptot*f*0.11*1000, the value at the *returned* sigma). Filed and
+# fixed: [GECKO #433]. This scenario's model-state checkpoint will read as matching
+# once that merges rather than needing a code change here.
+#
+# findMaxValue --- two confirmed bugs in a function with no callers anywhere in GECKO
+# (grep confirms it), so filed here as documentation rather than a fix, the same
+# judgment call kcat_chain_ectestgem made for selectKcatValue's dead 'median' branch:
+#   1. The wildcard branch's EC-prefix slice (`EC_cell{i}(strfind(EC_cell{i},'-')-1:end)`)
+#      keeps only the character *before* the dash plus the dash itself --- for any
+#      "X.Y.Z.-"-shaped wildcard, that is always exactly ".-", since a wildcard's
+#      dash is always preceded by a dot. Searching BRENDA for the literal substring
+#      ".-" can never match a real EC code, so every wildcard query returns nothing.
+#   2. When neither table matches at all, `Kcat>SA_Mw` compares 0 to 0 (false), so the
+#      function falls into the "SA won" branch and labels the (nonexistent) result
+#      'SA*Mw' instead of leaving the parameter blank.
+tolerance:
+  rel: 1.0e-6
+  abs: 1.0e-9

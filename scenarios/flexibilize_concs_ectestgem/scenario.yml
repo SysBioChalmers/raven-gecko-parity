@@ -1,0 +1,91 @@
+id: flexibilize_concs_ectestgem
+pair: gecko
+description: >-
+  Loading experimental flux data, applying it as exchange/growth bounds on
+  ecTestGEM's ecModel, and iteratively relaxing over-tight proteomics
+  constraints until a target growth rate is reachable.
+
+entries:
+  - loadFluxData
+  - constrainFluxData
+  - flexibilizeEnzConcs
+
+# The third scenario in this pair that needs an LP solver; same reasoning as
+# enzyme_usage_ectestgem and ec_fva_ectestgem for declaring it explicitly.
+inputs:
+  adapter_matlab: "{matlab_repo}/test/unit_tests/ecTestGEM/TestGEMAdapter.m"
+  adapter_python: "{python_repo}/examples/ecTestGEM"
+  fixture_dir: "{matlab_repo}/test/unit_tests/ecTestGEM"
+
+  matlab_solver: gurobi
+  python_solver: gurobi
+
+  # One condition, two exchanges: S1 (uptake, negative by RAVEN's sign convention --
+  # confirmed by ec_fva_ectestgem's own S1 range, which is always <= 0) and S2
+  # (secretion, positive). grRate is TestGEMAdapter's own gR_exp (0.41), reused here
+  # rather than invented, so this scenario's fixture is traceable to a real adapter
+  # value even though the adapter's own bioRxn/c_source (below) are not used as-is.
+  flux_data_path: "{scenario_dir}/data/fluxData.tsv"
+
+  # TestGEMAdapter.m sets bioRxn='R4' with the comment "%Not relevant", and
+  # c_source='E1' -- a metabolite-shaped name, not any real reaction id in this
+  # model (S1/S2 are the actual exchanges). Neither is meant to be used as-is; both
+  # loadFluxData/constrainFluxData's own signatures take a modelAdapter, not an
+  # explicit bio_rxn/c_source, so the MATLAB side redirects a *copy* of the adapter
+  # (value class, same pattern as kcat_chain_ectestgem's kcatAdapter) with corrected
+  # values, while apply_flux_data_constraints takes them directly as keyword
+  # arguments. Both sides end up pointed at the same two reactions.
+  bio_rxn: R5
+  c_source: S1
+
+  # Percentage-mode variance for the second constrainFluxData sub-check. MATLAB's
+  # own docstring already spells out the intended arithmetic for both modes
+  # (looseStrictFlux section), and geckopy's apply_flux_data_constraints carries a
+  # MATLAB-COMPAT note flagging RAVEN's setParam('var', ...) as a "soft
+  # slack-variable formulation" that might not match its own hard bound-set.
+  # Confirmed by direct execution against RAVEN's actual setParam.m: for this
+  # value, 'var' mode just sets lb/ub directly with the same arithmetic geckopy
+  # uses (sign-aware for a negative measurement) -- no separate slack variable at
+  # all. Both modes ('loose' and this percentage) therefore match exactly; this
+  # scenario is a live check on that, not just documentation of it.
+  pct_variance: 10.0
+
+  # R2 and R4 blocked, R3 left as the sole m1->m2 route: the same fixture
+  # enzyme_usage_ectestgem built and verified, reused here rather than re-derived,
+  # since it already gives a single, unambiguous growth-limiting enzyme (P5) --
+  # exactly what flexibilizeEnzConcs's iterative "find the worst enzyme, relax it"
+  # loop needs to run a short, deterministic trajectory on both sides. See
+  # enzyme_usage_ectestgem/scenario.yml for why the parallel routes have to be
+  # blocked at all.
+  flex_kcats:
+    R3: 15.0
+    R5: 200.0
+
+  # Comfortably above the fixture's unconstrained-by-proteomics growth (~2.253):
+  # enough for flexibilizeEnzConcs to have real work to do, not so much that P4
+  # (capUsage ~0.32 at the base point, scaling linearly with growth in this
+  # single-route fixture) crosses getConcControlCoeffs's own 0.75 eligibility
+  # threshold and becomes a second candidate -- confirmed by direct execution that
+  # P5 is the only enzyme ever flexed at this target, which is what keeps this
+  # checkpoint's trajectory short and deterministic rather than depending on
+  # getConcControlCoeffs's own separately-documented finite-difference-vs-
+  # shadow-price divergence (see enzyme_usage_ectestgem/scenario.yml).
+  exp_growth: 2.5
+  fold_change: 2.0
+  iter_per_enzyme: 5
+
+# One confirmed, asserted divergence in flexibilizeEnzConcs's post-loop refinement
+# pass, not in the loop itself: both sides flex exactly one protein (P5), the same
+# number of times (1), from the same starting concentration. MATLAB's refinement
+# solve pins growth into a narrow *band* around exp_growth (RAVEN's
+# setParam('var', bioRxn, expGrowth, 0.5) --- +/-0.25%) and, since the objective is
+# to *minimise* protein-pool usage, settles at the band's low edge (here, 2.49375,
+# not 2.5). geckopy's refinement solve pins growth to exp_growth *exactly*
+# (documented as a deliberate MATLAB-COMPAT choice in flexibilize_enz_concs.py).
+# Confirmed by direct execution: P5's flexed concentration and the final growth
+# rate both differ by a small, fully explained amount (flexConcs 0.173177 vs
+# 0.173611; growth 2.49375 vs 2.5); everything upstream of that one solve is
+# identical.
+tolerance:
+  rel: 1.0e-6
+  abs: 1.0e-9

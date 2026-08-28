@@ -1,0 +1,88 @@
+id: diff_models_smallyeast
+pair: raven
+description: >-
+  Reporting the semantic differences between two models: what changed,
+  what did not, and --- the one place a naive implementation usually gets
+  it wrong --- confirming a gene-reaction rule that was only reordered is
+  not reported as changed at all.
+
+entries:
+  - diffModels
+
+inputs:
+  model: "{matlab_repo}/tutorial/smallYeast.yml"
+
+  # Model B is model A with one deliberate edit per category diffModels
+  # checks, built with functions this suite has already cross-validated
+  # (add_reactions_from_equations / addRxns, change_reaction_equations /
+  # changeRxns, change_gene_reaction_rules / changeGrRules) plus a few plain
+  # field assignments for the fields none of those functions touch:
+  #
+  #   removed_reaction    ATPX taken out                 -> reactions only in A
+  #   added_reaction      PROBE_RXN (PYR_c => ACA_c)     -> reactions only in B
+  #   stoichiometry       PGI's G6P_c coefficient -1 -> -2, same two
+  #                       metabolites either side          -> stoichiometry
+  #   bounds              HXK's upper bound 1000 -> 500    -> bounds
+  #   objective           PFK's objective coefficient 0 -> 1 -> objective
+  #   gpr_changed         GND's isozyme pair replaced with
+  #                       one new gene, YSWAP1              -> GPR + genes only in B
+  #   gpr_reordered       HXK's three-gene isozyme OR,
+  #                       reordered, same three genes        -> nothing: the point
+  #                       of this scenario
+  #   eccode              PGK's EC code, A vs B differ       -> the one annotation
+  #                       key RAVEN's diffModels itself checks (see below)
+  #   metabolite_formula  ATP_c's formula, one atom added    -> formula
+  #   metabolite_charge   ATP_c's charge, unset -> -3         -> charge
+  removed_reaction: ATPX
+  added_reaction:
+    id: PROBE_RXN
+    equation: "PYR_c => ACA_c"
+    name: probe reaction
+  stoichiometry:
+    reaction: PGI
+    equation: "2 G6P_c <=> F6P_c"
+  bounds:
+    reaction: HXK
+    upper_bound: 500.0
+  objective:
+    reaction: PFK
+    coefficient: 1.0
+  gpr_changed:
+    reaction: GND
+    grRule: "YSWAP1"
+  gpr_reordered:
+    reaction: HXK
+    grRule: "YCL040W or YGL253W or YFR053C"
+  eccode:
+    reaction: PGK
+    a: "2.7.2.99"
+    b: "2.7.2.3"
+  metabolite_formula:
+    metabolite: ATP_c
+    b: "C10H16N5O13P3X"
+  metabolite_charge:
+    metabolite: ATP_c
+    b: -3
+
+# NOT covered here, and confirmed by reading both implementations rather than
+# assumed: annotation scope. diffModels checks exactly one annotation-like
+# field --- eccodes --- and nothing else; diff_models checks a much broader
+# set (sbo, ec-code, kegg.reaction, kegg.compound, metanetx.reaction,
+# metanetx.chemical, chebi, bigg.reaction, ...) across both reactions and
+# metabolites. A chebi or kegg.compound difference on a metabolite would be
+# flagged by diff_models and invisible to diffModels, so the fixture uses
+# only the one key both sides actually check. Recorded on the ledger row.
+#
+# Also structural rather than behavioural: diffModels returns rxnsOnlyInA /
+# rxnsOnlyInB / metsOnlyInA / metsOnlyInB / genesOnlyInA / genesOnlyInB as
+# their own fields; DiffReport on the Python side folds the same facts into
+# the free-text differences list only. The scenario does not lean on either
+# function for these --- it derives them itself, directly from the two
+# models, which is a fact about the fixture rather than a claim about either
+# function.
+
+tolerance:
+  # Coefficients are declared decimal strings parsed once; nothing here is
+  # computed.
+  rel: 0.0
+  abs: 0.0

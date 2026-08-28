@@ -1,0 +1,45 @@
+id: ec_model_expansion_ectestgem
+pair: gecko
+description: Expansion of GECKO's ecTestGEM into a full and a light ecModel.
+
+# The first GECKO scenario, and deliberately the same kind of choice as
+# elemental_balance_smallyeast was for RAVEN: no solver, no kcats, no network, no random
+# seed. makeEcModel is pure model surgery --- split reversible reactions, expand isozymes,
+# attach protein pseudometabolites, build the ec substructure --- so the two sides must
+# agree exactly, and anything that differs is a real disagreement rather than numerical
+# noise.
+#
+# The fixture is GECKO's own unit-test model, which is small enough to read in full
+# (7 reactions, 5 genes) and is the model MATLAB's geckoCoreFunctionTests pins its expected
+# values against. geckopy carries a copy of it under examples/ecTestGEM; this scenario
+# points *both* sides at the GECKO one, so the fixture cannot drift between them.
+#
+# One caveat worth stating: MATLAB's own tests build the test model in code
+# (getGeckoTestModel.m) rather than reading models/testModel.xml. This scenario reads the
+# SBML file on both sides instead, which is the only way the two implementations can start
+# from the same bytes --- and it exercises the two SBML readers for free. That is why the
+# `conventional` checkpoint exists: a divergence there is RAVEN's importModel against
+# cobrapy, not makeEcModel.
+
+entries:
+  - makeEcModel
+  - loadConventionalGEM
+  - ModelAdapter
+
+inputs:
+  # The conventional GEM, the enzyme data (data/uniprot.tsv) and the MATLAB adapter all
+  # come out of the GECKO checkout.
+  adapter_matlab: "{matlab_repo}/test/unit_tests/ecTestGEM/TestGEMAdapter.m"
+  fixture_dir: "{matlab_repo}/test/unit_tests/ecTestGEM"
+
+  # geckopy's port of that adapter --- its own model_adapter.toml, read as the project
+  # file it is. Only `path` and `conv_gem` are repointed at the GECKO fixture, so the
+  # parameter *values* being compared are geckopy's, not this scenario's.
+  adapter_python: "{python_repo}/examples/ecTestGEM"
+
+# Nothing here is summed: makeEcModel copies, negates and clamps. A stoichiometric
+# coefficient that differs in its last bits would be a real difference, so the tolerance
+# is zero.
+tolerance:
+  rel: 0.0
+  abs: 0.0

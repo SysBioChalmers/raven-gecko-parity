@@ -1,0 +1,61 @@
+id: add_transport_reactions_smallyeast
+pair: raven
+description: >-
+  Adding transport reactions between two compartments for a named set of
+  metabolites: which reactions get created, what they are named and
+  bounded, and how many metabolites move under a reversible transport
+  compared to an irreversible one.
+
+entries:
+  - addTransport
+
+inputs:
+  model: "{matlab_repo}/tutorial/smallYeast.yml"
+  from_compartment: c
+  to_compartment: m
+
+  # Four cytosolic metabolites known to already exist in the mitochondrial
+  # compartment, so the transport can be added with onlyToExisting --- the
+  # default on both sides --- without creating anything new. Chosen rather
+  # than "every metabolite in c" for a reason worth stating: that default call
+  # crashes RAVEN outright on this fixture (raven-gecko-parity#10 ---
+  # addTransport builds one array from the requested metabolites and another
+  # from the subset that actually has a mitochondrial match, then
+  # concatenates the two without reconciling their lengths, which fails
+  # whenever the two counts differ). A hand-picked subset that all resolve
+  # sidesteps the crash; it does not exercise RAVEN's default `metNames`
+  # behaviour, which has no scenario until #10 is fixed.
+  metabolite_names:
+    - acetyl-CoA
+    - coenzyme A
+    - CO2
+    - NAD(+)
+
+# Two checkpoints, differing only in isRev / reversible:
+#
+#   reversible    each transport gets the model's default bounds, both
+#                 directions open.
+#   irreversible  lower bound forced to zero.
+#
+# Both use onlyToExisting --- the shared default --- so no metabolite has to
+# be created; add_reactions_from_equations_smallyeast already covers metabolite
+# creation, and stacking it onto this scenario as well would just repeat that
+# comparison under a different function name.
+#
+# Reaction names are the part of this most likely to disagree, and are
+# compared in full: addTransport documents them as
+# "metaboliteName transport, fromCompName-toCompName", built from the
+# compartment *names*, not their ids --- "cytosol-mitochondria", not "c-m".
+# Reaction ids are not compared: both sides mint them fresh
+# (generateNewIds / a sequential tr_0001 counter on one side, whatever the
+# Python side's own counter produces on the other) rather than deriving them
+# from anything about the transport itself, so nothing about the toolboxes
+# would be asserted by requiring the counters to agree. What is compared
+# instead is the stoichiometry and the compartments the new reactions connect,
+# which is what a reaction id would otherwise stand in for.
+
+tolerance:
+  # Bounds come from the model's own defaults or are set to zero; nothing here
+  # is summed.
+  rel: 1.0e-12
+  abs: 1.0e-15

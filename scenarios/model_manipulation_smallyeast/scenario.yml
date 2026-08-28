@@ -1,0 +1,39 @@
+id: model_manipulation_smallyeast
+pair: raven
+description: >-
+  Three structural model manipulations on RAVEN's smallYeast tutorial model,
+  compared stage by stage: splitting reversible reactions, expanding
+  isozymes, and sorting identifiers. No solver and no randomness --- the
+  outputs are determined by the input model alone.
+
+entries:
+  - convertToIrrev
+  - expandModel
+  - sortIdentifiers
+
+inputs:
+  # Read by both sides out of the RAVEN checkout, so the fixture cannot drift
+  # between them. 53 reactions, 18 of them reversible, 17 with an isozyme
+  # rule --- small enough to read a difference off the diff, large enough that
+  # a difference has somewhere to appear.
+  model: "{matlab_repo}/tutorial/smallYeast.yml"
+
+# What this fixture does *not* exercise, so nobody reads a pass as more than
+# it is:
+#
+#   * Reversible exchange reactions. RAVEN's convertToIrrev splits every
+#     reaction with rev ~= 0; raven-toolbox's convert_to_irreversible skips
+#     boundary reactions regardless of their bounds. smallYeast has eight
+#     exchange reactions and none of them is reversible, so the two agree
+#     here and would not on a model where one is. Recorded on the ledger row.
+#   * A negative objective coefficient on a reversible reaction, which RAVEN
+#     moves onto the reverse reaction and raven-toolbox leaves alone.
+#     smallYeast's objective is a single positive coefficient.
+
+tolerance:
+  # Bounds and stoichiometric coefficients are copied, negated or clamped,
+  # never summed, so the two sides should agree bit for bit. Kept off zero
+  # anyway: a coefficient that arrives via a different parse of the same
+  # decimal string is not a disagreement worth failing on.
+  rel: 1.0e-12
+  abs: 1.0e-15

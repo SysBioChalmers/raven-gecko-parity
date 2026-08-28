@@ -37,82 +37,219 @@ entries:
   - matlab: addNewRxnsToEC
     python: geckopy.add_new_rxns_to_ec
     status: parity
-    notes: Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5.
+    scenarios:
+      - model_edits_ectestgem
+    notes: 'Was blocked: MATLAB develop4 crashed adding a reversible, isozyme-catalysed reaction
+      (or any two reactions in one call each needing isozyme expansion) --- an index-drift
+      bug in the split loop, fixed in GECKO#427 (merged). Behind the fix, matches geckopy exactly:
+      reactions added, enzymes added, and every field of the resulting model.'
   - matlab: applyComplexData
     python: geckopy.apply_complex_data
     status: parity
-    notes: Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5.
+    scenarios:
+      - enzyme_annotation_ectestgem
+    notes: 'GECKO develop4 called RAVEN''s progressbar, removed in RAVEN #623; ported to progressReport in GECKO #425 (merged to develop4 2026-08-26).'
   - matlab: applyCustomKcats
     python: geckopy.apply_custom_kcats
     status: parity
-    notes: Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5.
+    scenarios:
+      - kcat_chain_ectestgem
+    notes: 'Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5. DIVERGENCE, now measured: for
+      a mode-A row (reaction id only, no protein listed), MATLAB only writes ec.kcat, leaving ec.source/ec.notes
+      at whatever they already were; geckopy shares one write path across all three modes and always sets
+      source=''custom'' and appends the note. Not documented as a MATLAB-COMPAT note upstream.'
   - matlab: applyKcatConstraints
     python: geckopy.apply_kcat_constraints
     status: parity
-    notes: '[3->4] writes coefficients with the forward-direction usage_prot_* / prot_pool_exchange convention.'
+    scenarios:
+      - kcat_chain_ectestgem
+      - ec_model_full_yeastgem
+    notes: '[3->4] writes coefficients with the forward-direction usage_prot_* / prot_pool_exchange convention.
+      DIVERGENCE, now measured: in the light-model formulation, when only some isozymes of a reaction have a
+      kcat assigned, MATLAB corrects an unassigned isozyme''s Inf cost (MW/0) to 0 before taking min() across
+      isozymes, so the fabricated zero always wins --- silently writing a zero enzyme cost for the whole
+      reaction even though another isozyme has a real, valid kcat. geckopy skips invalid isozymes before the
+      comparison instead, correctly picking the real one. See docs/gecko-behaviour-parity-plan.md.
+      A second bug, also found by direct execution but not asserted by the scenario (not reachable through
+      the shared fixture): in the full formulation, two enzyme rows mapping to the same prot_<accession>
+      metabolite (distinct genes sharing one UniProt entry) got MATLAB''s last-write-wins instead of summed,
+      since repeated linear-index assignment in MATLAB keeps only the last value, where geckopy explicitly
+      sums. Fixed in GECKO#431.'
   - matlab: bayesianSensitivityTuning
     status: python-pending
+    issue: SysBioChalmers/raven-gecko-parity#21
     notes: ABC-SMC kcat tuning (~1370 LOC with its helpers). The migration doc calls it 'not ported', but
       geckopy/docs/internal/bayesian_tuning_plan.md has the design and says the work is paused, not abandoned
       --- queued, not a divergence.
   - matlab: calculateFfactor
     python: geckopy.calculate_f_factor
     status: parity
+    scenarios:
+      - protein_pool_ectestgem
     notes: Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5.
   - matlab: calculateMW
     python: geckopy.calculate_mw
     status: parity
-    notes: Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5.
+    issue: SysBioChalmers/raven-gecko-parity#11
+    scenarios:
+      - molecular_weight_sequences
+    notes: 'DIVERGENCE, now measured. Both agree on the twenty standard residues to the
+      gram-mole. Four differences: the water-mass constant (18 vs 18.01528); X''s mass
+      (126.50, an unsourced historical constant, vs the live mean of the standard table,
+      118.885); B''s mass (114.60 pre-rounded vs 114.595 computed) --- not previously
+      documented; and shape --- calculateMW is case-sensitive (a lowercase letter is
+      ignored, like a digit) and returns 18 for a sequence with no recognised residues,
+      where calculate_mw upper-cases first and returns NaN for the same case. All eighteen
+      cases in molecular_weight_sequences are red on purpose.'
   - matlab: constrainEnzConcs
     python: geckopy.constrain_enz_concs
     status: parity
+    scenarios:
+      - protein_pool_ectestgem
     notes: Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5.
   - matlab: constrainFluxData
     python: geckopy.apply_flux_data_constraints
     status: parity
+    scenarios:
+      - flexibilize_concs_ectestgem
+    notes: 'Confirmed matching by execution, in both bound-setting modes: ''loose'' and a
+      percentage-variance value. geckopy''s own MATLAB-COMPAT note flags RAVEN''s
+      setParam(''var'', ...) as a "soft slack-variable formulation" that might not match
+      apply_flux_data_constraints''s hard lb/ub set for the percentage mode --- checked
+      directly against RAVEN''s actual setParam.m rather than taken on faith: its ''var''
+      case just sets lb/ub with the same sign-aware arithmetic geckopy uses, no separate
+      slack variable. Both modes agree exactly on this fixture.'
   - matlab: copyECtoGEM
     python: geckopy.copy_ec_to_gem
     status: parity
-    notes: Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5.
+    scenarios:
+      - model_edits_ectestgem
+    notes: 'DIVERGENCE, now measured. Filling an empty eccode and leaving a populated one
+      alone under overwrite=false both match exactly. Under overwrite=true, MATLAB clobbers
+      an existing annotation with an empty ec.eccodes entry; geckopy treats an empty entry
+      as nothing to propagate and never clobbers with emptiness.'
   - matlab: ecFSEOF
     python: geckopy.ec_fseof
     status: parity
-    notes: '[Py] thin wrapper over raven_toolbox.analysis.fseof; selection is regression-based.'
+    scenarios:
+      - ec_fseof_ectestgem
+    notes: '[Py] thin wrapper over raven_toolbox.analysis.fseof; selection is regression-based.
+      DIVERGENCE, now measured, on every axis: (1) the enforced-flux levels themselves differ
+      before any target selection happens --- MATLAB''s alpha runs from the biomass-optimal
+      production flux to 90% of the theoretical max, raven-toolbox''s levels run from
+      target_max/n_steps to target_max with no reference to the biomass-optimal point at all;
+      (2) MATLAB restricts the target search space to gene-associated reactions only,
+      raven-toolbox''s classifier considers every reaction; (3) even on the same candidates the
+      selection criterion differs --- MATLAB requires strict monotonicity across every step
+      plus a top-quartile-by-slope cut, raven-toolbox uses a correlation+slope regression
+      threshold (its own IMPROVEMENTS notes FS1-FS4). On ecTestGEM: MATLAB finds 1 target,
+      geckopy finds 6. This is the same divergence already recorded on the RAVEN pair for
+      FSEOF vs raven_toolbox.analysis.fseof (docs/behaviour-parity-plan.md), now confirmed to
+      carry through the ecModel-specific wrappers on both sides too. Output shape differs
+      further and is not asserted: MATLAB additionally computes a per-gene essentiality column
+      and splits rxnTargets from transportTargets; geckopy''s ec_fseof does neither. See
+      scenarios/ec_fseof_ectestgem/scenario.yml.'
   - matlab: ecFVA
     python: geckopy.ec_fva
     status: parity
-    notes: Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5.
+    scenarios:
+      - ec_fva_ectestgem
+    notes: 'Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5. DIVERGENCE, now
+      measured: every reaction with a single enzyme (or none) agrees exactly; the one
+      isozyme-split reaction does not. MATLAB reduces each ec-reaction''s own bound with
+      min/max across every canonical group''s solve first, then sums forward and subtracts
+      reverse (the "envelope") --- a canonical group''s forward and reverse variants can
+      each be reduced against a different combination of the other, not necessarily one
+      jointly achievable in any single feasible flux distribution. geckopy instead reads
+      the combined forward-minus-reverse value directly off the one solve that actually
+      optimised it (the "diagonal", geckopy''s own MATLAB-COMPAT note in ec_fva.py), always
+      a value some feasible distribution attains. See
+      scenarios/ec_fva_ectestgem/scenario.yml for the measured ranges.'
   - matlab: enzymeUsage
     python: geckopy.enzyme_usage
     status: parity
-    notes: '[3->4] usage flux read from positive usage_prot_* flux.'
+    scenarios:
+      - enzyme_usage_ectestgem
+    notes: '[3->4] usage flux read from positive usage_prot_* flux. Confirmed matching by
+      execution: per-protein UB/absUsage/capUsage agree exactly on ecTestGEM, solved with
+      Gurobi on both sides.'
   - matlab: fillEnzConcs
     python: geckopy.fill_enz_concs
     status: parity
+    scenarios:
+      - protein_pool_ectestgem
     notes: Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5.
   - matlab: findECInDB
     python: geckopy.find_ec_in_db
     status: parity
-    notes: Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5.
+    notes: 'Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5. Found and fixed a real MATLAB
+      bug while mining the long-abandoned feat/geckopy-compat branch for content relevant to this project:
+      the private intersection() helper did not dedupe its output, so a specific EC code and its own
+      wildcard parent (e.g. "1.1.1.1" and "1.1.1.-") could both resolve to the same code and get appended
+      twice, e.g. "1.1.1.1;1.1.1.1" instead of "1.1.1.1". find_ec_in_db.py already documents this exact gap
+      as a deliberate MATLAB-COMPAT divergence and applies a final dedupe pass geckopy-side. [GECKO #446], merged.'
   - matlab: findGECKOroot
     status: internal
     reason: Path helper. pathlib.Path(__file__) covers it; nothing to port.
   - matlab: findMaxValue
     python: geckopy.find_max_value
     status: parity
-    notes: Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5.
+    scenarios:
+      - sensitivity_tuning_ectestgem
+    notes: 'Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5, and now
+      behaviourally by execution: two exact-match queries and a multi-EC query all agree.
+      DIVERGENCE, now measured, in a function with no callers anywhere in GECKO (checked
+      by grep, not assumed) --- documented rather than fixed, the same judgment call
+      kcat_chain_ectestgem made for selectKcatValue''s dead ''median'' branch. (1) The
+      wildcard branch''s EC-prefix slice keeps only the character before the dash plus
+      the dash itself --- for any "X.Y.Z.-"-shaped wildcard that is always exactly ".-",
+      since the dash is always preceded by a dot, so searching BRENDA for the literal
+      substring ".-" can never match a real EC code; every wildcard query returns
+      nothing. (2) When neither table matches at all, comparing 0 to 0 falls into the
+      "SA won" branch and labels the empty result ''SA*Mw'' instead of leaving the
+      parameter blank. See scenarios/sensitivity_tuning_ectestgem/scenario.yml.'
   - matlab: findMetSmiles
     python: geckopy.find_met_smiles
     status: parity
-    notes: Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5.
+    scenarios:
+      - okp_kcat_ectestgem
+    notes: Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5, and now behaviourally
+      by okp_kcat_ectestgem, whose fixture's local smilesDB.tsv cache covers every metabolite name
+      in ecTestGEM so both sides resolve entirely from cache, with no PubChem call on either side.
   - matlab: flexibilizeEnzConcs
     python: geckopy.flexibilize_enz_concs
     status: parity
-    notes: Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5.
+    scenarios:
+      - flexibilize_concs_ectestgem
+    notes: 'Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5, and now
+      behaviourally by execution. DIVERGENCE, now measured, in the post-loop refinement
+      pass only: the iterative loop itself agrees exactly (same protein flexed, P5, the
+      same number of times, from the same starting concentration). MATLAB''s refinement
+      solve pins growth into a narrow band around expGrowth (RAVEN''s setParam(''var'',
+      bioRxn, expGrowth, 0.5), +/-0.25%) and, minimising protein-pool usage, settles at
+      the band''s low edge rather than at expGrowth itself; geckopy''s refinement solve
+      pins growth to exp_growth exactly (a deliberate MATLAB-COMPAT choice documented in
+      flexibilize_enz_concs.py). The flexed concentration and final growth rate differ by
+      a small, fully explained amount. See scenarios/flexibilize_concs_ectestgem/scenario.yml.'
   - matlab: fuzzyKcatMatching
     python: geckopy.fuzzy_kcat_matching
     status: parity
-    notes: Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5.
+    scenarios:
+      - kcat_chain_ectestgem
+      - ec_model_full_yeastgem
+    notes: 'Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5, and behaviourally by
+      kcat_chain_ectestgem. The search-order/origin-numbering question is settled, not a divergence ---
+      see docs/brenda-search-order.md. Found and fixed a real MATLAB bug at genome scale
+      (ec_model_full_yeastgem, Tier 4): the wildcard EC search''s optimized path matched a substring
+      instead of a prefix, so a query for enzyme class 1 could also match an unrelated class-4 code
+      that merely contained the same two characters elsewhere in its string --- not reachable through
+      any hand-built fixture small enough to avoid the collision by chance. Filed and fixed:
+      [GECKO #434], merged. Found and fixed a second, unrelated MATLAB bug while mining the long-abandoned
+      feat/geckopy-compat branch: iterativeMatch''s wildcard-escalation loop had no termination guard, so an
+      EC class with zero BRENDA coverage even at full wildcard (''-.-.-.-'') crashed instead of reporting no
+      match --- reproduced the crash directly against current develop4 before fixing it. geckopy''s
+      escalate_wildcard/iterative_match_one_ec already terminate cleanly and return a "no match" sentinel in
+      this case. [GECKO #446], merged.'
   - matlab: GECKOInstaller
     status: internal
     reason: Installer. Python installs with pip.
@@ -123,13 +260,38 @@ entries:
   - matlab: getConcControlCoeffs
     python: geckopy.get_conc_control_coeffs
     status: parity
-    notes: Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5.
+    scenarios:
+      - enzyme_usage_ectestgem
+    notes: 'Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5, and now
+      behaviourally by execution: coefficients agree exactly on ecTestGEM''s one
+      cleanly-binding enzyme. geckopy''s own MATLAB-COMPAT note documents a real
+      algorithmic difference this fixture does not exercise --- MATLAB always runs a 2x
+      finite-difference probe, geckopy''s default instead reads the LP shadow price of
+      the binding prot_<id> constraint, which can differ from the probe by up to 4x at an
+      LP active-set breakpoint. See scenarios/enzyme_usage_ectestgem/scenario.yml.'
   - matlab: getECfromDatabase
     python: geckopy.fill_eccodes_from_database
     status: parity
+    scenarios:
+      - enzyme_annotation_ectestgem
+    notes: 'GECKO develop4 called RAVEN''s progressbar, removed in RAVEN #623; ported to progressReport in GECKO #425 (merged to develop4 2026-08-26).'
   - matlab: getECfromGEM
     python: geckopy.fill_eccodes_from_gem
     status: parity
+    scenarios:
+      - enzyme_annotation_ectestgem
+      - ec_model_full_yeastgem
+    notes: 'DIVERGENCE, measured at genome scale (ec_model_full_yeastgem, Tier 4):
+      fill_eccodes_from_gem validates each EC string against a strict pattern (four
+      purely-numeric-or-''-'' levels) and drops the whole string, including any other
+      valid EC code joined to it, on a single failure --- yeast-GEM''s own annotations
+      include real "new/undefined subclass" codes like 1.1.1.n12 that fail this pattern.
+      getECfromGEM.m had no equivalent validation and kept them (36 of 4671 reactions on
+      this model). Root cause found while mining the long-abandoned feat/geckopy-compat
+      branch: the MATLAB validation regex used \w (any word character) instead of \d+ per
+      EC component, so codes containing letters or underscores passed through unrejected.
+      Tightening the character classes closes this divergence rather than just documenting
+      it --- [GECKO #446], merged. See scenarios/ec_model_full_yeastgem/scenario.yml.'
   - matlab: getECstring
     status: subsumed
     reason: EC-string formatting, inlined on the Python side inside fill_eccodes_from_database and fill_eccodes_from_gem.
@@ -137,10 +299,17 @@ entries:
   - matlab: getKcatAcrossIsozymes
     python: geckopy.fill_kcats_from_isozymes
     status: parity
+    scenarios:
+      - kcat_chain_ectestgem
   - matlab: getReactionsFromEnzyme
     python: geckopy.get_reactions_from_enzyme
     status: parity
-    notes: Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5.
+    scenarios:
+      - model_edits_ectestgem
+    notes: 'DIVERGENCE, now measured. The known-enzyme case matches exactly. MATLAB matches
+      protein ids case-insensitively and returns empty outputs for an unknown one; geckopy
+      is case-sensitive and raises ValueError for both an unknown id and a case-mismatched
+      known one.'
   - matlab: getrSample
     status: internal
     reason: Helper of bayesianSensitivityTuning, not a standalone entry point. It will be absorbed into the
@@ -148,6 +317,29 @@ entries:
   - matlab: getStandardKcat
     python: geckopy.assign_standard_kcat
     status: parity
+    scenarios:
+      - kcat_chain_ectestgem
+    notes: 'DIVERGENCE, now measured, on the code path a subSystems-carrying model reaches, not exercised by
+      the ecTestGEM fixture (which has none): the per-subsystem kcat aggregation is the arithmetic mean in
+      MATLAB and the median in geckopy (deliberate on the Python side --- kcats span orders of magnitude and
+      a mean is dominated by the largest member), a >100x difference on a skewed sample. The reaction count
+      used for the subsystem''s own >=threshold eligibility check also differs: MATLAB counts every mapped
+      ec.rxns row including zero/NaN-kcat ones, geckopy counts only already-nonzero ones, so the two sides
+      can take different branches (subsystem-specific vs. global fallback) for the same input. Neither is
+      flagged as a MATLAB-COMPAT note upstream. Also: fillZeroKcat/fill_zero_kcat treats a NaN kcat as unset
+      in MATLAB but not in geckopy (geckopy only treats literal 0 as unset) --- undocumented, not exercised
+      by ecTestGEM either. Was blocked from having any MATLAB test at all: TestGEMAdapter.getSpontaneousReactions
+      referenced an undefined variable, then (once that was fixed) used a hardcoded reaction-list position
+      that broke once called against the already-expanded ecModel getStandardKcat actually passes it --- both
+      fixed in GECKO#429, alongside this scenario. Found and fixed a separate, plain MATLAB logic bug while
+      mining the long-abandoned feat/geckopy-compat branch, on top of (not a replacement for) the mean/median
+      and eligibility-count divergences above: kcatSubSystemIdx is a one-hot vector, and
+      all(kcatSubSystemIdx) --- instead of any() --- only ever succeeds for a model with exactly one
+      subSystem in total, so on any model with more than one, every reaction silently fell back to the
+      model-wide standardKcat regardless of its own subSystem. geckopy''s assign_standard_kcat is structured
+      differently (a dict lookup with a fallback default, not a boolean-mask-plus-all() check) so has no
+      direct code-shape equivalent of this bug, but its intended behaviour (apply the subsystem kcat whenever
+      the reaction''s subsystem has one) is what any() now gives MATLAB too. [GECKO #446], merged.'
   - matlab: getSubsetEcModel
     python: geckopy.get_subset_ec_model
     status: parity
@@ -159,10 +351,15 @@ entries:
   - matlab: loadBRENDAdata
     python: geckopy.load_brenda_data
     status: parity
-    notes: Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5.
+    scenarios:
+      - kcat_chain_ectestgem
+    notes: Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5, and behaviourally by
+      docs/brenda-reconciliation.md and kcat_chain_ectestgem.
   - matlab: loadConventionalGEM
     python: geckopy.load_conventional_gem
     status: parity
+    scenarios:
+      - ec_model_expansion_ectestgem
     notes: Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5.
   - matlab: loadDatabases
     status: subsumed
@@ -172,32 +369,56 @@ entries:
   - matlab: loadEcModel
     python: geckopy.load_ec_model
     status: parity
-    notes: '[3->4] auto-flips legacy reverse-direction usage_prot_* / prot_pool_exchange to the forward convention
-      on load. A scenario here would be well spent.'
+    issue: SysBioChalmers/raven-gecko-parity#6
+    scenarios:
+      - ec_model_io_ectestgem
+    notes: '[3->4] auto-flips legacy reverse-direction usage_prot_* / prot_pool_exchange to the forward
+      convention on load. ec_model_io_ectestgem: reads back a freshly built ecModel exactly, both sides,
+      zero differences --- the legacy-flip path is not exercised, since current makeEcModel already
+      writes forward.'
   - matlab: loadFluxData
     python: geckopy.load_flux_data
     status: parity
-    notes: Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5.
+    scenarios:
+      - flexibilize_concs_ectestgem
+    notes: Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5, and now
+      behaviourally by execution --- conds/Ptot/grRate/exchFluxes/exchMets/exchRxnIDs all
+      agree exactly on a hand-built fluxData.tsv fixture.
   - matlab: loadProtData
     python: geckopy.load_prot_data
     status: parity
+    scenarios:
+      - protein_pool_ectestgem
     notes: Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5.
   - matlab: makeEcModel
     python: geckopy.make_ec_model
     status: parity
+    scenarios:
+      - ec_model_expansion_ectestgem
+      - ec_model_full_yeastgem
     notes: '[3->4] ec.genes/enzymes/mw/sequence sorted alphabetically for stable order; KEGG fallback for
       unmatched genes is opt-in via kegg_db=. [Py] single return; unmatched genes logged and annotated on
-      rxn.notes[''geckopy_warning''].'
+      rxn.notes[''geckopy_warning'']. Confirmed matching in structure (reaction/gene/enzyme counts and
+      ID sets) at genome scale (ec_model_full_yeastgem, Tier 4) --- yeast-GEM''s 4102 conventional
+      reactions expand to 4671 ec.rxns identically on both sides.'
   - matlab: mapRxnsToConv
     python: geckopy.map_rxns_to_conv
     status: parity
-    notes: Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5.
+    scenarios:
+      - model_edits_ectestgem
+    notes: 'Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5. Also confirmed
+      behaviourally by model_edits_ectestgem, on a synthetic per-reaction flux vector keyed
+      by id: mapped conventional-reaction fluxes and enzyme-usage fluxes match exactly.'
   - matlab: mergeDLKcatAndFuzzyKcats
     python: geckopy.merge_kcats
     status: parity
+    scenarios:
+      - kcat_chain_ectestgem
   - matlab: ModelAdapter
     python: geckopy.ModelAdapter
     status: parity
+    scenarios:
+      - ec_model_expansion_ectestgem
     notes: Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5.
   - matlab: ModelAdapterManager
     status: matlab-only
@@ -217,19 +438,51 @@ entries:
   - matlab: readDLKcatOutput
     python: geckopy.read_dlkcat_output
     status: parity
-    notes: Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5.
+    scenarios:
+      - kcat_chain_ectestgem
+    notes: 'Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5. Not asserted by the scenario
+      (its fixture avoids the trigger), but found by direct source reading and worth knowing --- an
+      unrecognised substrate name is fatal in MATLAB (aborts the whole read, even for a row whose kcat would
+      otherwise be filtered out) but a non-fatal per-row drop in geckopy, which only the documented
+      case-sensitivity difference (§5, read_dlkcat_output.py) hints at.'
   - matlab: readOpenKineticsPredictorOutput
-    status: matlab-only
-    reason: Counterpart of writeOpenKineticsPredictorInput --- superseded on the Python side by the REST client,
-      whose parsing lives in parse_okp_output.
+    python: geckopy.gather_kcats.open_kinetics_predictor.parse_okp_output
+    status: parity
+    scenarios:
+      - okp_kcat_ectestgem
+    notes: 'Was wrongly filed as matlab-only with no counterpart named; parse_okp_output does the same
+      sequence->protein / SMILES->metabolite mapping over the same OKP output columns (kcat (1/s),
+      Source kcat, Protein Sequence, Substrate) and produces the same kcatList shape. Confirmed
+      behaviourally by okp_kcat_ectestgem: rxns/genes/substrates/kcats match exactly, including the
+      warn-and-skip handling of an unmatched row. One confirmed content divergence, not just a
+      mechanism one, also confirmed by that scenario: MATLAB prefixes each entry''s provenance with
+      "OKP-" (kcatSource, e.g. "OKP-CataPro"); parse_okp_output''s `source` column keeps the bare
+      value from Source kcat (e.g. "CataPro"), un-prefixed. Mechanism also differs --- MATLAB reads a
+      file the user downloads by hand from predictor.openkinetics.org; geckopy''s OKPClient fetches
+      the same CSV shape over REST --- but that difference is plumbing, not behaviour.'
   - matlab: removeStandardKcat
     python: geckopy.remove_standard_kcat
     status: parity
-    notes: Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5.
+    scenarios:
+      - kcat_chain_ectestgem
+    notes: Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5, and behaviourally by
+      kcat_chain_ectestgem's round trip.
   - matlab: reportEnzymeUsage
     python: geckopy.report_enzyme_usage
     status: parity
-    notes: '[3->4] reads positive usage_prot_* flux.'
+    scenarios:
+      - enzyme_usage_ectestgem
+    notes: '[3->4] reads positive usage_prot_* flux. DIVERGENCE, now measured: highCapUsage
+      agrees exactly, but topAbsUsage''s row count can differ. reportEnzymeUsage.m always
+      returns exactly topAbsUsage rows --- an enzyme with no flux-carrying reaction still
+      gets a placeholder row, since isscalar(find(carriedFlux)) is false for zero matches,
+      the same branch a genuinely multi-reaction enzyme takes. report_enzyme_usage instead
+      skips any enzyme with no flux-carrying reaction outright, so it can return fewer
+      rows than requested. Also found by direct execution but not yet fixed on either
+      side, since which behaviour is "correct" is a real design question: filed as
+      raven-gecko-parity#18. Along the way, found and fixed a real MATLAB crash:
+      reportEnzymeUsage''s default topAbsUsage (10) indexed past the end of any model
+      with fewer enzymes than that (ecTestGEM has 5) --- GECKO #432, merged.'
   - matlab: runDLKcat
     python: geckopy.run_dlkcat
     status: parity
@@ -237,25 +490,79 @@ entries:
   - matlab: saveEcModel
     python: geckopy.save_ec_model
     status: parity
-    notes: '[3->4] emits the new cobrapy-style YAML; usage_prot_* in forward convention.'
+    issue: SysBioChalmers/raven-gecko-parity#6
+    scenarios:
+      - ec_model_io_ectestgem
+    notes: '[3->4] emits the new cobrapy-style YAML; usage_prot_* in forward convention. Content is at
+      parity (ec_model_io_ectestgem: every field, both sides, zero differences); layout is not --- same
+      divergence as writeYAMLmodel / write_yaml_model, one level down.'
   - matlab: selectKcatValue
     python: geckopy.apply_kcat_list
     status: parity
+    scenarios:
+      - kcat_chain_ectestgem
+      - ec_model_full_yeastgem
+    notes: 'DIVERGENCE, now measured. criteria=''max''/''min'' match exactly (including the shared documented
+      MATLAB-COMPAT choices: geckopy lowercases ec.source and appends fuzzy wildcard/origin detail; returns
+      updated reaction ids instead of positions). criteria=''median''/''mean'' are dead code in MATLAB ---
+      selectKcatValue.m computes [selectedKcats(i),j] = median(...)/mean(...), a two-output call standard
+      MATLAB median/mean do not support (only max/min do); confirmed by direct execution to error
+      unconditionally with "Too many output arguments" on any non-empty kcatList. GECKO''s own
+      test/VerificationMatrix.tsv already flags this function as under-tested (''we did not test all possible
+      parameterizations here''), and no call site anywhere in the codebase, including the function''s own
+      docstring example, ever passes criteria=''median''/''mean''. geckopy''s apply_kcat_list has no such
+      restriction and computes both correctly. criteria=''max'' also confirmed at genome scale
+      (ec_model_full_yeastgem, Tier 4), modulo the upstream kcat-matching divergences recorded on
+      fuzzyKcatMatching''s own row --- this function correctly reproduces whatever selectKcatValue was
+      handed.'
   - matlab: sensitivityTuning
     python: geckopy.sensitivity_tuning
     status: parity
-    notes: Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5.
+    scenarios:
+      - sensitivity_tuning_ectestgem
+    notes: 'Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5, and now
+      behaviourally by execution: same reaction/enzyme tuned (R3/P4), the same old and
+      new kcat, on both sides. geckopy''s own MATLAB-COMPAT note describes MATLAB as
+      picking the reverse-direction usage reaction with the most negative flux --- stale
+      relative to the develop4 this scenario runs against: usage/pool reactions were
+      switched to the forward direction in GECKO#419, after which MATLAB''s own code
+      already reads max(drawFluxes), the same choice geckopy makes. Confirmed matching
+      by direct execution, not merely by re-reading both sources.'
   - matlab: setKcatForReactions
     python: geckopy.set_kcat_for_reactions
     status: parity
-    notes: Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5.
+    scenarios:
+      - model_edits_ectestgem
+    notes: 'DIVERGENCE, now measured. kcat values match exactly for a suffixed id and for a
+      base name broadcasting one scalar across its isozymes. Two differences: ec.source
+      reads ''setKcatForReactions'' in MATLAB, ''manual'' in geckopy; and MATLAB accepts a
+      per-isozyme kcat list for an unsuffixed base name (relying on ec.rxns order), which
+      geckopy refuses, asking for the suffixed ids explicitly instead.'
   - matlab: setProtPoolSize
     python: geckopy.set_prot_pool_size
     status: parity
-    notes: Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5.
+    scenarios:
+      - protein_pool_ectestgem
+      - ec_model_full_yeastgem
+    notes: Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5, and now at genome scale
+      too (ec_model_full_yeastgem, Tier 4) --- with both adapters' own f value matched (they carry
+      different defaults, neither wrong, see scenarios/ec_model_full_yeastgem/scenario.yml), the
+      pool bound agrees exactly.
   - matlab: sigmaFitter
     python: geckopy.fit_sigma
     status: parity
+    scenarios:
+      - sensitivity_tuning_ectestgem
+    notes: 'DIVERGENCE, now measured: the fitted sigma value agrees exactly (both sides
+      run the same 100-point grid search, geckopy''s fit_sigma called with
+      method=''grid'' to match). MATLAB''s own bug: the grid-search loop reassigns
+      `model` every iteration, so it returns a model sized for whichever sigma was
+      tried last (sigma=1), not the best-fitting one it reports as `sigma` --- contrary
+      to its own docstring ("ecModel with protein pool exchange upper bound adapted to
+      the optimal sigma-factor"). geckopy''s own MATLAB-COMPAT note already flagged
+      this; confirmed here with the actual numbers (sigma 0.11 both sides; MATLAB''s
+      returned model pool bound 2000 vs the correct 220 = Ptot*f*0.11*1000). Filed and
+      fixed: GECKO #433, merged.'
   - matlab: startGECKOproject
     status: subsumed
     reason: Project skeleton generation lives in `geckopy init my_project` on the CLI rather than in a library
@@ -263,7 +570,11 @@ entries:
   - matlab: truncateValues
     python: geckopy.truncate_values
     status: parity
-    notes: Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5.
+    scenarios:
+      - sensitivity_tuning_ectestgem
+    notes: Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5, and now
+      behaviourally by execution --- one value per order-of-magnitude regime, a negative
+      value, and a value small enough to round away to zero, all agree exactly.
   - matlab: updateGECKOdoc
     status: internal
     reason: Regenerates MATLAB Toolbox doc metadata. Python docs are docstring-driven, so there is nothing
@@ -279,11 +590,30 @@ entries:
   - matlab: writeDLKcatInput
     python: geckopy.write_dlkcat_input
     status: parity
-    notes: Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5.
+    scenarios:
+      - kcat_chain_ectestgem
+    notes: Confirmed against geckopy docs/migrating_from_gecko_matlab.md §5, and behaviourally by
+      kcat_chain_ectestgem. Was broken for any non-trivial ecRxns subset (the ordinary, documented way to
+      call it) until fixed in GECKO#428, alongside this scenario.
   - matlab: writeOpenKineticsPredictorInput
-    status: matlab-only
-    reason: geckopy replaced the OpenKineticsPredictor file round-trip with a REST client (submit_open_kinetics_predictor
-      / fetch_open_kinetics_predictor); the input CSV is built internally by build_okp_input_csv.
+    python: geckopy.gather_kcats.open_kinetics_predictor.build_okp_input_csv
+    status: parity
+    scenarios:
+      - okp_kcat_ectestgem
+    notes: 'Was wrongly filed as matlab-only with no counterpart named; build_okp_input_csv builds
+      the identical CSV shape (header "Protein Sequence,Substrate", one row per enzyme/substrate
+      pair) via the same shared extraction helper both sides reuse from their DLKcat input builder
+      (extract_enzyme_substrate_pairs / writeDLKcatInput.m''s inline logic), including the same
+      onlyWithSmiles filtering. Mechanism differs --- MATLAB writes OKP.csv to params.path/data for
+      the user to upload by hand; build_okp_input_csv returns the CSV text for geckopy''s OKPClient
+      to POST directly --- but that is plumbing (file vs REST), not a behavioural difference.
+      Building okp_kcat_ectestgem found and fixed a real MATLAB bug along the way:
+      writeOpenKineticsPredictorInput.m indexed model.ec.rxnEnzMat with a position *within the
+      requested ecRxns subset* instead of mapping it back to ec.rxns'' own absolute numbering, so any
+      subset excluding an earlier ec.rxns entry (the scenario''s own {R2_EXP_1, R2_EXP_2, R3}, which
+      skips the two REV entries in between) silently dropped a later reaction''s enzyme and duplicated
+      an earlier one''s instead. Confirmed by direct execution; geckopy''s build_okp_input_csv has no
+      equivalent bug. Filed and fixed: [GECKO #437], merged.'
   - python: geckopy.adapter.ComplexParams
     status: python-only
     reason: Adapter parameter group; MATLAB uses ModelAdapter classdef properties.
@@ -319,11 +649,15 @@ entries:
       a DeprecationWarning. The canonical name carries the parity row.
   - python: geckopy.databases.brenda.aggregate_and_write
     status: python-only
-    reason: Part of the BRENDA JSON -> TSV refresh pipeline; no MATLAB equivalent generator.
+    reason: 'Part of the BRENDA JSON -> TSV refresh pipeline; no MATLAB equivalent generator. (GECKO briefly
+      had one, src/geckopy/brenda_parser/ --- an unmaintained 2018 BRENDA-SOAP scraper invisible to a
+      .m-only source scan, producing GECKO''s raw max_*.txt shape from a different, now-defunct BRENDA
+      access method. Removed as dead code, [GECKO #436]; geckopy is the maintained BRENDA-parsing tooling
+      for both sides now.)'
   - python: geckopy.databases.brenda.parse_brenda_json
     status: python-only
-    reason: Part of the BRENDA JSON -> TSV refresh pipeline. MATLAB GECKO ships the pre-built TSV and has
-      no equivalent generator.
+    reason: Part of the BRENDA JSON -> TSV refresh pipeline; no MATLAB equivalent generator. See
+      aggregate_and_write's note.
   - python: geckopy.databases.brenda.Row
     status: python-only
     reason: Loaded-data type. MATLAB GECKO passes parallel cell arrays and structs; geckopy wraps them in
@@ -421,10 +755,22 @@ entries:
     status: python-only
     reason: Return type. MATLAB GECKO returns several parallel outputs ([model, a, b] = f(...)); geckopy returns
       one dataclass instead, so this has no MATLAB counterpart by design.
-  - python: geckopy.fetch_open_kinetics_predictor
-    status: matlab-pending
-    notes: MATLAB fetchOpenKineticsPredictor.m exists on the unmerged feat/geckopy-compat branch but not on
-      develop4 or develop. Merging that branch closes this row.
+  - matlab: resolveOkpApiKey
+    status: internal
+    reason: 'Shared helper extracted from submitOpenKineticsPredictor.m / fetchOpenKineticsPredictor.m
+      during the GECKO #441 port (resolution order: explicit arg, then OKP_API_KEY env var, then
+      data/okpApiKey.txt), not a standalone entry point. geckopy''s equivalent resolution lives inline
+      in OKPClient rather than as a separate function.'
+  - matlab: fetchOpenKineticsPredictor
+    python: geckopy.fetch_open_kinetics_predictor
+    status: parity
+    issue: SysBioChalmers/raven-gecko-parity#25
+    notes: 'MATLAB fetchOpenKineticsPredictor.m existed only on the unmerged feat/geckopy-compat branch (84
+      commits ahead of develop4, but also 99 behind it); rebuilt against current develop4 rather than merging
+      that branch wholesale. [GECKO #441], merged. Refactored during the port to delegate to
+      readOpenKineticsPredictorOutput for CSV parsing instead of its own separate reimplementation --- the
+      feat/geckopy-compat version had drifted from it (missing the "OKP-" kcatSource prefix, a different
+      kcatList.source convention), which delegation now removes.'
   - python: geckopy.FlexEnzResult
     status: python-only
     reason: Return type. MATLAB GECKO returns several parallel outputs ([model, a, b] = f(...)); geckopy returns
@@ -444,17 +790,13 @@ entries:
     reason: Helper exported alongside merge_kcats; MATLAB keeps it inline in mergeDLKcatAndFuzzyKcats.m.
   - python: geckopy.gather_kcats.OKPClient
     status: python-only
-    reason: HTTP client backing submit_open_kinetics_predictor / fetch_open_kinetics_predictor. MATLAB's develop4
-      code is file-based.
+    reason: 'HTTP client backing submit_open_kinetics_predictor / fetch_open_kinetics_predictor. MATLAB''s
+      submitOpenKineticsPredictor.m / fetchOpenKineticsPredictor.m (GECKO #441) call matlab.net.http /
+      webread directly rather than through a reusable client object --- no equivalent class to port.'
   - python: geckopy.gather_kcats.OKPError
     status: python-only
-    reason: Exception type for the OKP client. MATLAB signals with error().
-  - python: geckopy.gather_kcats.open_kinetics_predictor.build_okp_input_csv
-    status: python-only
-    reason: Builds the OKP request payload inside the client; MATLAB's equivalent is the user-facing writeOpenKineticsPredictorInput.
-  - python: geckopy.gather_kcats.open_kinetics_predictor.parse_okp_output
-    status: python-only
-    reason: Parses the OKP response inside the client; MATLAB's equivalent is the user-facing readOpenKineticsPredictorOutput.
+    reason: 'Exception type for the OKP client. MATLAB signals with error(), including from its own OKP REST
+      calls (GECKO #441).'
   - python: geckopy.get_ec_from_database
     status: internal
     reason: Deprecated alias of fill_eccodes_from_database, kept for backwards compatibility and emitting
@@ -463,10 +805,23 @@ entries:
     status: internal
     reason: Deprecated alias of fill_eccodes_from_gem, kept for backwards compatibility and emitting a DeprecationWarning.
       The canonical name carries the parity row.
-  - python: geckopy.get_enzyme_bottlenecks
-    status: matlab-pending
-    notes: 'New in geckopy: per-enzyme dual-based bottleneck ranker. Marked [Py] in the migration doc; queued
-      here as new functionality. Confirm before scheduling.'
+  - matlab: getEnzymeBottlenecks
+    python: geckopy.get_enzyme_bottlenecks
+    status: parity
+    issue: SysBioChalmers/raven-gecko-parity#22
+    notes: 'Per-enzyme dual-based bottleneck ranker: top-N enzymes by |shadow price| of their prot_<id>
+      mass-balance constraint. Was genuinely new (confirmed: no trace of it, by name or by concept, anywhere in
+      GECKO''s MATLAB source on develop4); ported to getEnzymeBottlenecks.m. [GECKO #438], merged. Found while
+      building the regression test: an enzyme that carries zero flux at the optimum has a genuinely
+      LP-dual-degenerate shadow price --- confirmed across three independent environments (this repo''s own
+      local Windows run, geckopy''s Python/gurobipy run, and this same MATLAB test on GitHub Actions'' Linux
+      runner) that which value comes back (an exact 0, or the shared protein pool''s own nonzero dual
+      propagated uniformly to it) depends on the solver build/platform/presolve path --- NOT on the calling
+      language. All three environments solve the byte-identical LP; none is "wrong", and it is not a stable
+      MATLAB-vs-Python split (the Linux MATLAB run and geckopy agreed with each other; only the local Windows
+      run differed). The regression test asserts only what is stable everywhere checked: every primal-derived
+      value (flux, capUsage, upperBound, all confirmed identical on both sides) and that results are sorted by
+      non-increasing |shadowPrice| --- not a specific shadow-price value for any zero-flux enzyme.'
   - python: geckopy.get_kcat_across_isozymes
     status: internal
     reason: Deprecated alias of fill_kcats_from_isozymes, kept for backwards compatibility and emitting a
@@ -515,10 +870,18 @@ entries:
     status: python-only
     reason: Return type. MATLAB GECKO returns several parallel outputs ([model, a, b] = f(...)); geckopy returns
       one dataclass instead, so this has no MATLAB counterpart by design.
-  - python: geckopy.pfba_enzymes
-    status: matlab-pending
-    notes: 'New in geckopy: pFBA variant minimising total usage_prot_* flux instead of all fluxes. Marked
-      [Py] in the migration doc; queued here as new functionality. Confirm before scheduling.'
+  - matlab: pfbaEnzymes
+    python: geckopy.pfba_enzymes
+    status: parity
+    issue: SysBioChalmers/raven-gecko-parity#23
+    notes: 'pFBA variant minimising total usage_prot_* flux (enzyme mass) instead of all fluxes. Was genuinely
+      new (confirmed: no trace of it, by name or by concept, e.g. "pFBA", anywhere in GECKO''s MATLAB source on
+      develop4); ported to pfbaEnzymes.m. [GECKO #439], merged. Cross-verified against geckopy on an identical
+      ecTestGEM fixture (exact match on which enzymes are used, up to a deliberate ~1e-6 relative safety margin
+      borrowed from solveLP''s own minFlux=1 technique) --- this function reports a primal solution (fluxes),
+      which stayed stable across repeated verification runs, unlike getEnzymeBottlenecks'' dual-degeneracy
+      finding on its own row above. usage_prot_<id> reactions with lb<0 (reverse flux) are rejected rather than
+      silently minimised incorrectly --- not reachable through any real GECKO 3 ecModel today.'
   - python: geckopy.PhylDist
     status: python-only
     reason: Loaded-data type. MATLAB GECKO passes parallel cell arrays and structs; geckopy wraps them in
@@ -527,11 +890,19 @@ entries:
     status: python-only
     reason: Loaded-data type. MATLAB GECKO passes parallel cell arrays and structs; geckopy wraps them in
       a dataclass.
-  - python: geckopy.relax_proteomics_greedy
-    status: matlab-pending
-    notes: 'New in geckopy: relaxes a fixed top-k of measured concentrations in a greedy loop until a target
-      growth is reached --- an alternative to flexibilize_enz_concs. The migration doc marks it [Py]; queued
-      here because it is a genuinely new algorithm, not a port artefact. Confirm before scheduling.'
+  - matlab: relaxProteomicsGreedy
+    python: geckopy.relax_proteomics_greedy
+    status: parity
+    issue: SysBioChalmers/raven-gecko-parity#24
+    notes: 'Relaxes a shadow-price-ranked constrained enzyme in a greedy loop until a target growth is reached
+      --- an alternative to flexibilize_enz_concs. Was genuinely new (confirmed: no trace of it, by name or by
+      concept, anywhere in GECKO''s MATLAB source on develop4); ported to relaxProteomicsGreedy.m. [GECKO #440],
+      merged. Cross-verified against geckopy on an identical ecTestGEM fixture across all three code paths
+      (converges; exhausts candidates, returns converged=false; exceeds maxIterations, raises) --- exact match
+      on every value in each, stable across repeated runs in separate processes. Not exposed to
+      getEnzymeBottlenecks'' own dual-degeneracy finding above: this fixture uses constrainEnzConcs to give the
+      relaxed enzymes their own individual usage bounds, a genuinely binding, non-degenerate constraint, rather
+      than relying on the shared, freely-interchangeable protein pool.'
   - python: geckopy.RelaxationStep
     status: python-only
     reason: Return type. MATLAB GECKO returns several parallel outputs ([model, a, b] = f(...)); geckopy returns
@@ -548,10 +919,16 @@ entries:
     status: python-only
     reason: Return type. MATLAB GECKO returns several parallel outputs ([model, a, b] = f(...)); geckopy returns
       one dataclass instead, so this has no MATLAB counterpart by design.
-  - python: geckopy.submit_open_kinetics_predictor
-    status: matlab-pending
-    notes: MATLAB submitOpenKineticsPredictor.m exists on the unmerged feat/geckopy-compat branch (84 commits
-      ahead of develop4) but not on develop4 or develop. Merging that branch closes this row.
+  - matlab: submitOpenKineticsPredictor
+    python: geckopy.submit_open_kinetics_predictor
+    status: parity
+    issue: SysBioChalmers/raven-gecko-parity#25
+    notes: 'MATLAB submitOpenKineticsPredictor.m existed only on the unmerged feat/geckopy-compat branch (84
+      commits ahead of develop4, but also 99 behind it); rebuilt against current develop4 rather than merging
+      that branch wholesale. [GECKO #441], merged. Refactored during the port to delegate to
+      writeOpenKineticsPredictorInput for CSV building instead of its own separate reimplementation --- the
+      feat/geckopy-compat version had forked that logic before GECKO #437''s fix and inherited the identical
+      reaction-subset indexing bug, which delegation now removes.'
   - python: geckopy.TunedKcatsResult
     status: python-only
     reason: Return type. MATLAB GECKO returns several parallel outputs ([model, a, b] = f(...)); geckopy returns

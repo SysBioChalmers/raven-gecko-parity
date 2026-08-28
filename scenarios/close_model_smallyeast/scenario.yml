@@ -1,0 +1,102 @@
+id: close_model_smallyeast
+pair: raven
+description: >-
+  Closing every unit-coefficient exchange, so that afterwards the only way
+  in or out of the model is whatever a caller declares explicitly ---
+  verified by what each implementation can no longer do (carry flux), not
+  by how it did it, since the two get there by completely different means.
+
+entries:
+  - closeModel
+
+inputs:
+  model: "{matlab_repo}/tutorial/smallYeast.yml"
+
+  # smallYeast ships every carbon/oxygen source shut (lb=ub=0); closing an
+  # already-closed exchange proves nothing. Opened here so there is a
+  # nonzero growth rate to lose.
+  glc_uptake: 10.0
+  o2_uptake: 1000.0
+
+  # An ordinary internal reaction neither function ever touches directly,
+  # to check that closure's downstream reach --- not just the reactions it
+  # targets --- lines up too. PGI depends on glucose entering the model at
+  # all, so its own achievable range shrinks once glcIN is closed even
+  # though PGI's bounds are never written by either implementation; see the
+  # notes below for why that is the right outcome, not a scoping leak.
+  # Already read and verified elsewhere in this suite
+  # (diff_models_smallyeast, check_model_struct_smallyeast).
+  control_reaction: PGI
+
+  # Solved with Gurobi on both sides, named here rather than inherited ---
+  # see gapfill_connect_smallyeast for why (a silent solver mismatch would
+  # compare solvers, not toolboxes). Nothing here needs a MILP solver, but
+  # the growth-rate comparison needs the two sides provably solving with
+  # the same one to mean anything.
+  matlab_solver: gurobi
+  python_solver: gurobi
+
+# Both functions detect the same reactions by the same rule ---
+# sum(|coefficient|) == 1, a single-metabolite exchange/sink/demand with
+# unit coefficient --- stated in both docstrings and restated independently
+# on each side of this scenario rather than taken from either
+# implementation, so agreeing on unit_exchange_reactions is itself a real
+# check, not a tautology. On smallYeast that is eight reactions: acOUT,
+# biomassOUT, co2OUT, ethIN, ethOUT, glcIN, glyOUT, o2IN.
+#
+# What happens to those eight afterwards has NO shared representation to
+# compare. closeModel adds a boundary metabolite per reaction, in a new 'b'
+# compartment, and never touches lb/ub --- confirmed by reading
+# manipulation/closeModel.m, which contains no assignment to either field.
+# close_model leaves metabolites and compartments alone and sets
+# rxn.bounds = (0, 0) directly. A scenario that compared metabolite counts,
+# compartment counts, or raw bounds would report a difference on every run,
+# and that difference would say nothing about whether either function does
+# its job.
+#
+# What DOES have a shared representation is the LP each implementation is
+# ultimately built to feed: does the reaction have a nonzero feasible flux
+# after closure. That is what unit_exchange_reactions' members are checked
+# against, post-closure, by optimising each one's own flux to its minimum
+# and maximum (closed_reactions) --- expected (0, 0) on both sides, and
+# confirmed on both before this scenario was written to assert it. The
+# route each implementation takes there could not be more different:
+# closeModel's zero comes from solveLP's own construction (see
+# close_model_smallyeast.m's header comment for exactly how a same-valued,
+# singly-referenced boundary metabolite forces its one reaction to zero
+# regardless of that reaction's own bounds); close_model's zero comes
+# directly from the bounds it sets. Neither is a workaround for the other's
+# behaviour --- they were independently arrived at and happen to agree.
+#
+# growth_before / growth_after add one whole-model number to the eight
+# per-reaction ones: with glucose and oxygen open, smallYeast can grow
+# before closure and cannot after, on both sides, by construction (closing
+# every boundary reaction removes every source of the carbon and oxygen
+# growth needs).
+#
+# control_reaction (PGI, an ordinary internal reaction neither
+# implementation ever writes to directly) is checked before and after on
+# each side independently --- and its own max flux drops from 10 to 0 right
+# along with the eight targeted reactions, on both sides. That is the
+# correct outcome, not a scoping leak: PGI processes a product of glucose,
+# so once glcIN carries no flux, PGI has nothing to process either, whatever
+# its own bounds say. Confirmed directly: neither closeModel nor
+# close_model writes to PGI's bounds (closeModel touches only the model
+# fields listed in its own source; close_model's rxn.bounds assignment
+# only ever runs for reactions the unit-exchange rule matches, and PGI is
+# not one of them). Checking it is what confirms the two implementations'
+# closure produces the same downstream reachability, not just the same
+# answer on the eight reactions it directly names.
+#
+# NOT COMPARABLE, and not attempted: raw model shape after closure (mets,
+# comps, S, bounds --- see above), and closeModel's own model.b bookkeeping
+# for anything beyond the one boundary metabolite this scenario's mechanism
+# note already accounts for.
+
+tolerance:
+  # Real LP solves, not exact arithmetic --- Gurobi on both sides, but still
+  # floating point. Loose enough for solver noise, tight enough that a
+  # reaction meant to be pinned at exactly zero could not drift and pass by
+  # accident.
+  rel: 1.0e-6
+  abs: 1.0e-9

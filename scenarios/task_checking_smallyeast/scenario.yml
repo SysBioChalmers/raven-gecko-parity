@@ -1,0 +1,57 @@
+id: task_checking_smallyeast
+pair: raven
+description: >-
+  Running a metabolic task list against a model: whether each task is
+  feasible, and whether that counts as a pass once SHOULD FAIL is taken into
+  account.
+
+entries:
+  - checkTasks
+
+inputs:
+  model: "{matlab_repo}/tutorial/smallYeast.yml"
+
+  # Vendored, unlike every other fixture here, because there is no task list in
+  # either repository written against smallYeast --- RAVEN's test_tasks.txt
+  # describes a synthetic model built inside its test class. Six tasks chosen
+  # so that every verdict path is exercised and none of them is marginal:
+  #
+  #   GLC_AER        feasible, passes
+  #   GLC_ANA        feasible, passes
+  #   ATP_GLC        feasible, passes --- and is the only one using EQU
+  #   NO_CARBON      infeasible, marked SHOULD FAIL, so it passes
+  #   ETH_AER        infeasible, marked SHOULD FAIL, so it passes
+  #   GLC_AER_TIGHT  infeasible, not marked SHOULD FAIL, so it fails
+  #
+  # The last one matters as much as the rest: without it the scenario would
+  # never compare how a *failure* is reported.
+  #
+  # Three of them declare their overflow outlets on a continuation row, so the
+  # multi-row task format is exercised here as well as in task_list_parsing.
+  tasks: "smallyeast_tasks.txt"
+
+  # Named, not inherited --- see below.
+  matlab_solver: gurobi
+  python_solver: gurobi
+
+# This is the first scenario that needs an LP solver, and both sides are told
+# which one to use rather than inheriting it: RAVEN would otherwise take the
+# RAVEN preference (glpk by default) and cobrapy whatever the machine has
+# configured, and a difference in a verdict could then be read as a difference
+# between the toolboxes when it was a difference between solvers. With both on
+# Gurobi that reading is closed off --- which matters here more than anywhere,
+# because this scenario reports a real difference (raven-gecko-parity#7) and
+# the first question anyone will ask of it is whether the solver explains it.
+#
+# The tasks are also chosen to be comfortably feasible or comfortably
+# infeasible rather than sitting on a boundary, so the comparison would survive
+# a solver swap in any case.
+#
+# A task's `ok` (RAVEN) / `passed` (Python) already folds in SHOULD FAIL, so
+# should_fail is emitted beside it: a difference in one but not the other says
+# whether the disagreement is about the LP or about the bookkeeping around it.
+
+tolerance:
+  # Counts and booleans only.
+  rel: 0.0
+  abs: 0.0

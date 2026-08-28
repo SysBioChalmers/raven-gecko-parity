@@ -1,15 +1,23 @@
 name: nightly
 
-# Runs every scenario against both implementations and records the verdict.
+# Runs every scenario against both implementations, for both pairs, and records the
+# verdict.
 #
 # The MATLAB side needs a licence, so this cannot run per-PR;
 # matlab-actions/setup-matlab is licence-free only for public repositories, which
 # is why this repo has to stay public.
 #
-# Nothing is compared unless one of the two repos actually moved: `nightly/state.json`
-# holds the revisions of the last real run, and an unchanged pair means the answer is
-# already on disk. Re-running an hour of MATLAB to reprint yesterday's table teaches
-# nobody anything.
+# Nothing is compared unless a pair's own two sides actually moved: nightly/state.json
+# (raven) and nightly/gecko-state.json (gecko) hold the revisions of each pair's last
+# real run, and an unchanged pair means the answer is already on disk. Re-running an
+# hour of MATLAB to reprint yesterday's table teaches nobody anything.
+#
+# The gecko pair is a four-repo job, not two: GECKO depends on RAVEN on the MATLAB
+# path, and geckopy depends on raven-toolbox (not yet on PyPI, pinned to a git ref) on
+# the Python side. Installing geckopy from its own metadata would pull raven-toolbox's
+# ref directly rather than the checkout this job already resolved, so raven-toolbox is
+# installed first from that checkout and geckopy is installed with --no-deps on top of
+# it --- see "Point parity at the checked-out repos" below.
 
 on:
   schedule:
@@ -20,7 +28,7 @@ on:
         description: "Scenario id (blank = all)"
         required: false
       force:
-        description: "Run even if neither repo has moved"
+        description: "Run even if neither side of the pair has moved"
         type: boolean
         default: false
 
@@ -31,6 +39,21 @@ permissions:
 jobs:
   compare:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      # One pair at a time: both entries commit nightly/ back to this repo, and a
+      # concurrent push from the other entry would race it. Nightly has no latency
+      # requirement, so running sequentially is the simple fix rather than the fast one.
+      max-parallel: 1
+      matrix:
+        pair: [raven, gecko]
+        include:
+          - pair: raven
+            report_path: nightly/report.md
+            state_path: nightly/state.json
+          - pair: gecko
+            report_path: nightly/gecko-report.md
+            state_path: nightly/gecko-state.json
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -40,30 +63,49 @@ jobs:
 
       # parity.toml is the single source of truth for which branch each side is
       # compared at --- RAVEN's default branch is `main`, but the ledger describes
-      # `develop3`.
+      # `develop3`. RAVEN's own repo/ref is resolved unconditionally: the gecko entry
+      # needs it as a MATLAB-path and geckopy-install dependency even though it is not
+      # the pair under test there.
       - id: refs
-        run: parity refs --pair raven --format shell >> "$GITHUB_OUTPUT"
+        run: |
+          eval "$(parity refs --pair raven --format shell)"
+          echo "raven_matlab_repo=$raven_matlab_repo" >> "$GITHUB_OUTPUT"
+          echo "raven_matlab_ref=$raven_matlab_ref" >> "$GITHUB_OUTPUT"
+          echo "raven_python_repo=$raven_python_repo" >> "$GITHUB_OUTPUT"
+          echo "raven_python_ref=$raven_python_ref" >> "$GITHUB_OUTPUT"
+
+          eval "$(parity refs --pair ${{ matrix.pair }} --format shell)"
+          echo "matlab_repo=${${{ matrix.pair }}_matlab_repo}" >> "$GITHUB_OUTPUT"
+          echo "matlab_ref=${${{ matrix.pair }}_matlab_ref}" >> "$GITHUB_OUTPUT"
+          echo "python_repo=${${{ matrix.pair }}_python_repo}" >> "$GITHUB_OUTPUT"
+          echo "python_ref=${${{ matrix.pair }}_python_ref}" >> "$GITHUB_OUTPUT"
 
       - id: state
-        name: Has either side moved since the last run?
+        name: Has this pair moved since its last run?
         run: |
-          matlab_sha=$(git ls-remote https://github.com/SysBioChalmers/RAVEN.git \
+          matlab_sha=$(git ls-remote "https://github.com/${{ steps.refs.outputs.matlab_repo }}.git" \
+            "refs/heads/${{ steps.refs.outputs.matlab_ref }}" | cut -f1)
+          python_sha=$(git ls-remote "https://github.com/${{ steps.refs.outputs.python_repo }}.git" \
+            "refs/heads/${{ steps.refs.outputs.python_ref }}" | cut -f1)
+          raven_matlab_sha=$(git ls-remote "https://github.com/${{ steps.refs.outputs.raven_matlab_repo }}.git" \
             "refs/heads/${{ steps.refs.outputs.raven_matlab_ref }}" | cut -f1)
-          python_sha=$(git ls-remote https://github.com/SysBioChalmers/raven-toolbox.git \
+          raven_python_sha=$(git ls-remote "https://github.com/${{ steps.refs.outputs.raven_python_repo }}.git" \
             "refs/heads/${{ steps.refs.outputs.raven_python_ref }}" | cut -f1)
-          if [ -z "$matlab_sha" ] || [ -z "$python_sha" ]; then
+          if [ -z "$matlab_sha" ] || [ -z "$python_sha" ] || [ -z "$raven_matlab_sha" ] || [ -z "$raven_python_sha" ]; then
             echo "could not resolve one of the tracked branches" >&2
             exit 1
           fi
           echo "matlab_sha=$matlab_sha" >> "$GITHUB_OUTPUT"
           echo "python_sha=$python_sha" >> "$GITHUB_OUTPUT"
+          echo "raven_matlab_sha=$raven_matlab_sha" >> "$GITHUB_OUTPUT"
+          echo "raven_python_sha=$raven_python_sha" >> "$GITHUB_OUTPUT"
 
           previous="none none"
-          if [ -f nightly/state.json ]; then
+          if [ -f "${{ matrix.state_path }}" ]; then
             previous=$(python -c "
           import json
-          state = json.load(open('nightly/state.json'))['revisions']
-          print(state.get('raven.matlab', 'none'), state.get('raven.python', 'none'))
+          state = json.load(open('${{ matrix.state_path }}'))['revisions']
+          print(state.get('${{ matrix.pair }}.matlab', 'none'), state.get('${{ matrix.pair }}.python', 'none'))
           ")
           fi
           if [ "$previous" = "$matlab_sha $python_sha" ] && [ "${{ inputs.force }}" != "true" ]; then
@@ -73,18 +115,34 @@ jobs:
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
+      # RAVEN and raven-toolbox: needed by both entries, as the pair under test for
+      # raven and as a MATLAB-path / geckopy-install dependency for gecko.
       - uses: actions/checkout@v4
         if: steps.state.outputs.changed == 'true'
         with:
-          repository: SysBioChalmers/RAVEN
-          ref: ${{ steps.state.outputs.matlab_sha }}
+          repository: ${{ steps.refs.outputs.raven_matlab_repo }}
+          ref: ${{ steps.state.outputs.raven_matlab_sha }}
           path: repos/RAVEN
       - uses: actions/checkout@v4
         if: steps.state.outputs.changed == 'true'
         with:
-          repository: SysBioChalmers/raven-toolbox
-          ref: ${{ steps.state.outputs.python_sha }}
+          repository: ${{ steps.refs.outputs.raven_python_repo }}
+          ref: ${{ steps.state.outputs.raven_python_sha }}
           path: repos/raven-toolbox
+
+      # GECKO and geckopy: only the gecko entry needs these.
+      - uses: actions/checkout@v4
+        if: steps.state.outputs.changed == 'true' && matrix.pair == 'gecko'
+        with:
+          repository: ${{ steps.refs.outputs.matlab_repo }}
+          ref: ${{ steps.state.outputs.matlab_sha }}
+          path: repos/GECKO
+      - uses: actions/checkout@v4
+        if: steps.state.outputs.changed == 'true' && matrix.pair == 'gecko'
+        with:
+          repository: ${{ steps.refs.outputs.python_repo }}
+          ref: ${{ steps.state.outputs.python_sha }}
+          path: repos/geckopy
 
       - name: Point parity at the checked-out repos
         if: steps.state.outputs.changed == 'true'
@@ -96,6 +154,29 @@ jobs:
           path = "repos/raven-toolbox"
           EOF
           pip install ./repos/raven-toolbox
+
+          if [ "${{ matrix.pair }}" = "gecko" ]; then
+            cat >> parity.local.toml <<'EOF'
+          [pairs.gecko.matlab]
+          path = "repos/GECKO"
+          [pairs.gecko.python]
+          path = "repos/geckopy"
+          EOF
+            # --no-deps: geckopy's own metadata pins raven-toolbox to a git ref, which
+            # would otherwise override the pinned checkout just installed above with
+            # whatever that ref currently resolves to. Its other dependencies still need
+            # installing, so they are read out of its own pyproject.toml (skipping the
+            # raven-toolbox entry) rather than duplicated here by hand, which would
+            # silently drift out of sync as geckopy's dependencies change.
+            pip install --no-deps ./repos/geckopy
+            python -c "
+          import tomllib
+          with open('repos/geckopy/pyproject.toml', 'rb') as f:
+              deps = tomllib.load(f)['project']['dependencies']
+          print('\n'.join(d for d in deps if not d.strip().startswith('raven-toolbox')))
+          " > geckopy-deps.txt
+            pip install -r geckopy-deps.txt
+          fi
 
       - uses: matlab-actions/setup-matlab@v2
         if: steps.state.outputs.changed == 'true'
@@ -154,7 +235,7 @@ jobs:
         continue-on-error: true
         run: |
           : > matlab_side.m
-          for id in $(parity scenarios --pair raven | awk 'NR % 2 == 1 {print $1}'); do
+          for id in $(parity scenarios --pair ${{ matrix.pair }} | awk 'NR % 2 == 1 {print $1}'); do
             if [ -n "${{ inputs.scenario }}" ] && [ "$id" != "${{ inputs.scenario }}" ]; then
               continue
             fi
@@ -185,7 +266,7 @@ jobs:
         if: steps.state.outputs.changed == 'true'
         continue-on-error: true
         run: |
-          for id in $(parity scenarios --pair raven | awk 'NR % 2 == 1 {print $1}'); do
+          for id in $(parity scenarios --pair ${{ matrix.pair }} | awk 'NR % 2 == 1 {print $1}'); do
             if [ -n "${{ inputs.scenario }}" ] && [ "$id" != "${{ inputs.scenario }}" ]; then
               continue
             fi
@@ -198,10 +279,13 @@ jobs:
         continue-on-error: true
         run: |
           python scripts/nightly_report.py \
+            --pair ${{ matrix.pair }} \
+            --state "${{ matrix.state_path }}" \
+            --report "${{ matrix.report_path }}" \
             --stamp "$(date -u +%Y-%m-%d)" \
             --run-url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
-            --sha "raven.matlab=${{ steps.state.outputs.matlab_sha }}" \
-            --sha "raven.python=${{ steps.state.outputs.python_sha }}"
+            --sha "${{ matrix.pair }}.matlab=${{ steps.state.outputs.matlab_sha }}" \
+            --sha "${{ matrix.pair }}.python=${{ steps.state.outputs.python_sha }}"
 
       # Committed rather than left as an artefact: an artefact expires and nobody
       # browses old runs, so a report that lives only there is a report nobody reads.
@@ -214,14 +298,14 @@ jobs:
           if git diff --cached --quiet; then
             echo "nothing changed"
           else
-            git commit -m "nightly: parity report for $(date -u +%Y-%m-%d)"
+            git commit -m "nightly: ${{ matrix.pair }} parity report for $(date -u +%Y-%m-%d)"
             git push
           fi
 
       - uses: actions/upload-artifact@v4
         if: always() && steps.state.outputs.changed == 'true'
         with:
-          name: scenario-results
+          name: scenario-results-${{ matrix.pair }}
           path: |
             results/
             nightly/
@@ -229,5 +313,5 @@ jobs:
       - name: Fail if the two implementations disagree
         if: steps.state.outputs.changed == 'true' && steps.report.outcome != 'success'
         run: |
-          echo "see nightly/report.md" >&2
+          echo "see ${{ matrix.report_path }}" >&2
           exit 1

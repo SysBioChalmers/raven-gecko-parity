@@ -1,0 +1,103 @@
+id: add_reactions_from_equations_smallyeast
+pair: raven
+description: >-
+  Building reactions from equation strings: how the arrow is read, how
+  coefficients are parsed, what happens when a metabolite or a gene in the
+  equation does not exist yet, and what an explicit bound does to a
+  reversible arrow.
+
+entries:
+  - addRxns
+
+inputs:
+  model: "{matlab_repo}/tutorial/smallYeast.yml"
+
+  # Where a metabolite that has to be created goes. Optional on both sides when
+  # every token resolves to an existing metabolite, and required by both the
+  # moment one does not --- the Python side says so outright ("Cannot create
+  # metabolite 'PROBE_c': no compartment given").
+  compartment: c
+
+  # Both stated, because the defaults are opposites: RAVEN refuses to invent a
+  # metabolite or a gene unless asked (allowNewMets and allowNewGenes default
+  # false), while the Python signature defaults both to true. A scenario on the
+  # defaults would compare one refusal against one invention.
+  allow_new_mets: true
+  allow_new_genes: true
+
+  # Added in one call with no bounds given, so the arrow decides them.
+  arrow_reactions:
+    - id: PX_REV
+      equation: "ATP_c + GLC_c <=> ADP_c + G6P_c"
+      name: reversible arrow
+      gene_reaction_rule: ""
+    - id: PX_IRREV
+      equation: "PYR_c => ACA_c + CO2_c"
+      name: irreversible arrow
+      gene_reaction_rule: ""
+    # An integer and a decimal coefficient in the same equation, on both sides
+    # of the arrow. Coefficient parsing is where an equation reader usually
+    # first disagrees with another one.
+    - id: PX_COEFF
+      equation: "1.5 ATP_c + 2 PYR_c => 1.5 ADP_c + 2 ACA_c"
+      name: fractional and integer coefficients
+      gene_reaction_rule: ""
+    # PROBE_c is in neither model, so this one has to be created.
+    - id: PX_NEWMET
+      equation: "PYR_c => PROBE_c"
+      name: creates a metabolite
+      gene_reaction_rule: ""
+    # Neither gene exists, so both have to be created and attached.
+    - id: PX_GPR
+      equation: "ETH_c => ACA_c"
+      name: creates two genes
+      gene_reaction_rule: "YPROBE1 and YPROBE2"
+
+  # Added in a second call with bounds given, so the arrow is overruled --- in
+  # both directions, since overruling a reversible arrow and overruling an
+  # irreversible one are different code paths and only one of them tends to be
+  # tested.
+  bounded_reactions:
+    - id: PX_FORCED_IRREV
+      equation: "AC_c <=> ACCOA_c"
+      name: reversible arrow held to one direction
+      gene_reaction_rule: ""
+      lower_bound: 0.0
+      upper_bound: 7.5
+    - id: PX_FORCED_REV
+      equation: "GLY_c => GP_c"
+      name: irreversible arrow opened both ways
+      gene_reaction_rule: ""
+      lower_bound: -5.0
+      upper_bound: 5.0
+
+# Two checkpoints, one per call, because bounds cannot be given for some
+# reactions and not others: RAVEN takes lb and ub as vectors over the whole
+# batch, so a mixed call would need the harness to fill in the arrow-derived
+# defaults itself --- and those defaults are exactly what the first checkpoint
+# is there to compare.
+#
+# Bounds a reaction gets from its arrow are the interesting default here:
+# RAVEN takes them from the model's own defaultLB / defaultUB annotation, the
+# Python side from cobra's configuration. Both are -1000 / 1000 for smallYeast,
+# so they agree --- but they agree by coincidence rather than by construction,
+# and a model annotated differently would part them. Recorded on the ledger row.
+#
+# One thing about a created metabolite is not compared: its NAME. Asked to
+# invent PROBE_c, RAVEN sets metNames to "PROBE_c" --- the id, for want of
+# anything better --- while the Python side leaves the name empty. That is a
+# real difference rather than a convention, and it has a consequence: a
+# metabolite with no name is invisible to everything that keys on names, which
+# in this very toolbox includes merge_compartments (whose docstring tells the
+# caller to pass base_metabolite=lambda m: m.name for exactly that reason) and
+# addRxnsGenesMets' name[compartment] matching. Tracked as
+# raven-gecko-parity#9; the id and the compartment of the created metabolite
+# are compared, which is the rest of the claim.
+#
+# Equations use metabolite IDS on both sides (RAVEN's eqnType 1, the Python
+# side's mets_by="id"). The name and name[compartment] forms are not covered.
+
+tolerance:
+  # Coefficients are parsed from the decimal strings above, not computed.
+  rel: 1.0e-12
+  abs: 1.0e-15

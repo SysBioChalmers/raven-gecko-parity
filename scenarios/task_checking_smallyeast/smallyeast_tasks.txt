@@ -1,0 +1,13 @@
+	ID	DESCRIPTION	IN	IN LB	IN UB	OUT	OUT LB	OUT UB	EQU	EQU LB	EQU UB	SHOULD FAIL	COMMENTS
+#	Growth and energy tasks for RAVEN's smallYeast tutorial model												
+	GLC_AER	Aerobic growth on glucose	alpha-D-glucose[c];O2[c]	0	1000	biomass[c]	0.1	1000					Expected to pass
+						CO2[c];ethanol[c];glycerol[c];acetate[c]	0	1000					Overflow outlets, on a continuation row
+	GLC_ANA	Anaerobic growth on glucose	alpha-D-glucose[c]	0	1000	biomass[c]	0.01	1000					Fermentation only
+						CO2[c];ethanol[c];glycerol[c];acetate[c]	0	1000					
+	ATP_GLC	ATP regeneration from glucose	alpha-D-glucose[c];O2[c]	0	1000	CO2[c];ethanol[c];glycerol[c];acetate[c]	0	1000	ATP[c] => ADP[c] + phosphate[c]	1	1000		Exercises the EQU column
+	NO_CARBON	Growth with no carbon source	O2[c]	0	1000	biomass[c]	0.01	1000				1	Infeasible, and marked SHOULD FAIL, so the task passes
+						CO2[c];ethanol[c];glycerol[c];acetate[c]	0	1000					
+	ETH_AER	Growth on ethanol as sole carbon source	ethanol[c];O2[c]	0	1000	biomass[c]	0.01	1000				1	smallYeast cannot consume ethanol; SHOULD FAIL
+						CO2[c];ethanol[c];glycerol[c];acetate[c]	0	1000					
+	GLC_AER_TIGHT	Aerobic growth on glucose with CO2 as the only outlet	alpha-D-glucose[c];O2[c]	0	1000	biomass[c]	0.1	1000					Infeasible and not marked SHOULD FAIL, so the task fails
+						CO2[c]	0	1000					

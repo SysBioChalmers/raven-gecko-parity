@@ -1,0 +1,74 @@
+id: assign_sbo_terms_smallyeast
+pair: raven
+description: >-
+  Classifying every metabolite and reaction with a Systems Biology
+  Ontology term --- biomass vs. simple chemical, exchange vs. sink vs.
+  demand, transport, and named overrides for the biomass and maintenance
+  reactions --- covering every branch of a shared, fully deterministic
+  rule set.
+
+entries:
+  - assignSBOterms
+
+inputs:
+  model: "{matlab_repo}/tutorial/smallYeast.yml"
+
+  # Neither side's default biomassRxnName/ngamRxnName ("biomass
+  # pseudoreaction" / "non-growth associated maintenance reaction") match
+  # anything in smallYeast's own reaction names --- both are yeast-GEM
+  # specific defaults, and smallYeast is RAVEN's own, differently-named
+  # tutorial model. Redirected to reaction names smallYeast actually has,
+  # so those two override branches --- and their priority over the
+  # single-reactant default --- are exercised rather than silently
+  # skipped.
+  biomass_rxn_name: "Production of biomass"
+  ngam_rxn_name: "ATP hydrolysis"
+
+# Every metabolite and every reaction is compared, not a hand-picked
+# subset --- this is a pure classification with no solver and no
+# tolerance to speak of, so there is no reason to sample it.
+#
+# What this fixture exercises:
+#   - Metabolite classification: BIOMASS_c's name ("biomass") is in the
+#     default biomassMetNames set --- SBO:0000649. Every other metabolite
+#     falls through to SBO:0000247.
+#   - Single-reactant reactions (acOUT, biomassOUT, co2OUT, ethOUT,
+#     glyOUT, glcIN, o2IN, ethIN --- the same eight from
+#     close_model_smallyeast and apply_condition_smallyeast): none touch
+#     an 'e'/extracellular compartment (smallYeast has only 'c' and 'm'),
+#     so each becomes SBO:0000632 (sink, negative coefficient) or
+#     SBO:0000628 (demand, positive), never SBO:0000627 (exchange).
+#   - Transport reactions, by the shared name-in->=2-compartments rule:
+#     CAT2, CO2TRANS, GROWTH, ShuttleX --- confirmed directly on the
+#     Python side before this file was written. See the note below on why
+#     this rule is not quite the same rule as RAVEN's, and why that does
+#     not show up on this model.
+#   - Named overrides, redirected to exist on this model at all:
+#     biomassOUT (a single-reactant reaction, sink by default) is
+#     reclassified to SBO:0000629 by name; ATPX (an ordinary
+#     multi-metabolite reaction) is reclassified to SBO:0000630 by name.
+#   - pseudoreactionSubstrings ('pseudoreaction', 'SLIME rxn') and
+#     onlyLastReactionForPseudo are left at their defaults: no smallYeast
+#     reaction name contains either substring, and the bug-compat flag is
+#     off on both sides by default, so neither path is reachable here.
+#     Not a gap in this scenario --- the substring path has nothing to
+#     exercise on this model, and the bug-compat flag is a yeast-GEM
+#     migration aid neither side turns on unasked.
+#
+# NOT THE SAME ALGORITHM, doesn't matter here: assignSBOterms's transport
+# check (getTransportRxns) flags a reaction whenever the same metabolite
+# NAME appears more than once among its participants, with no regard for
+# compartment at all; add_sbo_terms's default detector is explicitly
+# documented as "a cheap analogue" that instead requires the name to
+# appear in two or more DISTINCT compartments. These agree on any model
+# with no same-name-same-compartment duplicate metabolites --- checked
+# directly against smallYeast's own metabolite list (every repeated name
+# --- acetyl-CoA, CO2, coenzyme A, NAD(+), NADH, NADP(+), NADPH --- is a
+# cytosol/mitochondria pair, never two entries in the same compartment)
+# --- and would diverge on a model that has one. Recorded on the ledger
+# row as a latent risk, not asserted by this scenario.
+
+tolerance:
+  # Categorical facts, not floats.
+  rel: 0.0
+  abs: 0.0

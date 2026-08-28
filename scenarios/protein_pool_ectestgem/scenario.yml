@@ -1,0 +1,58 @@
+id: protein_pool_ectestgem
+pair: gecko
+description: Protein pool budget, proteomics loading and enzyme-concentration constraints on GECKO's ecTestGEM.
+
+# The third GECKO scenario, and the last purely deterministic one in this chain: no solver,
+# no kcats, no network. Where ec_model_expansion_ectestgem covers the model surgery and
+# enzyme_annotation_ectestgem the annotation, this one covers the budget --- how much total
+# enzyme the model is allowed to deploy, and how a proteomics measurement narrows that
+# budget per enzyme. setKcatForReactions and applyKcatConstraints are deliberately absent:
+# this scenario never assigns a kcat, so every usage reaction keeps its default bound except
+# where a measured concentration tightens it.
+#
+# Both sides read the GECKO fixture --- the model, the adapter and data/proteomics.tsv ---
+# for the same reason as the first two scenarios: the fixture cannot drift if it is one file
+# read twice.
+
+entries:
+  - setProtPoolSize
+  - calculateFfactor
+  - loadProtData
+  - fillEnzConcs
+  - constrainEnzConcs
+
+inputs:
+  adapter_matlab: "{matlab_repo}/test/unit_tests/ecTestGEM/TestGEMAdapter.m"
+  fixture_dir: "{matlab_repo}/test/unit_tests/ecTestGEM"
+  adapter_python: "{python_repo}/examples/ecTestGEM"
+
+  # Overrides for the second setProtPoolSize call in each flavour. The first call uses the
+  # adapter's own defaults (sigma=0.5, Ptot=0.5, f=4 --- deliberately out of range, per
+  # model_adapter.toml's comment --- giving 1000); this is a second, different point.
+  pool_size_override:
+    p_tot: 1.0
+    f: 5.0
+    sigma: 1.0
+
+  # calculateFfactor against a subset of ec.enzymes rather than the model's own list, so the
+  # numerator and denominator differ. ecTestGEM's five proteins are all five of the model's
+  # enzymes, so the default call (enzymes unspecified) always gives f=1 --- a real value, but
+  # one that cannot catch a mismatched index. This subset can.
+  f_factor_enzymes:
+    - P1
+    - P3
+
+  # Which measured proteins to keep for the "some enzymes unmeasured" checkpoint. Built by
+  # filtering the same proteomics.tsv both sides already read, not a second fixture: P3 and
+  # P5 are the ones left out, so their usage reactions must fall back to the default bound
+  # while P1, P2 and P4 are tightened.
+  partial_proteins:
+    - P1
+    - P2
+    - P4
+
+# Nothing here is summed: bounds are copied or multiplied by declared constants, and
+# concentrations are copied from the fixture. A last-bit difference would be a real one.
+tolerance:
+  rel: 0.0
+  abs: 0.0

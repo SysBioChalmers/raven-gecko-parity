@@ -1,0 +1,56 @@
+id: set_variance_bounds_smallyeast
+pair: raven
+description: >-
+  Constraining reactions to a percentage band around a measured value ---
+  setParam's "var" mode, the one mode of it with no direct cobra
+  equivalent. Covers the sign-dependent bound swap and broadcasting one
+  value across several reactions.
+
+entries:
+  - setParam
+
+inputs:
+  model: "{matlab_repo}/tutorial/smallYeast.yml"
+
+  # setParam's other six modes (lb, ub, eq, obj, rev, unc) are cobra
+  # one-liners on the Python side --- reaction.bounds, model.objective,
+  # Configuration().bounds --- and have no raven_toolbox wrapper to compare
+  # against. Only "var" is covered here; see the ledger row.
+
+  # Three reactions, three signs, one percent, so the sign-dependent swap is
+  # exercised in both directions plus the edge the swap collapses to nothing:
+  #
+  #   HXK   positive value  -> lb/ub the ordinary way round
+  #   PFK   negative value  -> lb/ub swapped, so lb stays <= ub
+  #   PGK   zero            -> both bounds are exactly zero regardless of
+  #                            percent, a value neither branch of the
+  #                            sign check treats specially
+  distinct:
+    percent: 5.0
+    values:
+      HXK: 12.5
+      PFK: -8.3
+      PGK: 0.0
+
+  # A single measured value broadcast across several reactions in one call
+  # --- both sides document this as a real capability, not an incidental
+  # side effect, so it gets its own checkpoint at a different percent rather
+  # than being folded into the one above.
+  broadcast:
+    percent: 10.0
+    value: 20.0
+    reactions:
+      - GND
+      - ZWF
+
+# Reactions outside these five keep their original bounds; asserting that
+# is not incidental here since setParam mutates by reaction index and a
+# miscounted index would show up as exactly the kind of change --- a bound
+# moved on the wrong reaction --- that only checking "everything else" would
+# catch.
+
+tolerance:
+  # v * (1 +/- percent/200): the one place in this scenario a float is
+  # actually computed rather than copied.
+  rel: 1.0e-12
+  abs: 1.0e-15

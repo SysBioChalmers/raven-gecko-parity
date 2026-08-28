@@ -1,0 +1,90 @@
+id: gapfill_topology_smallyeast
+pair: raven
+description: >-
+  Topological gap analysis: which metabolites a draft model can still produce
+  from a given medium, which target metabolites it cannot reach, and which
+  reactions in a universal database would produce each of those directly.
+
+entries:
+  - gapFillTopological
+
+inputs:
+  # The draft is smallYeast with two reactions taken out, and the universal
+  # database is intact smallYeast --- so the reactions that would repair the
+  # gaps are exactly the ones removed, and both sides read the same file for
+  # each role.
+  model: "{matlab_repo}/tutorial/smallYeast.yml"
+
+  # PGI and ZWF are the only two ways out of glucose 6-phosphate in this model:
+  # glycolysis and the oxidative pentose phosphate pathway. Removing both
+  # strands the whole of central metabolism downstream of G6P, which leaves 23
+  # of 52 metabolites reachable and 11 of the 16 targets blocked --- enough of
+  # each for a difference to have somewhere to show.
+  removed_reactions:
+    - PGI
+    - ZWF
+
+  # Seeds and targets are given explicitly rather than left to each side's
+  # default, because the defaults are not the same and comparing them would
+  # measure that rather than the traversal:
+  #
+  #   seeds    RAVEN takes the metabolites of every exchange reaction whose
+  #            bounds allow uptake; the Python side takes one-metabolite
+  #            reactions with lower_bound < 0. smallYeast ships glcIN and o2IN
+  #            shut (lb = ub = 0), so both would find nothing here.
+  #   targets  RAVEN defaults to the substrates of the objective reaction; the
+  #            Python side defaults to every metabolite in the model.
+  #
+  # Recorded on the ledger row. What is compared here is the traversal itself.
+  #
+  # The cofactor pool is seeded along with the medium. A scope computation
+  # fires a reaction only when *all* its substrates are reachable, and nothing
+  # in smallYeast synthesises ATP, NAD(+) or coenzyme A from glucose --- so
+  # without them in the seed set the traversal stops at the first kinase and
+  # every target is blocked for a reason that has nothing to do with the gaps.
+  seeds:
+    - GLC_c
+    - O2_c
+    - ATP_c
+    - ADP_c
+    - PI_c
+    - NAD_c
+    - NADH_c
+    - NADP_c
+    - NADPH_c
+    - COA_c
+    - NAD_m
+    - NADH_m
+    - NADP_m
+    - NADPH_m
+    - FAD_m
+    - FADH2_m
+    - COA_m
+
+  # Spread across glycolysis, the pentose phosphate pathway, the TCA cycle and
+  # the fermentation outlets, so a traversal that goes wrong in one branch is
+  # distinguishable from one that goes wrong everywhere.
+  targets:
+    - BIOMASS_c
+    - ETH_c
+    - AC_c
+    - GLY_c
+    - CO2_c
+    - PYR_c
+    - ACCOA_c
+    - ACCOA_m
+    - CI_m
+    - MAL_m
+    - R5P_c
+    - E4P_c
+    - S7P_c
+    - F6P_c
+    - G6P_c
+    - PEP_c
+
+tolerance:
+  # pruning_fraction is the one number here: a ratio of two integer counts, so
+  # it should agree exactly, but it is a division and not worth failing on the
+  # last bit.
+  rel: 1.0e-12
+  abs: 1.0e-15

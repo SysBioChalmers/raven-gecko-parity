@@ -1,0 +1,98 @@
+id: init_merge_linear_smallyeast
+pair: raven
+description: >-
+  ftINIT's lossless MILP shrink: contracting linear reaction chains into
+  single combined reactions, and summing the original reaction scores over
+  each merged group.
+
+entries:
+  - mergeLinear
+  - groupRxnScores
+
+inputs:
+  model: "{matlab_repo}/tutorial/smallYeast.yml"
+
+  # The eight boundary reactions, used by the second merge checkpoint. Real
+  # ftINIT runs protect reactions for the same reason --- a merge across an
+  # exchange would make the model's interface with the medium disappear into a
+  # combined reaction.
+  protected_reactions:
+    - glcIN
+    - o2IN
+    - ethIN
+    - acOUT
+    - biomassOUT
+    - co2OUT
+    - ethOUT
+    - glyOUT
+
+  # Scores for the third checkpoint, over the protected merge. Chosen to reach
+  # every branch of the zero handling that groupRxnScores exists for, since
+  # that is the part of it with any behaviour in it:
+  #
+  #   GLD + PGK          +3 and -3, so the group cancels to zero while having
+  #                      non-zero members --- must come out as 0.01, not 0
+  #   GPM + ENO          an ordinary sum, 4.0
+  #   ZWF + PGL + GND    PGL is unlisted, so its score is a genuine 0 and
+  #                      becomes 0.01 before the sum: -1 + 0.01 + 2 = 1.01
+  #   TKI1TKI2a + TAL1   TAL1 is masked to zero, so the group keeps 4.0 rather
+  #                      than cancelling
+  #   CIT + ACO + IDP1   all three unlisted: 0.01 three times over
+  #   KGD1KGD2 + LSC1LSC2  a masked member alongside a scored one
+  #   HXK                unmerged, scored
+  #   PFK                unmerged and masked, so 0
+  #
+  # Every reaction not named here scores 0, which both sides then read as a
+  # genuine zero and lift to 0.01.
+  scores:
+    GLD: 3.0
+    PGK: -3.0
+    GPM: 2.5
+    ENO: 1.5
+    ZWF: -1.0
+    GND: 2.0
+    TKI1TKI2a: 4.0
+    TAL1: -4.0
+    KGD1KGD2: 5.0
+    HXK: -2.5
+
+  # Reactions to drop from the problem: their score becomes 0 rather than
+  # 0.01, which is how a masked reaction stays distinguishable from one that
+  # merely scored zero.
+  scores_to_zero:
+    - TAL1
+    - LSC1LSC2
+    - PFK
+
+# Three checkpoints, so a difference is located rather than merely observed:
+# the merge with nothing protected, the merge with the exchanges protected
+# (a different partition, so the protection parameter is exercised rather
+# than assumed), and the score grouping on top of the second.
+#
+# What the merge produces is compared as more than a count: the reduced
+# model's stoichiometry and bounds have to match too, since a merge that
+# contracted the same chains but combined them wrongly would otherwise pass.
+#
+# Grouping is compared as the partition, not as the raw integers. The two
+# implementations agree on which reactions merge together and disagree on what
+# to call each group: on smallYeast the same nine groups come out numbered
+# differently, because each side's counter increments in its own merge order.
+# The integer is documented on both sides as an equivalence marker --- "merged
+# rxns have the same id" --- and neither promises anything about its value, so
+# comparing it would report a difference that is not one. What is compared
+# instead is the sorted member lists, and a per-reaction index into them, which
+# still asserts that every reaction lands in the same group as its counterpart
+# and that the unmerged set is the same. Recorded on the ledger row, since a
+# caller who stored these integers and compared them across implementations
+# would be caught out by it.
+#
+# One path this fixture does not reach: `reversed`, the flag marking an
+# original reaction whose stored direction was flipped when it was oriented
+# for merging. Neither smallYeast nor smallYeastBad has a chain that needs it,
+# so both sides return all-false. Recorded on the ledger row.
+
+tolerance:
+  # The scores are sums of declared decimals; 0.01 three times over is not
+  # exactly 0.03 on either side.
+  rel: 1.0e-12
+  abs: 1.0e-15

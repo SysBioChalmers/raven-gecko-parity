@@ -1,0 +1,39 @@
+id: yaml_roundtrip_smallyeast
+pair: raven
+description: >-
+  The YAML reader and writer, compared as text and as content: what each
+  side makes of RAVEN's smallYeast tutorial model, the exact file each one
+  writes back out, and what survives a read-write-read round trip.
+
+entries:
+  - readYAMLmodel
+  - writeYAMLmodel
+
+inputs:
+  # The same bytes on both sides, read out of the RAVEN checkout.
+  model: "{matlab_repo}/tutorial/smallYeast.yml"
+
+# Three checkpoints, so a difference is located rather than merely observed:
+#
+#   direct     what each reader made of the file. A difference here is in the
+#              readers, and explains anything downstream.
+#   written    the file each writer produced, line by line. writeYAMLmodel
+#              claims to be byte-stable with write_yaml_model on the same
+#              model; this is what checks the claim. Written twice --- once in
+#              the order the reader produced and once with sortIds --- so an
+#              ordering difference in the reader is distinguishable from a
+#              formatting difference in the writer.
+#   roundtrip  the model after read -> write -> read. Its identical_to_direct
+#              flag is each implementation's own verdict on whether its round
+#              trip loses anything; the flag agreeing on `false` is not a pass,
+#              which is why the content is emitted as well.
+#
+# Line endings are normalised to \n before comparison. MATLAB opens the output
+# in text mode and so writes CRLF on Windows; that is a platform artefact of
+# the harness's own file handling, not a difference between the writers.
+
+tolerance:
+  # Bounds and coefficients are parsed from the same decimal strings and
+  # written back; nothing is summed. Kept off zero on principle only.
+  rel: 1.0e-12
+  abs: 1.0e-15
