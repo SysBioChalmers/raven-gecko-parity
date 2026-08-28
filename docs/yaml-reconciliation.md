@@ -50,6 +50,19 @@ side's full test suite passing.
 one-time, do-it-once corpus change that should happen deliberately, in a commit that does
 nothing else, once this decision has had a chance to settle.
 
+**Addendum (2026-08-28):** the "verified byte-identical... exercising every optional field" claim
+above did not actually hold for every field --- re-verifying it directly (rather than trusting
+this record) found the two writers still disagreed on `metaData` field order, on whether
+`defaultLB`/`defaultUB` were emitted at all, and on whether a singleton MIRIAM annotation
+collapsed to a bare scalar. Fixed in
+[SysBioChalmers/raven-toolbox#106](https://github.com/SysBioChalmers/raven-toolbox/pull/106); *that*
+fix is what a same-model byte-identity check (same SHA256) now confirms, on both `smallYeast.yml`
+and a fixture built to exercise the fields above. Separately, two reader-side bugs in
+`readYAMLmodel.m` were found and fixed
+([SysBioChalmers/RAVEN#709](https://github.com/SysBioChalmers/RAVEN/pull/709)): a metabolite
+missing its charge or compartment resolved differently depending on whether some *later*
+metabolite in the file happened to carry that field.
+
 ## The short answer
 
 **No --- "cobrapy uses ruamel" does not mean MATLAB has to adopt ruamel's output.** ruamel is a

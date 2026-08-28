@@ -440,7 +440,8 @@ entries:
   - matlab: defaultCompartmentMap
     python: raven_toolbox.localization.DEFAULT_COMPARTMENT_MAP
     status: parity
-    notes: auto-paired (exact name match); confirm the behaviour actually matches
+    notes: 'Cross-validated key by key: MATLAB''s containers.Map (built from parallel labels/ids arrays) and
+      the Python dict constant carry the same 23 entries, same mapped ids, same declaration order.'
   - matlab: deleteUnusedGenes
     status: via-dependency
     reason: 'cobrapy covers this: cobra.manipulation.prune_unused_genes. raven_toolbox.manipulation.remove_genes
@@ -781,7 +782,21 @@ entries:
   - matlab: getKEGGModelForOrganism
     python: raven_toolbox.reconstruction.kegg.get_kegg_model_for_organism
     status: parity
-    notes: auto-paired (exact name match); confirm the behaviour actually matches
+    issue: SysBioChalmers/RAVEN#704
+    notes: 'This row covers only the no-FASTA (organism-ID) path; get_kegg_model_for_organism''s own docstring
+      says so explicitly, and the FASTA/HMM-search path is separately and correctly tracked as python-only
+      (get_kegg_model_from_sequences and friends, "RAVEN keeps all five stages inside
+      getKEGGModelForOrganism"). For that path: MATLAB''s getModelFromKEGG was rewritten
+      (SysBioChalmers/RAVEN#707) to join organism_gene_ko/ko_reaction into the reference model exactly the way
+      Python''s assemble_model_from_ko_genes does, and the quality-flag-vs-genes-vs-spontaneous precedence
+      matches despite the two sides structuring it differently --- MATLAB drops flagged reactions globally in
+      getModelFromKEGG before gene-based pruning ever runs in getKEGGModelForOrganism, Python drops them in the
+      same single pass it checks genes/spontaneous, but a flagged reaction is dropped either way regardless of
+      having genes, and an unflagged one is kept on the same genes-or-spontaneous condition. Verified at the
+      code level and via RAVEN''s own test suite (buildGlobalGPR''s offline join test, 14 passed) plus
+      raven-toolbox''s cross-language parity suite against a live RAVEN checkout (4/4) --- NOT an end-to-end run
+      of either function against real KEGG data (needs network access to the ~150+ MB raven-data artefact set,
+      not attempted).'
   - matlab: getMinimalMedium
     status: via-dependency
     reason: 'cobrapy covers this: cobra.medium.minimal_medium.'
@@ -1050,7 +1065,12 @@ entries:
       per-entry keys (inchis/deltaG/metFrom/notes, confidence_score/references/rxnFrom/deltaG, protein) into
       .notes, plus version/metaData/GECKO ec-*. cobra-readable output verified. Cross-validated on smallYeast:
       the two readers produce the same model down to bounds, formulae, compartments, gene sets and
-      stoichiometry.'
+      stoichiometry. FIXED two position-dependent RAVEN reader bugs found while re-verifying this row
+      (SysBioChalmers/RAVEN#709): a metabolite missing charge or compartment resolved differently
+      (NaN/crash-prone-0 vs the intended default) depending on whether a later metabolite happened to carry
+      that field. raven_toolbox''s read_yaml_model gained the matching "missing compartment defaults to the
+      first one" behaviour (SysBioChalmers/raven-toolbox#106); confirmed both readers resolve an identical
+      probe file (a mid-list metabolite missing its compartment) to the same assignment.'
   - matlab: removeBadRxns
     status: python-pending
     notes: Flags reactions with structural problems for review. No port decision is recorded either way. Left
@@ -1229,7 +1249,12 @@ entries:
   - matlab: setGAM
     python: raven_toolbox.biomass.set_gam
     status: parity
-    notes: auto-paired (exact name match); confirm the behaviour actually matches
+    notes: 'Cross-validated: both only rescale biomass-equation metabolites with a nonzero coefficient whose
+      name is in the cofactor-name list, to sign(coefficient)*value --- algebraically identical (MATLAB''s
+      direct S-matrix write vs. Python''s add_metabolites delta, cobra''s sparse dict already excluding
+      zero-coefficient entries). NGAM handling matches: both require the reaction id and the value non-null
+      before fixing that reaction''s bounds to (value, value). A missing biomassRxn errors explicitly on both
+      sides. Only difference is calling convention (Python''s extra arguments are keyword-only).'
   - matlab: setParam
     python: raven_toolbox.manipulation.set_variance_bounds
     status: parity
@@ -1325,22 +1350,32 @@ entries:
   - matlab: writeFasta
     python: raven_toolbox.localization.write_fasta
     status: parity
-    notes: auto-paired (exact name match); confirm the behaviour actually matches
+    issue: SysBioChalmers/raven-gecko-parity#26
+    notes: 'DIVERGENCE, five ways: default wrap width (80 vs 60), an empty sequence emits a trailing blank
+      line in Python but not MATLAB, Python rejects whitespace in a header/id where MATLAB accepts it,
+      max_records_per_file chunking is Python-only, and MATLAB writes platform line endings (CRLF on Windows)
+      while Python forces LF everywhere. Not wrong on either side individually, but not the same output for
+      the same input.'
   - matlab: writeYAMLmodel
     python: raven_toolbox.io.write_yaml_model
     status: parity
     issue: SysBioChalmers/raven-gecko-parity#6
     scenarios:
       - yaml_roundtrip_smallyeast
-    notes: 'DIVERGENCE in layout, not in content. Both writers preserve the model --- a read-write-read round
-      trip is lossless on either side, and the models the two produce agree field for field --- but they do not
-      write the same file, so the byte-stability writeYAMLmodel.m claims in its own docstring does not hold
-      today. writeYAMLmodel reproduces the historical RAVEN layout (4-space sequence indent, long scalars inline
-      in double quotes) and emits an empty "version:" line into metaData; write_yaml_model dumps through cobra''s
-      ruamel instance at its defaults (2-space indent, scalars folded at 80 columns) and quotes the date. On
-      smallYeast that is 1415 lines against 1571. Asserted by yaml_roundtrip_smallyeast, which compares the two
-      written files line by line. Analysed in docs/yaml-reconciliation.md, which also records that
-      readYAMLmodel cannot read cobrapy-written YAML at all --- a separate and larger problem than the layout.'
+    notes: 'FIXED: the layout divergence this row used to describe (writeYAMLmodel''s historical 4-space
+      indent/double-quoting vs write_yaml_model dumping through cobra''s ruamel defaults) was resolved by the
+      shared-format rewrite recorded in docs/yaml-reconciliation.md ("Status: resolved"). Re-verified directly
+      today rather than trusting that record: reading RAVEN''s tutorial/smallYeast.yml and writing it back out
+      through each side''s writer now produces byte-identical output (same SHA256, 1428/1428 lines). That
+      verification also surfaced three narrower gaps the shared-format work had not caught --- write_yaml_model
+      echoed metaData in whatever order model.notes[''metaData''] happened to already be in instead of
+      writeYAMLmodel.m''s fixed id/name/version/date/... order, never emitted defaultLB/defaultUB, and never
+      collapsed a singleton MIRIAM annotation to a bare scalar --- all fixed in
+      SysBioChalmers/raven-toolbox#106, which is what made the byte-identical result above true rather than
+      aspirational. Verified against a model exercising every optional field (inchis, deltaG, notes, references,
+      confidence_score, rxnFrom, protein, multi-item subsystem, singleton and multi-value annotations), not just
+      smallYeast, and against raven-toolbox''s own parity suite run for real against a live RAVEN checkout
+      (parity vs MATLAB RAVEN CI job, 4/4 passed).'
   - python: raven_toolbox.analysis.find_good_reactions
     status: python-only
     reason: The non-loop flux screen randomSampling performs inline when choosing random objectives.
