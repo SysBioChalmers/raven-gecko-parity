@@ -44,7 +44,7 @@ entries:
       bug in the split loop, fixed in GECKO#427 (merged). Behind the fix, matches geckopy exactly:
       reactions added, enzymes added, and every field of the resulting model. Separately: MATLAB''s
       missing-gene error path called dispEM, a RAVEN utility RAVEN#659 deleted (already on develop3) ---
-      crashed with "Undefined function ''dispEM''" instead of reporting the missing gene. [GECKO #454], open.'
+      crashed with "Undefined function ''dispEM''" instead of reporting the missing gene. [GECKO #454], merged.'
   - matlab: applyComplexData
     python: geckopy.apply_complex_data
     status: parity
@@ -347,7 +347,7 @@ entries:
     status: parity
     notes: '[Py] returns a new EcModel; the input is not mutated. MATLAB''s same-starting-GEM mismatch
       error path called dispEM, a RAVEN utility RAVEN#659 deleted (already on develop3) --- crashed with
-      "Undefined function ''dispEM''" instead of naming the mismatched reactions. [GECKO #454], open.'
+      "Undefined function ''dispEM''" instead of naming the mismatched reactions. [GECKO #454], merged.'
   - matlab: loadBayesianData
     status: internal
     reason: Helper of bayesianSensitivityTuning, not a standalone entry point. It will be absorbed into the
@@ -371,7 +371,7 @@ entries:
       halves MATLAB performs inline (urlwrite for UniProt, a local downloadKEGG subfunction) are exposed separately
       in Python as geckopy.databases.download_kegg / download_uniprot. Separately: MATLAB''s duplicate-UniProt-entry
       error path called dispEM, a RAVEN utility RAVEN#659 deleted (already on develop3) --- crashed with "Undefined
-      function ''dispEM''" instead of reporting the duplicates. [GECKO #454], open.'
+      function ''dispEM''" instead of reporting the duplicates. [GECKO #454], merged.'
   - matlab: loadEcModel
     python: geckopy.load_ec_model
     status: parity
@@ -464,7 +464,7 @@ entries:
       differ in capitalization"). Ported the same case-insensitive match to readDLKcatOutput.m. [GECKO #452],
       open. Separately: both of MATLAB''s "not found" error paths (substrates, reactions) called dispEM, a
       RAVEN utility RAVEN#659 deleted (already on develop3) --- crashed with "Undefined function ''dispEM''"
-      instead of reporting the unrecognised names. [GECKO #454], open.'
+      instead of reporting the unrecognised names. [GECKO #454], merged.'
   - matlab: readOpenKineticsPredictorOutput
     python: geckopy.gather_kcats.open_kinetics_predictor.parse_okp_output
     status: parity
