@@ -187,7 +187,7 @@ entries:
       the private intersection() helper did not dedupe its output, so a specific EC code and its own
       wildcard parent (e.g. "1.1.1.1" and "1.1.1.-") could both resolve to the same code and get appended
       twice, e.g. "1.1.1.1;1.1.1.1" instead of "1.1.1.1". find_ec_in_db.py already documents this exact gap
-      as a deliberate MATLAB-COMPAT divergence and applies a final dedupe pass geckopy-side. [GECKO #446], open.'
+      as a deliberate MATLAB-COMPAT divergence and applies a final dedupe pass geckopy-side. [GECKO #446], merged.'
   - matlab: findGECKOroot
     status: internal
     reason: Path helper. pathlib.Path(__file__) covers it; nothing to port.
@@ -249,7 +249,7 @@ entries:
       EC class with zero BRENDA coverage even at full wildcard (''-.-.-.-'') crashed instead of reporting no
       match --- reproduced the crash directly against current develop4 before fixing it. geckopy''s
       escalate_wildcard/iterative_match_one_ec already terminate cleanly and return a "no match" sentinel in
-      this case. [GECKO #446], open.'
+      this case. [GECKO #446], merged.'
   - matlab: GECKOInstaller
     status: internal
     reason: Installer. Python installs with pip.
@@ -291,8 +291,7 @@ entries:
       branch: the MATLAB validation regex used \w (any word character) instead of \d+ per
       EC component, so codes containing letters or underscores passed through unrejected.
       Tightening the character classes closes this divergence rather than just documenting
-      it --- [GECKO #446], open; re-run ec_model_full_yeastgem after merge to confirm 0 of
-      4671 differ on this axis. See scenarios/ec_model_full_yeastgem/scenario.yml.'
+      it --- [GECKO #446], merged. See scenarios/ec_model_full_yeastgem/scenario.yml.'
   - matlab: getECstring
     status: subsumed
     reason: EC-string formatting, inlined on the Python side inside fill_eccodes_from_database and fill_eccodes_from_gem.
@@ -340,7 +339,7 @@ entries:
       model-wide standardKcat regardless of its own subSystem. geckopy''s assign_standard_kcat is structured
       differently (a dict lookup with a fallback default, not a boolean-mask-plus-all() check) so has no
       direct code-shape equivalent of this bug, but its intended behaviour (apply the subsystem kcat whenever
-      the reaction''s subsystem has one) is what any() now gives MATLAB too. [GECKO #446], open.'
+      the reaction''s subsystem has one) is what any() now gives MATLAB too. [GECKO #446], merged.'
   - matlab: getSubsetEcModel
     python: geckopy.get_subset_ec_model
     status: parity
