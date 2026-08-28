@@ -77,6 +77,7 @@ entries:
       sums. Fixed in GECKO#431.'
   - matlab: bayesianSensitivityTuning
     status: python-pending
+    issue: SysBioChalmers/raven-gecko-parity#21
     notes: ABC-SMC kcat tuning (~1370 LOC with its helpers). The migration doc calls it 'not ported', but
       geckopy/docs/internal/bayesian_tuning_plan.md has the design and says the work is paused, not abandoned
       --- queued, not a divergence.
@@ -769,9 +770,10 @@ entries:
     reason: Deprecated alias of fill_eccodes_from_gem, kept for backwards compatibility and emitting a DeprecationWarning.
       The canonical name carries the parity row.
   - python: geckopy.get_enzyme_bottlenecks
-    status: matlab-pending
-    notes: 'New in geckopy: per-enzyme dual-based bottleneck ranker. Marked [Py] in the migration doc; queued
-      here as new functionality. Confirm before scheduling.'
+    status: python-only
+    reason: 'New in geckopy: per-enzyme dual-based bottleneck ranker. Confirmed genuinely new, not a port
+      artefact --- no trace of it (by name or by concept) anywhere in GECKO''s MATLAB source on develop4.
+      Not scheduled for a MATLAB back-port.'
   - python: geckopy.get_kcat_across_isozymes
     status: internal
     reason: Deprecated alias of fill_kcats_from_isozymes, kept for backwards compatibility and emitting a
@@ -821,9 +823,10 @@ entries:
     reason: Return type. MATLAB GECKO returns several parallel outputs ([model, a, b] = f(...)); geckopy returns
       one dataclass instead, so this has no MATLAB counterpart by design.
   - python: geckopy.pfba_enzymes
-    status: matlab-pending
-    notes: 'New in geckopy: pFBA variant minimising total usage_prot_* flux instead of all fluxes. Marked
-      [Py] in the migration doc; queued here as new functionality. Confirm before scheduling.'
+    status: python-only
+    reason: 'New in geckopy: pFBA variant minimising total usage_prot_* flux instead of all fluxes. Confirmed
+      genuinely new, not a port artefact --- no trace of it (by name or by concept, e.g. "pFBA") anywhere in
+      GECKO''s MATLAB source on develop4. Not scheduled for a MATLAB back-port.'
   - python: geckopy.PhylDist
     status: python-only
     reason: Loaded-data type. MATLAB GECKO passes parallel cell arrays and structs; geckopy wraps them in
@@ -833,10 +836,11 @@ entries:
     reason: Loaded-data type. MATLAB GECKO passes parallel cell arrays and structs; geckopy wraps them in
       a dataclass.
   - python: geckopy.relax_proteomics_greedy
-    status: matlab-pending
-    notes: 'New in geckopy: relaxes a fixed top-k of measured concentrations in a greedy loop until a target
-      growth is reached --- an alternative to flexibilize_enz_concs. The migration doc marks it [Py]; queued
-      here because it is a genuinely new algorithm, not a port artefact. Confirm before scheduling.'
+    status: python-only
+    reason: 'New in geckopy: relaxes a fixed top-k of measured concentrations in a greedy loop until a target
+      growth is reached --- an alternative to flexibilize_enz_concs. Confirmed genuinely new, not a port
+      artefact --- no trace of it (by name or by concept) anywhere in GECKO''s MATLAB source on develop4. Not
+      scheduled for a MATLAB back-port.'
   - python: geckopy.RelaxationStep
     status: python-only
     reason: Return type. MATLAB GECKO returns several parallel outputs ([model, a, b] = f(...)); geckopy returns
