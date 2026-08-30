@@ -40,7 +40,7 @@ setup = "addpath(genpath('{raven_matlab}')); addpath(genpath('{path}'))"
 
 [pairs.gecko.python]
 repo = "SysBioChalmers/geckopy"
-ref = "develop"
+ref = "main"
 path = "../geckopy"
 package = "geckopy"
 src = "src"
