@@ -63,12 +63,9 @@ entries:
       - kcat_chain_ectestgem
       - ec_model_full_yeastgem
     notes: '[3->4] writes coefficients with the forward-direction usage_prot_* / prot_pool_exchange convention.
-      DIVERGENCE: in the light-model formulation, when only some isozymes of a reaction have a kcat assigned,
-      MATLAB corrects an unassigned isozyme''s Inf cost (MW/0) to 0 before taking min() across isozymes, so the
-      fabricated zero always wins --- silently writing a zero enzyme cost for the whole reaction even though
-      another isozyme has a real, valid kcat. geckopy skips invalid isozymes before the comparison instead,
-      correctly picking the real one. In the full formulation, two enzyme rows mapping to the same
-      prot_<accession> metabolite (distinct genes sharing one UniProt entry) are summed on both sides.'
+      In the full formulation, two enzyme rows mapping to the same prot_<accession> metabolite (distinct genes
+      sharing one UniProt entry) are summed on both sides. In the light formulation, an isozyme with no usable
+      kcat is excluded before selecting the cheapest isozyme on both sides (GECKO#463).'
   - matlab: bayesianSensitivityTuning
     status: python-pending
     issue: SysBioChalmers/raven-gecko-parity#21
@@ -104,9 +101,8 @@ entries:
     status: parity
     scenarios:
       - model_edits_ectestgem
-    notes: 'DIVERGENCE: filling an empty eccode and leaving a populated one alone under overwrite=false match
-      on both sides. Under overwrite=true, MATLAB clobbers an existing annotation with an empty ec.eccodes
-      entry; geckopy treats an empty entry as nothing to propagate and never clobbers with emptiness.'
+    notes: 'An empty ec.eccodes source entry is never copied over an existing annotation, under overwrite=true
+      or overwrite=false alike (GECKO#463).'
   - matlab: ecFSEOF
     python: geckopy.ec_fseof
     status: parity
