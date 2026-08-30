@@ -277,13 +277,12 @@ entries:
   - matlab: convertToIrrev
     python: raven_toolbox.manipulation.convert_to_irreversible
     status: parity
-    issue: SysBioChalmers/raven-gecko-parity#66
     scenarios:
       - model_manipulation_smallyeast
-    notes: 'from migration.md. Splits reversible non-exchange reactions into forward + _REV. Adopted from
-      geckopy. DIVERGENCE: RAVEN splits every reaction with rev ~= 0 including reversible exchange reactions,
-      where the Python side skips boundary reactions whatever their bounds; and RAVEN moves a negative objective
-      coefficient onto the reverse reaction, where the Python side leaves it.'
+    notes: 'Splits every reaction with rev ~= 0, including reversible exchange reactions (neither side
+      special-cases them), into forward + _REV. A negative objective coefficient on a split reaction moves
+      onto the new reverse reaction (sign-flipped positive) and is zeroed on the forward reaction, on both
+      sides.'
   - matlab: copyToComps
     python: raven_toolbox.manipulation.copy_to_compartment
     status: parity
@@ -755,13 +754,12 @@ entries:
   - matlab: mergeModels
     python: raven_toolbox.manipulation.merge_models
     status: parity
-    issue: SysBioChalmers/raven-gecko-parity#68
     scenarios:
       - merge_models_smallyeast
     notes: 'from migration.md. N-model merge, unify mets by name[comp] (or id), keep all reactions (id collisions
-      renamed, "<id>_<source model id>"). cobra''s merge is pairwise / strict-by-id. DIVERGENCE on a *second*
-      collision of the same id: the Python side goes on to "<id>_<source>_2" while RAVEN emits the same id
-      twice.'
+      renamed, "<id>_<source model id>", appending "_2", "_3", ... on repeat collisions against the same
+      candidate id, whether from the existing model or from duplicate ids within the same source model).
+      cobra''s merge is pairwise / strict-by-id.'
   - matlab: modelSummary
     status: python-pending
     issue: SysBioChalmers/raven-gecko-parity#38

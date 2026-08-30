@@ -1,6 +1,6 @@
 """Python side of the sensitivity-tuning scenario.
 
-Four independent checkpoints, matching the four ledger rows this scenario covers:
+Three independent checkpoints, matching the three ledger rows this scenario covers:
 
 ``sensitivity_tuning``
     sensitivity_tuning on enzyme_usage_ectestgem's own R2/R4-blocked, single-route
@@ -9,10 +9,6 @@ Four independent checkpoints, matching the four ledger rows this scenario covers
     fit_sigma (method='grid', matching MATLAB's own 100-point sweep exactly) on a
     separate instance of the same fixture shape. Confirmed divergence in the returned
     model's pool bound only --- see scenario.yml; filed and fixed as GECKO#433.
-``find_max_value``
-    A hand-built BRENDA-shaped fixture (no file I/O; both sides take the tables
-    directly), five queries covering every branch. Two confirmed divergences, both in
-    MATLAB code with no callers anywhere in GECKO --- see scenario.yml.
 ``truncate_values``
     Plain rounding, one value per order-of-magnitude regime.
 """
@@ -23,13 +19,11 @@ from pathlib import Path
 
 import cobra
 import numpy as np
-import pandas as pd
 
 from geckopy import (
     ModelAdapter,
     apply_kcat_constraints,
     fill_eccodes_from_gem,
-    find_max_value,
     fit_sigma,
     load_conventional_gem,
     make_ec_model,
@@ -37,7 +31,6 @@ from geckopy import (
     set_prot_pool_size,
     truncate_values,
 )
-from geckopy.databases.brenda_loader import BrendaData
 
 
 def _adapter(inputs: dict) -> ModelAdapter:
@@ -142,25 +135,6 @@ def _checkpoint_sigma_fitter(adapter, conv, inputs: dict) -> dict:
     }
 
 
-def _checkpoint_find_max_value(inputs: dict) -> list:
-    kcat_max = pd.DataFrame(inputs["find_max_value"]["kcat_max"])
-    sa_max = pd.DataFrame(inputs["find_max_value"]["sa_max"])
-    brenda = BrendaData(kcat_max=kcat_max, sa_max=sa_max)
-
-    rows = []
-    for query in inputs["find_max_value"]["queries"]:
-        value, organism, parameter = find_max_value(str(query), brenda)
-        rows.append(
-            {
-                "query": str(query),
-                "value": float(value),
-                "organism": str(organism),
-                "parameter": str(parameter),
-            }
-        )
-    return rows
-
-
 def _checkpoint_truncate_values(inputs: dict) -> list:
     arr = np.array(inputs["truncate_values"], dtype=float)
     out = truncate_values(arr)
@@ -177,6 +151,5 @@ def run(ctx):
     return {
         "sensitivity_tuning": _checkpoint_sensitivity_tuning(adapter, conv, inputs),
         "sigma_fitter": _checkpoint_sigma_fitter(adapter, conv, inputs),
-        "find_max_value": _checkpoint_find_max_value(inputs),
         "truncate_values": _checkpoint_truncate_values(inputs),
     }

@@ -1,9 +1,8 @@
 function results = sensitivity_tuning_ectestgem(ctx)
 % MATLAB side of the sensitivity-tuning scenario.
 %
-% Four independent checkpoints, mirroring run.py. See scenario.yml for the two
-% confirmed divergences (sigmaFitter's returned-model bug, fixed as GECKO#433;
-% findMaxValue's two bugs in a function with no callers anywhere in GECKO).
+% Three independent checkpoints, mirroring run.py. See scenario.yml for the
+% confirmed divergence (sigmaFitter's returned-model bug, fixed as GECKO#433).
 
 previousSolver = getpref('RAVEN', 'solver', '');
 restoreSolver = onCleanup(@() restore_solver(previousSolver));
@@ -17,7 +16,6 @@ fixAdapter.params.bioRxn = char(ctx.inputs.bio_rxn);
 
 results.sensitivity_tuning = checkpoint_sensitivity_tuning(model, adapter, fixAdapter, ctx.inputs);
 results.sigma_fitter = checkpoint_sigma_fitter(model, adapter, ctx.inputs);
-results.find_max_value = checkpoint_find_max_value(ctx.inputs);
 results.truncate_values = checkpoint_truncate_values(ctx.inputs);
 
 end
@@ -89,60 +87,6 @@ ecModel = setProtPoolSize(ecModel, [], [], [], adapter);
 out.sigma = double(sigma);
 poolIdx = strcmp(fittedModel.rxns, 'prot_pool_exchange');
 out.model_pool_ub = double(fittedModel.ub(poolIdx));
-end
-
-
-% --------------------------------------------------------------------------- %
-% find_max_value: findMaxValue
-% --------------------------------------------------------------------------- %
-
-function out = checkpoint_find_max_value(inputs)
-% jsondecode (parity_run.m's context loader) turns a JSON array of same-shaped
-% objects into a struct array, not a cell array of structs -- kcat_max/sa_max are
-% therefore struct arrays here, indexed with parens+dot, not braces+dot.
-kcatRows = inputs.find_max_value.kcat_max;
-saRows = inputs.find_max_value.sa_max;
-
-BRENDA = { ...
-    arrayfun(@(r) ['EC' r.ec_code], kcatRows, 'UniformOutput', false), ...
-    arrayfun(@(r) r.substrate, kcatRows, 'UniformOutput', false), ...
-    arrayfun(@(r) r.organism, kcatRows, 'UniformOutput', false), ...
-    arrayfun(@(r) r.kcat, kcatRows) ...
-};
-SA = { ...
-    arrayfun(@(r) ['EC' r.ec_code], saRows, 'UniformOutput', false), ...
-    arrayfun(@(r) r.organism, saRows, 'UniformOutput', false), ...
-    arrayfun(@(r) r.kcat, saRows) ...
-};
-
-queries = inputs.find_max_value.queries;
-n = numel(queries);
-rows = cell(1, n);
-for i = 1:n
-    [value, organism, parameter] = findMaxValue(queries{i}, BRENDA, SA);
-    rows{i} = struct('query', queries{i}, 'value', double(value), ...
-        'organism', unwrap_cell(organism), 'parameter', unwrap_cell(parameter));
-end
-out = rows;
-end
-
-
-function out = unwrap_cell(x)
-% findMaxValue's organism/parameter outputs are 1x1 cells that, when a match was
-% found, wrap ANOTHER 1x1 cell (from indexing a cell array with parens rather than
-% braces one level up) -- unwrap however deep it goes, down to the underlying char.
-out = '';
-if isempty(x)
-    return
-end
-x = x{1};
-while iscell(x)
-    if isempty(x)
-        return
-    end
-    x = x{1};
-end
-out = x;
 end
 
 

@@ -150,18 +150,12 @@ entries:
   - matlab: findGECKOroot
     status: internal
     reason: Path helper. pathlib.Path(__file__) covers it; nothing to port.
-  - matlab: findMaxValue
-    python: geckopy.find_max_value
-    status: parity
-    scenarios:
-      - sensitivity_tuning_ectestgem
-    notes: 'DIVERGENCE in a function with no callers anywhere in GECKO --- documented rather than fixed, the
-      same judgment call kcat_chain_ectestgem made for selectKcatValue''s dead ''median'' branch. (1) The
-      wildcard branch''s EC-prefix slice keeps only the character before the dash plus the dash itself --- for
-      any "X.Y.Z.-"-shaped wildcard that is always exactly ".-", since the dash is always preceded by a dot,
-      so searching BRENDA for the literal substring ".-" can never match a real EC code; every wildcard query
-      returns nothing. (2) When neither table matches at all, comparing 0 to 0 falls into the "SA won" branch
-      and labels the empty result ''SA*Mw'' instead of leaving the parameter blank.'
+  - python: geckopy.find_max_value
+    status: python-only
+    reason: 'findMaxValue.m was removed from GECKO (GECKO#465): it had no callers anywhere in the codebase
+      and three confirmed bugs (BRENDA matching could never succeed at all, a broken wildcard slice, and a
+      0-vs-0 tie mislabeled as a real result), not worth fixing dead code for. geckopy''s find_max_value keeps
+      working and is retained.'
   - matlab: findMetSmiles
     python: geckopy.find_met_smiles
     status: parity
