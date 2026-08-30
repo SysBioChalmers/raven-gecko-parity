@@ -76,19 +76,15 @@ tolerance:
   rel: 1.0e-6
   abs: 1.0e-9
 
-# One confirmed, asserted divergence: report.top_abs_usage. reportEnzymeUsage.m always
-# returns exactly topAbsUsage rows (here, the model's own enzyme count, 5) --- for any
-# enzyme with no reaction actually carrying flux, MATLAB's isscalar(find(carriedFlux))
-# check is false (zero elements is not scalar, same as more-than-one), so it falls into
-# the "combined usage, multiple rxns" branch and emits one placeholder row (kcat=NaN,
-# source/rxnID='===') even though the enzyme is not, in fact, involved in multiple
-# reactions --- it is involved in none carrying flux. geckopy's report_enzyme_usage
-# instead skips any enzyme with no flux-carrying reaction outright, so its top_abs_usage
-# table returns fewer than topAbsUsage rows whenever fewer than that many enzymes are
-# actually active (here: 2, P4 and P5, against a requested 5). Confirmed by direct
-# execution: the two enzymes that do carry flux agree exactly between the two tables;
-# the extra three MATLAB rows are placeholders for enzymes report_enzyme_usage leaves
-# out. Not reachable through the shared ecTestGEM fixture without also leaving the
-# broader LP degeneracy in (see blocked_reactions above), so filed as
-# [raven-gecko-parity #18] rather than fixed --- which of the two behaviours is
-# "correct" is a real design question, not a bug.
+# report.top_abs_usage used to be a confirmed, asserted divergence, closed by GECKO#460
+# (raven-gecko-parity#18). Before the fix, reportEnzymeUsage.m always returned exactly
+# topAbsUsage rows (here, the model's own enzyme count, 5): for any enzyme with no
+# reaction actually carrying flux, MATLAB's isscalar(find(carriedFlux)) check was false
+# (zero elements is not scalar, same as more-than-one), so it fell into the "combined
+# usage, multiple rxns" branch and emitted one placeholder row (kcat=NaN,
+# source/rxnID='===') even though the enzyme wasn't, in fact, involved in multiple
+# reactions --- it was involved in none carrying flux. geckopy's report_enzyme_usage has
+# always skipped any enzyme with no flux-carrying reaction outright. reportEnzymeUsage.m
+# now does the same: an enzyme with zero flux-carrying reactions is skipped rather than
+# padded, so both sides return exactly 2 rows for this fixture (P4 and P5, the only
+# enzymes actually carrying flux) instead of MATLAB padding to 5 with placeholders.

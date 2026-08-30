@@ -85,11 +85,6 @@ entries:
     status: parity
     scenarios:
       - molecular_weight_sequences
-    notes: 'Both agree on the twenty standard residues to the gram-mole. Four differences: the water-mass
-      constant (18 vs 18.01528); X''s mass (126.50, an unsourced historical constant, vs the live mean of the
-      standard table, 118.885); B''s mass (114.60 pre-rounded vs 114.595 computed); and shape --- calculateMW
-      is case-sensitive (a lowercase letter is ignored, like a digit) and returns 18 for a sequence with no
-      recognised residues, where calculate_mw upper-cases first and returns NaN for the same case.'
   - matlab: constrainEnzConcs
     python: geckopy.constrain_enz_concs
     status: parity
@@ -394,13 +389,7 @@ entries:
     status: parity
     scenarios:
       - enzyme_usage_ectestgem
-    notes: '[3->4] reads positive usage_prot_* flux. DIVERGENCE: highCapUsage agrees exactly, but
-      topAbsUsage''s row count can differ. reportEnzymeUsage.m always returns exactly topAbsUsage rows ---
-      an enzyme with no flux-carrying reaction still gets a placeholder row, since isscalar(find(carriedFlux))
-      is false for zero matches, the same branch a genuinely multi-reaction enzyme takes.
-      report_enzyme_usage instead skips any enzyme with no flux-carrying reaction outright, so it can return
-      fewer rows than requested. Not yet fixed on either side, since which behaviour is "correct" is a real
-      design question.'
+    notes: '[3->4] reads positive usage_prot_* flux.'
   - matlab: runDLKcat
     python: geckopy.run_dlkcat
     status: parity
