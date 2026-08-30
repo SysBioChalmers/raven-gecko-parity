@@ -29,10 +29,9 @@ entries:
     status: via-dependency
     reason: 'cobrapy covers this: genes are created automatically from a reaction''s GPR.'
   - matlab: addIdentifierPrefix
-    status: python-pending
-    issue: SysBioChalmers/raven-gecko-parity#35
-    notes: Adds an SBML-safe prefix to model identifiers. No port decision is recorded either way. Left in
-      the queue rather than declared a divergence, so the choice stays visible.
+    status: via-dependency
+    reason: 'Its only caller is io/exportModel.m, itself via-dependency (cobra.io.write_sbml_model);
+      cobrapy''s own SBML writer owns id-safety handling, so there''s no standalone Python use case.'
   - matlab: addMets
     status: via-dependency
     reason: 'cobrapy covers this: model.add_metabolites([cobra.Metabolite(...)]).'
@@ -347,7 +346,7 @@ entries:
       structured equivalent.'
   - matlab: downloadGenomeData
     status: python-pending
-    issue: SysBioChalmers/raven-gecko-parity#56
+    issue: SysBioChalmers/raven-gecko-parity#53
     notes: Fetches genome/proteome files for a reconstruction. No port decision is recorded either way. Left
       in the queue rather than declared a divergence, so the choice stays visible.
   - matlab: editMiriam
@@ -520,8 +519,11 @@ entries:
   - matlab: generateNewIds
     status: python-pending
     issue: SysBioChalmers/raven-gecko-parity#54
-    notes: Generates the next free id in a model's numbering scheme. No port decision is recorded either way.
-      Left in the queue rather than declared a divergence, so the choice stays visible.
+    notes: Generates the next free id in a model's numbering scheme. add_transport_reactions and
+      batch_curate_from_tsv already reimplement this inline (their own sequential-id logic) rather
+      than sharing a port of this function, but it's kept as its own port target since a user may
+      want to generate ids directly when adding metabolites/reactions by hand, not only via those
+      two callers.
   - matlab: getAllowedBounds
     status: via-dependency
     reason: 'cobrapy covers this: cobra.flux_analysis.flux_variability_analysis.'
@@ -566,12 +568,12 @@ entries:
     reason: Inverse of the reaction-scoring step, folded into the init scoring functions.
   - matlab: getFluxZ
     status: python-pending
-    issue: SysBioChalmers/raven-gecko-parity#43
+    issue: SysBioChalmers/raven-gecko-parity#41
     notes: Z-scores fluxes across a sample set. No port decision is recorded either way. Left in the queue
       rather than declared a divergence, so the choice stays visible.
   - matlab: getGeneData
     status: python-pending
-    issue: SysBioChalmers/raven-gecko-parity#58
+    issue: SysBioChalmers/raven-gecko-parity#53
     notes: Retrieves per-gene annotation for curation. No port decision is recorded either way. Left in the
       queue rather than declared a divergence, so the choice stays visible.
   - matlab: getGenesFromGrRules
@@ -895,10 +897,9 @@ entries:
       remove policy. Python also has a third policy, blocked_reactions="keep" (leave the reaction with its
       original bounds and an empty GPR), with no RAVEN equivalent.'
   - matlab: removeIdentifierPrefix
-    status: python-pending
-    issue: SysBioChalmers/raven-gecko-parity#35
-    notes: Strips the SBML-safe identifier prefix. No port decision is recorded either way. Left in the queue
-      rather than declared a divergence, so the choice stays visible.
+    status: via-dependency
+    reason: 'Its only caller is io/importModel.m, itself via-dependency (cobra.io.read_sbml_model);
+      cobrapy''s own SBML reader owns id-safety handling, so there''s no standalone Python use case.'
   - matlab: removeLowScoreGenes
     python: raven_toolbox.init.remove_low_score_genes
     status: parity
@@ -969,11 +970,9 @@ entries:
     status: via-dependency
     reason: 'cobrapy covers this: cobra.flux_analysis.production_envelope over one varying reaction.'
   - matlab: runSimpleOptKnock
-    status: python-pending
-    issue: SysBioChalmers/raven-gecko-parity#49
-    notes: Reaction-knockout strain design. cobrapy dropped its design module; straindesign and mewpy cover
-      this ground. No port decision is recorded either way. Left in the queue rather than declared a divergence,
-      so the choice stays visible.
+    status: via-dependency
+    reason: 'Reaction-knockout strain design; cobrapy dropped its own design module. Use
+      https://github.com/klamt-lab/straindesign (or mewpy) instead of an in-house port.'
   - matlab: sampleACHR
     status: via-dependency
     reason: 'cobrapy covers this: cobra.sampling.ACHRSampler. flux_sampling_algorithms.md section 8: the Python
@@ -1267,11 +1266,6 @@ entries:
   - python: raven_toolbox.io.EcData
     status: python-only
     reason: The enzyme-constrained payload geckopy writes into the shared YAML schema.
-  - python: raven_toolbox.io.export_model_to_sif
-    status: matlab-pending
-    issue: SysBioChalmers/raven-gecko-parity#59
-    notes: Cytoscape SIF export (rc / rr / cc graphs). migration.md lists this under I/O as a port of exportModelToSIF,
-      but MATLAB RAVEN has no such function on any branch --- so it is new functionality, not a port.
   - python: raven_toolbox.localization.annotate_proteome
     status: matlab-pending
     issue: SysBioChalmers/raven-gecko-parity#20
@@ -1305,7 +1299,7 @@ entries:
       Part of the transporter-evidence subsystem, decided in issue #20 to be worth porting eventually.'
   - python: raven_toolbox.localization.curation_priority
     status: matlab-pending
-    issue: SysBioChalmers/raven-gecko-parity#60
+    issue: SysBioChalmers/raven-gecko-parity#20
     notes: Ranks genes by how much a curation decision would change the placement. No RAVEN counterpart.
   - python: raven_toolbox.localization.DEEPLOC_COMPARTMENT_TRUST
     status: python-only
@@ -1334,12 +1328,12 @@ entries:
     reason: Parsed-data type. RAVEN passes structs and parallel cell arrays instead.
   - python: raven_toolbox.localization.load_compartments
     status: matlab-pending
-    issue: SysBioChalmers/raven-gecko-parity#61
+    issue: SysBioChalmers/raven-gecko-parity#20
     notes: COMPARTMENTS (jensenlab.org) evidence loader --- a source RAVEN has no adapter for. migration.md
       marks it '(new)'.
   - python: raven_toolbox.localization.load_mulocdeep
     status: matlab-pending
-    issue: SysBioChalmers/raven-gecko-parity#62
+    issue: SysBioChalmers/raven-gecko-parity#20
     notes: MULocDeep evidence loader --- a predictor RAVEN's parseScores has no adapter for. migration.md
       marks it '(new)'.
   - python: raven_toolbox.localization.load_uniprot
@@ -1365,7 +1359,7 @@ entries:
       has no MATLAB counterpart by design.
   - python: raven_toolbox.localization.relocate_reactions
     status: matlab-pending
-    issue: SysBioChalmers/raven-gecko-parity#63
+    issue: SysBioChalmers/raven-gecko-parity#20
     notes: Moves reactions between compartments given an accepted proposal. No RAVEN counterpart.
   - python: raven_toolbox.localization.RelocationResult
     status: python-only
@@ -1383,7 +1377,7 @@ entries:
     reason: Parsed-data type. RAVEN passes structs and parallel cell arrays instead.
   - python: raven_toolbox.localization.triage_localization
     status: matlab-pending
-    issue: SysBioChalmers/raven-gecko-parity#64
+    issue: SysBioChalmers/raven-gecko-parity#20
     notes: Turns a certification report into a reviewable triage list. No RAVEN counterpart.
   - python: raven_toolbox.manipulation.constrain_reversible_reactions
     status: subsumed
