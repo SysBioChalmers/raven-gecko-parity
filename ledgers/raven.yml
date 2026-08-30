@@ -30,6 +30,7 @@ entries:
     reason: 'cobrapy covers this: genes are created automatically from a reaction''s GPR.'
   - matlab: addIdentifierPrefix
     status: python-pending
+    issue: SysBioChalmers/raven-gecko-parity#35
     notes: Adds an SBML-safe prefix to model identifiers. No port decision is recorded either way. Left in
       the queue rather than declared a divergence, so the choice stays visible.
   - matlab: addMets
@@ -69,11 +70,13 @@ entries:
       transport itself.'
   - matlab: analyzeSampling
     status: python-pending
+    issue: SysBioChalmers/raven-gecko-parity#41
     notes: Correlates per-reaction expression t-scores with flux samples. No port decision is recorded either
       way. Left in the queue rather than declared a divergence, so the choice stays visible.
   - matlab: applyCondition
     python: raven_toolbox.conditions.apply_condition
     status: parity
+    issue: SysBioChalmers/raven-gecko-parity#65
     scenarios:
       - apply_condition_smallyeast
     notes: 'Both docstrings describe the same schema, down to the same worked examples. prelude.reset_exchanges
@@ -221,6 +224,7 @@ entries:
       not.'
   - matlab: compareFluxes
     status: python-pending
+    issue: SysBioChalmers/raven-gecko-parity#40
     notes: Diagnostic flux comparison across conditions; cobra_raven_comparison.md calls it a practical tool
       COBRA lacks. No port decision is recorded either way. Left in the queue rather than declared a divergence,
       so the choice stays visible.
@@ -274,6 +278,7 @@ entries:
   - matlab: convertToIrrev
     python: raven_toolbox.manipulation.convert_to_irreversible
     status: parity
+    issue: SysBioChalmers/raven-gecko-parity#66
     scenarios:
       - model_manipulation_smallyeast
     notes: 'from migration.md. Splits reversible non-exchange reactions into forward + _REV. Adopted from
@@ -307,6 +312,7 @@ entries:
   - matlab: deltaGCSV
     python: raven_toolbox.annotation.load_delta_g_csv
     status: parity
+    issue: SysBioChalmers/raven-gecko-parity#67
     scenarios:
       - delta_g_csv_smallyeast
     notes: 'The read half; save_delta_g_csv is the write half, and this row is only about the read half ---
@@ -341,6 +347,7 @@ entries:
       structured equivalent.'
   - matlab: downloadGenomeData
     status: python-pending
+    issue: SysBioChalmers/raven-gecko-parity#56
     notes: Fetches genome/proteome files for a reconstruction. No port decision is recorded either way. Left
       in the queue rather than declared a divergence, so the choice stays visible.
   - matlab: editMiriam
@@ -389,6 +396,7 @@ entries:
       no model.ec). Neither side provides a reader for its own export.'
   - matlab: exportToTabDelimited
     status: python-pending
+    issue: SysBioChalmers/raven-gecko-parity#55
     notes: Tab-delimited model export. No port decision is recorded either way. Left in the queue rather than
       declared a divergence, so the choice stays visible.
   - matlab: extractMiriam
@@ -416,6 +424,7 @@ entries:
     reason: 'cobrapy covers this: cobra.flux_analysis.single_gene_deletion / double_gene_deletion.'
   - matlab: findLeakMetabolite
     status: python-pending
+    issue: SysBioChalmers/raven-gecko-parity#44
     notes: Finds metabolites produced from nothing (leaks). No port decision is recorded either way. Left
       in the queue rather than declared a divergence, so the choice stays visible.
   - matlab: findPotentialErrors
@@ -423,6 +432,7 @@ entries:
     reason: Structural checks folded into utils.check_model's report.
   - matlab: fitParameters
     status: python-pending
+    issue: SysBioChalmers/raven-gecko-parity#39
     notes: Fits growth-associated maintenance parameters to measured data. No port decision is recorded either
       way. Left in the queue rather than declared a divergence, so the choice stays visible.
   - matlab: fitTasks
@@ -436,10 +446,12 @@ entries:
       ftINITFillGapsForAllTasks in this ledger''s one-python-function-per-row model.'
   - matlab: followChanged
     status: python-pending
+    issue: SysBioChalmers/raven-gecko-parity#45
     notes: Walks reactions whose flux changed between two solutions. No port decision is recorded either way.
       Left in the queue rather than declared a divergence, so the choice stays visible.
   - matlab: followFluxes
     status: python-pending
+    issue: SysBioChalmers/raven-gecko-parity#46
     notes: Traces flux through a metabolite's producers and consumers. No port decision is recorded either
       way. Left in the queue rather than declared a divergence, so the choice stays visible.
   - matlab: FSEOF
@@ -501,11 +513,13 @@ entries:
       reactions with lower_bound < 0 and targets every metabolite in the model.'
   - matlab: gapReport
     status: python-pending
+    issue: SysBioChalmers/raven-gecko-parity#36
     notes: Summary report over a gap analysis. analyse_topology returns the data; the reporting layer is not
       ported. No port decision is recorded either way. Left in the queue rather than declared a divergence,
       so the choice stays visible.
   - matlab: generateNewIds
     status: python-pending
+    issue: SysBioChalmers/raven-gecko-parity#54
     notes: Generates the next free id in a model's numbering scheme. No port decision is recorded either way.
       Left in the queue rather than declared a divergence, so the choice stays visible.
   - matlab: getAllowedBounds
@@ -552,10 +566,12 @@ entries:
     reason: Inverse of the reaction-scoring step, folded into the init scoring functions.
   - matlab: getFluxZ
     status: python-pending
+    issue: SysBioChalmers/raven-gecko-parity#43
     notes: Z-scores fluxes across a sample set. No port decision is recorded either way. Left in the queue
       rather than declared a divergence, so the choice stays visible.
   - matlab: getGeneData
     status: python-pending
+    issue: SysBioChalmers/raven-gecko-parity#58
     notes: Retrieves per-gene annotation for curation. No port decision is recorded either way. Left in the
       queue rather than declared a divergence, so the choice stays visible.
   - matlab: getGenesFromGrRules
@@ -596,6 +612,7 @@ entries:
     reason: 'cobrapy covers this: cobra.medium.minimal_medium.'
   - matlab: getMinNrFluxes
     status: python-pending
+    issue: SysBioChalmers/raven-gecko-parity#42
     notes: Minimal-cardinality flux set (a MILP, not cobra's L1 pFBA). No port decision is recorded either
       way. Left in the queue rather than declared a divergence, so the choice stays visible.
   - matlab: getModelFromHomology
@@ -667,6 +684,7 @@ entries:
     reason: 'cobrapy covers this: GPR.to_string().'
   - matlab: guessComposition
     status: python-pending
+    issue: SysBioChalmers/raven-gecko-parity#37
     notes: Infers biomass composition from a related organism. No port decision is recorded either way. Left
       in the queue rather than declared a divergence, so the choice stays visible.
   - matlab: haveFlux
@@ -735,6 +753,7 @@ entries:
   - matlab: mergeModels
     python: raven_toolbox.manipulation.merge_models
     status: parity
+    issue: SysBioChalmers/raven-gecko-parity#68
     scenarios:
       - merge_models_smallyeast
     notes: 'from migration.md. N-model merge, unify mets by name[comp] (or id), keep all reactions (id collisions
@@ -743,6 +762,7 @@ entries:
       twice.'
   - matlab: modelSummary
     status: python-pending
+    issue: SysBioChalmers/raven-gecko-parity#38
     notes: Console/struct model summary. No port decision is recorded either way. Left in the queue rather
       than declared a divergence, so the choice stays visible.
   - matlab: optimizeProb
@@ -858,6 +878,7 @@ entries:
       same model down to bounds, formulae, compartments, gene sets and stoichiometry.'
   - matlab: removeBadRxns
     status: python-pending
+    issue: SysBioChalmers/raven-gecko-parity#50
     notes: Flags reactions with structural problems for review. No port decision is recorded either way. Left
       in the queue rather than declared a divergence, so the choice stays visible.
   - matlab: removeGenes
@@ -875,6 +896,7 @@ entries:
       original bounds and an empty GPR), with no RAVEN equivalent.'
   - matlab: removeIdentifierPrefix
     status: python-pending
+    issue: SysBioChalmers/raven-gecko-parity#35
     notes: Strips the SBML-safe identifier prefix. No port decision is recorded either way. Left in the queue
       rather than declared a divergence, so the choice stays visible.
   - matlab: removeLowScoreGenes
@@ -906,10 +928,12 @@ entries:
       decision: with orphan cleanup kept coupled the wrapper added nothing, so it was removed entirely.'
   - matlab: renameModelGenes
     status: python-pending
+    issue: SysBioChalmers/raven-gecko-parity#53
     notes: Renames genes across GPRs and the gene list. No port decision is recorded either way. Left in the
       queue rather than declared a divergence, so the choice stays visible.
   - matlab: replaceMets
     status: python-pending
+    issue: SysBioChalmers/raven-gecko-parity#52
     notes: Substitutes one metabolite for another across the model. No port decision is recorded either way.
       Left in the queue rather than declared a divergence, so the choice stays visible.
   - matlab: reporterMetabolites
@@ -946,6 +970,7 @@ entries:
     reason: 'cobrapy covers this: cobra.flux_analysis.production_envelope over one varying reaction.'
   - matlab: runSimpleOptKnock
     status: python-pending
+    issue: SysBioChalmers/raven-gecko-parity#49
     notes: Reaction-knockout strain design. cobrapy dropped its design module; straindesign and mewpy cover
       this ground. No port decision is recorded either way. Left in the queue rather than declared a divergence,
       so the choice stays visible.
@@ -1032,6 +1057,7 @@ entries:
   - matlab: simplifyModel
     python: raven_toolbox.manipulation.simplify_model
     status: parity
+    issue: SysBioChalmers/raven-gecko-parity#69
     scenarios:
       - model_simplification_smallyeast
     notes: 'Was paired with remove_dead_end_reactions, which is one of simplifyModel''s modes rather than its
@@ -1080,10 +1106,12 @@ entries:
     reason: RAVEN struct field ordering is moot in an object model; cobra has no field order to standardise.
   - matlab: traceFluxPath
     status: python-pending
+    issue: SysBioChalmers/raven-gecko-parity#48
     notes: Traces a carbon/flux path between two reactions. No port decision is recorded either way. Left
       in the queue rather than declared a divergence, so the choice stays visible.
   - matlab: walkFluxes
     status: python-pending
+    issue: SysBioChalmers/raven-gecko-parity#47
     notes: Graph walk over the flux network. No port decision is recorded either way. Left in the queue rather
       than declared a divergence, so the choice stays visible.
   - matlab: writeExcel
@@ -1241,6 +1269,7 @@ entries:
     reason: The enzyme-constrained payload geckopy writes into the shared YAML schema.
   - python: raven_toolbox.io.export_model_to_sif
     status: matlab-pending
+    issue: SysBioChalmers/raven-gecko-parity#59
     notes: Cytoscape SIF export (rc / rr / cc graphs). migration.md lists this under I/O as a port of exportModelToSIF,
       but MATLAB RAVEN has no such function on any branch --- so it is new functionality, not a port.
   - python: raven_toolbox.localization.annotate_proteome
@@ -1276,6 +1305,7 @@ entries:
       Part of the transporter-evidence subsystem, decided in issue #20 to be worth porting eventually.'
   - python: raven_toolbox.localization.curation_priority
     status: matlab-pending
+    issue: SysBioChalmers/raven-gecko-parity#60
     notes: Ranks genes by how much a curation decision would change the placement. No RAVEN counterpart.
   - python: raven_toolbox.localization.DEEPLOC_COMPARTMENT_TRUST
     status: python-only
@@ -1304,10 +1334,12 @@ entries:
     reason: Parsed-data type. RAVEN passes structs and parallel cell arrays instead.
   - python: raven_toolbox.localization.load_compartments
     status: matlab-pending
+    issue: SysBioChalmers/raven-gecko-parity#61
     notes: COMPARTMENTS (jensenlab.org) evidence loader --- a source RAVEN has no adapter for. migration.md
       marks it '(new)'.
   - python: raven_toolbox.localization.load_mulocdeep
     status: matlab-pending
+    issue: SysBioChalmers/raven-gecko-parity#62
     notes: MULocDeep evidence loader --- a predictor RAVEN's parseScores has no adapter for. migration.md
       marks it '(new)'.
   - python: raven_toolbox.localization.load_uniprot
@@ -1333,6 +1365,7 @@ entries:
       has no MATLAB counterpart by design.
   - python: raven_toolbox.localization.relocate_reactions
     status: matlab-pending
+    issue: SysBioChalmers/raven-gecko-parity#63
     notes: Moves reactions between compartments given an accepted proposal. No RAVEN counterpart.
   - python: raven_toolbox.localization.RelocationResult
     status: python-only
@@ -1350,6 +1383,7 @@ entries:
     reason: Parsed-data type. RAVEN passes structs and parallel cell arrays instead.
   - python: raven_toolbox.localization.triage_localization
     status: matlab-pending
+    issue: SysBioChalmers/raven-gecko-parity#64
     notes: Turns a certification report into a reviewable triage list. No RAVEN counterpart.
   - python: raven_toolbox.manipulation.constrain_reversible_reactions
     status: subsumed
