@@ -293,7 +293,7 @@ parity refs
 
 ```
 gecko    matlab  SysBioChalmers/GECKO@develop4
-gecko    python  SysBioChalmers/geckopy@develop
+gecko    python  SysBioChalmers/geckopy@main
 raven    matlab  SysBioChalmers/RAVEN@develop3
 raven    python  SysBioChalmers/raven-toolbox@develop
 ```
