@@ -359,14 +359,17 @@ entries:
   - matlab: readDLKcatOutput
     python: geckopy.read_dlkcat_output
     status: parity
+    issue: SysBioChalmers/raven-gecko-parity#76
     scenarios:
       - kcat_chain_ectestgem
-    notes: 'DIVERGENCE: an unrecognised substrate name is fatal in MATLAB (aborts the whole read, even for a
-      row whose kcat would otherwise be filtered out) but a non-fatal per-row drop in geckopy.
-      Substrate-name matching against model.metNames is case-insensitive on both sides. Separately: both of
-      MATLAB''s "not found" error paths (substrates, reactions) call dispEM, a RAVEN utility RAVEN#659
-      deleted (already on develop3) --- crash with "Undefined function ''dispEM''" instead of reporting the
-      unrecognised names.'
+    notes: 'DIVERGENCE: an unrecognised substrate name is fatal in
+      [readDLKcatOutput](https://github.com/SysBioChalmers/GECKO/blob/develop4/src/geckomat/gather_kcats/readDLKcatOutput.m#L1)
+      (aborts the whole read, even for a row whose kcat would otherwise be filtered out) but a non-fatal
+      per-row drop in
+      [read_dlkcat_output](https://github.com/SysBioChalmers/geckopy/blob/develop/src/geckopy/gather_kcats/read_dlkcat_output.py#L32).
+      Substrate-name matching against model.metNames is case-insensitive on both sides. MATLAB''s "not found"
+      error paths now raise a normal error via ravenList (GECKO#454 replaced the deleted RAVEN dispEM
+      utility) instead of crashing.'
   - matlab: readOpenKineticsPredictorOutput
     python: geckopy.gather_kcats.open_kinetics_predictor.parse_okp_output
     status: parity
@@ -427,12 +430,17 @@ entries:
   - matlab: setKcatForReactions
     python: geckopy.set_kcat_for_reactions
     status: parity
+    issue: SysBioChalmers/raven-gecko-parity#77
     scenarios:
       - model_edits_ectestgem
     notes: 'DIVERGENCE: kcat values match exactly for a suffixed id and for a base name broadcasting one
       scalar across its isozymes. Two differences: ec.source reads ''setKcatForReactions'' in MATLAB,
-      ''manual'' in geckopy; and MATLAB accepts a per-isozyme kcat list for an unsuffixed base name (relying
-      on ec.rxns order), which geckopy refuses, asking for the suffixed ids explicitly instead.'
+      ''manual'' in geckopy; and
+      [setKcatForReactions](https://github.com/SysBioChalmers/GECKO/blob/develop4/src/geckomat/change_model/setKcatForReactions.m#L1)
+      accepts a per-isozyme kcat list for an unsuffixed base name (relying on ec.rxns order, with no guard
+      against getting that order wrong), which
+      [set_kcat_for_reactions](https://github.com/SysBioChalmers/geckopy/blob/develop/src/geckopy/ec_model/pipeline/set_kcat.py#L23)
+      refuses, asking for the suffixed ids explicitly instead.'
   - matlab: setProtPoolSize
     python: geckopy.set_prot_pool_size
     status: parity
