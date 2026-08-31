@@ -1,18 +1,17 @@
 function results = delta_g_csv_smallyeast(ctx)
 % MATLAB side of the deltaG CSV loader scenario.
 %
-% deltaGCSV('load', ...) and load_delta_g_csv agree on the ordinary case
-% --- match by id, leave anything the CSV doesn't mention untouched --- but
-% not on what a "no value" sentinel means. yeast-GEM's own side-car CSVs
-% use 10000000.0 to mean "no measurement"; deltaGCSV has no concept of
-% this sentinel at all and stores it as a literal number like any other.
-% load_delta_g_csv treats it as missing and leaves the entity unstamped
-% instead. See run.py and scenario.yml.
+% loadDeltaGCSV and load_delta_g_csv agree on both the ordinary case ---
+% match by id, leave anything the CSV doesn't mention untouched --- and,
+% by their current defaults, on yeast-GEM's own "no measurement" sentinel
+% value (10000000.0): both store every matched CSV value exactly as
+% written, including the sentinel, rather than treating it as absent.
+% See run.py and scenario.yml.
 
 inputs = ctx.inputs;
 model = readYAMLmodel(inputs.model);
 
-model = deltaGCSV(model, 'load', 'metCsv', char(inputs.met_csv), 'rxnCsv', char(inputs.rxn_csv));
+model = loadDeltaGCSV(model, 'metCsv', char(inputs.met_csv), 'rxnCsv', char(inputs.rxn_csv));
 
 metIds = as_cellstr(inputs.met_ids);
 metRecords = cell(1, numel(metIds));

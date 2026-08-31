@@ -1,13 +1,15 @@
 """Python side of the deltaG CSV loader scenario.
 
-load_delta_g_csv and deltaGCSV('load', ...) agree on the ordinary case ---
-match by id, leave anything the CSV doesn't mention untouched --- but not
-on what a "no value" sentinel means. yeast-GEM's own side-car CSVs use
-10000000.0 to mean "no measurement" (load_delta_g_csv's own docstring
-names checkrxnDirection.m as the reader that gates on this verbatim); RAVEN's
-deltaGCSV has no concept of this sentinel at all and stores it as a literal
-number like any other. load_delta_g_csv treats it as missing and leaves the
-entity unstamped instead.
+load_delta_g_csv and loadDeltaGCSV agree on the ordinary case --- match by
+id, leave anything the CSV doesn't mention untouched --- and, by their
+current defaults, on yeast-GEM's own "no measurement" sentinel value too:
+10000000.0 (load_delta_g_csv's own docstring names checkrxnDirection.m as
+the reader that gates on this verbatim) is stored exactly as written by
+both, rather than treated as absent. load_delta_g_csv still carries a
+``missing_value`` opt-in for callers who want the old filtering behaviour;
+loadDeltaGCSV has no such option at all (RAVEN#719 removed it outright).
+Neither side filters unless explicitly asked to, so the two agree without
+this scenario overriding either default.
 
 Storage location differs too and is not itself the finding: RAVEN keeps
 metDeltaG/rxnDeltaG as numeric array fields on the model struct;

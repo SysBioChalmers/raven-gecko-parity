@@ -3,8 +3,8 @@ pair: raven
 description: >-
   Loading a two-column ΔG side-car CSV onto a model --- matching, leaving
   the rest untouched, and, deliberately, one entry using yeast-GEM's own
-  "no measurement" sentinel value, which RAVEN stores as a literal number
-  and raven-toolbox treats as absent.
+  "no measurement" sentinel value, which both RAVEN and raven-toolbox
+  currently store as a literal number by default.
 
 entries:
   - loadDeltaGCSV
@@ -33,45 +33,50 @@ inputs:
   met_ids: [MAL_m, AKG_m, GLC_c]
   rxn_ids: [PGI, HXK, ACO]
 
-# deltaGCSV('load', ...) and load_delta_g_csv agree on the ordinary case:
-# MAL_m and PGI come back with their CSV value on both sides, GLC_c and
-# ACO come back with no value on both sides (RAVEN: metDeltaG/rxnDeltaG
-# pre-initialised to NaN and never touched for an id the CSV doesn't
-# mention; raven_toolbox: entity.notes has no 'deltaG' key to begin with
-# and load_delta_g_csv never sets one). Both are reported here as NaN ---
-# the harness's own canonicalisation turns a NaN float into the string
-# "NaN" on either side, so "no value" compares equal without this
-# scenario needing a separate has-value flag.
+# loadDeltaGCSV and load_delta_g_csv agree on the ordinary case: MAL_m and
+# PGI come back with their CSV value on both sides, GLC_c and ACO come back
+# with no value on both sides (RAVEN: metDeltaG/rxnDeltaG pre-initialised to
+# NaN and never touched for an id the CSV doesn't mention; raven_toolbox:
+# entity.notes has no 'deltaG' key to begin with and load_delta_g_csv never
+# sets one). Both are reported here as NaN --- the harness's own
+# canonicalisation turns a NaN float into the string "NaN" on either side,
+# so "no value" compares equal without this scenario needing a separate
+# has-value flag.
 #
-# DIVERGENCE. AKG_m and HXK carry yeast-GEM's own "no measurement"
-# sentinel (10000000.0 --- named directly in load_delta_g_csv's own
-# docstring, which cites yeast-GEM's checkrxnDirection.m gating on this
-# exact value). deltaGCSV has no concept of a sentinel at all: it copies
-# whatever the CSV says for a matched id, verbatim, so AKG_m/HXK come
-# back as the literal number 10000000.0 --- indistinguishable, on the
-# RAVEN side, from a real (if implausible) measurement. load_delta_g_csv
-# checks every matched value against exactly this sentinel by default
-# and leaves the entity unstamped when it matches, so AKG_m/HXK come back
-# with no value at all on the Python side --- the same NaN a truly
-# unmentioned id gets. Applying the identical CSV to the identical model
-# leaves the two sides disagreeing about whether these two entities have
-# a ΔG value on record at all, let alone what it is.
+# AKG_m and HXK carry yeast-GEM's own "no measurement" sentinel (10000000.0
+# --- named directly in load_delta_g_csv's own docstring, which cites
+# yeast-GEM's checkrxnDirection.m gating on this exact value). Both sides
+# currently store it exactly as written by default, rather than treating it
+# as absent, so AKG_m/HXK come back as the literal number 10000000.0 on
+# both sides --- indistinguishable from a real (if implausible)
+# measurement. This was a real divergence at one point: RAVEN's old
+# deltaGCSV (removed by RAVEN#719, which split it into
+# loadDeltaGCSV/saveDeltaGCSV) took an opt-in missingValue argument that
+# filtered the sentinel by default, while load_delta_g_csv's own
+# missing_value argument defaults to None (raven-toolbox#102). loadDeltaGCSV
+# has no such argument at all: every matched value is stored literally,
+# unconditionally. load_delta_g_csv still carries missing_value as an
+# opt-in for callers who want the old filtering behaviour
+# (raven-toolbox#119, open, proposes removing it outright to match), but
+# this scenario never passes it, so the two current defaults ---
+# unconditional-literal and opt-in-but-unused --- agree.
 #
-# NOT THE DIVERGENCE, and not itself compared: where the value ends up
-# stored. RAVEN keeps metDeltaG/rxnDeltaG as numeric array fields on the
-# model struct; raven_toolbox stores the same fact as a string on each
-# entity's own notes['deltaG'] (cobra has no per-entity numeric side-table
-# to put it in, and the module's own docstring says as much). Both are
-# normalised to a plain float (or NaN) before comparison here, so that
-# representational difference never shows up as one.
+# NOT COMPARABLE, and not itself compared: where the value ends up stored.
+# RAVEN keeps metDeltaG/rxnDeltaG as numeric array fields on the model
+# struct; raven_toolbox stores the same fact as a string on each entity's
+# own notes['deltaG'] (cobra has no per-entity numeric side-table to put it
+# in, and the module's own docstring says as much). Both are normalised to
+# a plain float (or NaN) before comparison here, so that representational
+# difference never shows up as one.
 #
-# NOT COMPARABLE, and not attempted: deltaGCSV's 'save' direction (no
-# ledger row of its own pairs it with save_delta_g_csv), and verbose
-# output on either side, which is prose, not a fact.
+# NOT ATTEMPTED: saveDeltaGCSV / save_delta_g_csv (the write half; see
+# save_delta_g_csv_smallyeast for that side), and verbose output on either
+# side, which is prose, not a fact.
 
 tolerance:
-  # AKG_m/HXK's sentinel is copied verbatim by RAVEN and compared exactly;
-  # the ordinary values (MAL_m, PGI) are hand-typed floats read back
-  # through readtable/pandas, not solver output, so exact-enough is exact.
+  # AKG_m/HXK's sentinel is stored verbatim by both sides and compared
+  # exactly; the ordinary values (MAL_m, PGI) are hand-typed floats read
+  # back through readtable/pandas, not solver output, so exact-enough is
+  # exact.
   rel: 0.0
   abs: 1.0e-9
