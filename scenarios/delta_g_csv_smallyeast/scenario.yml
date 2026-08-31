@@ -1,13 +1,14 @@
 id: delta_g_csv_smallyeast
 pair: raven
 description: >-
-  Loading a two-column ΔG side-car CSV onto a model --- matching, leaving
-  the rest untouched, and, deliberately, one entry using yeast-GEM's own
-  "no measurement" sentinel value, which RAVEN stores as a literal number
-  and raven-toolbox treats as absent.
+  Loading a two-column ΔG side-car CSV onto a model, and writing it back
+  out again: matching by id, leaving the rest untouched, and treating
+  yeast-GEM's own "no measurement" placeholder value like any other value
+  on both directions and both sides.
 
 entries:
-  - deltaGCSV
+  - loadDeltaGCSV
+  - saveDeltaGCSV
 
 inputs:
   model: "{matlab_repo}/tutorial/smallYeast.yml"
@@ -18,7 +19,7 @@ inputs:
   # both sides' own column conventions (RAVEN by position: whatever its
   # first two columns are named; raven_toolbox by name: literally
   # "Var1"/"Var2"). One real id per file gets an ordinary value (MAL_m,
-  # PGI), one gets yeast-GEM's 10000000.0 "no measurement" sentinel
+  # PGI), one gets yeast-GEM's 10000000.0 "no measurement" placeholder
   # (AKG_m, HXK), and one id that is not in the model at all is included
   # as harmless noise a CSV commonly carries (NOTAMET_xyz, NOTARXN_xyz)
   # --- neither side errors on an unmatched CSV row; both simply never
@@ -27,51 +28,45 @@ inputs:
   met_csv: "met_deltag.csv"
   rxn_csv: "rxn_deltag.csv"
 
-  # MAL_m/PGI: ordinary matched value. AKG_m/HXK: the sentinel. GLC_c/ACO:
-  # mentioned in neither CSV, to confirm both sides leave an unmentioned
-  # entity alone rather than defaulting it to something else.
+  # MAL_m/PGI: ordinary matched value. AKG_m/HXK: the placeholder, now
+  # expected to come back as the literal number on both sides (see below).
+  # GLC_c/ACO: mentioned in neither CSV, to confirm both sides leave an
+  # unmentioned entity alone rather than defaulting it to something else.
   met_ids: [MAL_m, AKG_m, GLC_c]
   rxn_ids: [PGI, HXK, ACO]
 
-# deltaGCSV('load', ...) and load_delta_g_csv agree on the ordinary case:
-# MAL_m and PGI come back with their CSV value on both sides, GLC_c and
-# ACO come back with no value on both sides (RAVEN: metDeltaG/rxnDeltaG
-# pre-initialised to NaN and never touched for an id the CSV doesn't
-# mention; raven_toolbox: entity.notes has no 'deltaG' key to begin with
-# and load_delta_g_csv never sets one). Both are reported here as NaN ---
-# the harness's own canonicalisation turns a NaN float into the string
-# "NaN" on either side, so "no value" compares equal without this
-# scenario needing a separate has-value flag.
+# What is being compared, and why each part is worth comparing:
 #
-# DIVERGENCE. AKG_m and HXK carry yeast-GEM's own "no measurement"
-# sentinel (10000000.0 --- named directly in load_delta_g_csv's own
-# docstring, which cites yeast-GEM's checkrxnDirection.m gating on this
-# exact value). deltaGCSV has no concept of a sentinel at all: it copies
-# whatever the CSV says for a matched id, verbatim, so AKG_m/HXK come
-# back as the literal number 10000000.0 --- indistinguishable, on the
-# RAVEN side, from a real (if implausible) measurement. load_delta_g_csv
-# checks every matched value against exactly this sentinel by default
-# and leaves the entity unstamped when it matches, so AKG_m/HXK come back
-# with no value at all on the Python side --- the same NaN a truly
-# unmentioned id gets. Applying the identical CSV to the identical model
-# leaves the two sides disagreeing about whether these two entities have
-# a ΔG value on record at all, let alone what it is.
+#   * loading. Both sides match a CSV row to a model id and record its
+#     value exactly as the CSV states it, including yeast-GEM's own "no
+#     measurement" placeholder (10000000.0, AKG_m/HXK) --- neither side
+#     interprets a CSV value at all any more. This used to be a real
+#     divergence (raven-gecko-parity#16): RAVEN's deltaGCSV verbatim-copied
+#     while raven_toolbox's load_delta_g_csv filtered the placeholder by
+#     default, then RAVEN separately grew its own opt-out filtering with
+#     the opposite default, landing back on the same disagreement with the
+#     two sides swapped. Fixed for good (raven-gecko-parity#67) by
+#     removing the filtering option from both loadDeltaGCSV and
+#     load_delta_g_csv entirely, rather than re-aligning a default that
+#     had already drifted out of sync twice.
+#   * saving. Both sides write one row per model entity, in model order:
+#     the entity's id, plus whatever value it carries, or nothing (NaN) if
+#     it was never loaded or set. Compared here as the full sorted
+#     {id, value} list saveDeltaGCSV / save_delta_g_csv actually wrote to
+#     disk --- not just what a later load of it would read back, which
+#     would miss a difference in the file itself.
 #
 # NOT THE DIVERGENCE, and not itself compared: where the value ends up
-# stored. RAVEN keeps metDeltaG/rxnDeltaG as numeric array fields on the
-# model struct; raven_toolbox stores the same fact as a string on each
-# entity's own notes['deltaG'] (cobra has no per-entity numeric side-table
-# to put it in, and the module's own docstring says as much). Both are
-# normalised to a plain float (or NaN) before comparison here, so that
-# representational difference never shows up as one.
-#
-# NOT COMPARABLE, and not attempted: deltaGCSV's 'save' direction (no
-# ledger row of its own pairs it with save_delta_g_csv), and verbose
-# output on either side, which is prose, not a fact.
+# stored between load and save. RAVEN keeps metDeltaG/rxnDeltaG as numeric
+# array fields on the model struct; raven_toolbox stores the same fact as
+# a string on each entity's own notes['deltaG'] (cobra has no per-entity
+# numeric side-table to put it in). Both are normalised to a plain float
+# (or NaN) before comparison here, so that representational difference
+# never shows up as one.
 
 tolerance:
-  # AKG_m/HXK's sentinel is copied verbatim by RAVEN and compared exactly;
-  # the ordinary values (MAL_m, PGI) are hand-typed floats read back
-  # through readtable/pandas, not solver output, so exact-enough is exact.
+  # The placeholder is copied verbatim and compared exactly; the ordinary
+  # values are hand-typed floats read back through readtable/pandas, not
+  # solver output, so exact-enough is exact.
   rel: 0.0
   abs: 1.0e-9

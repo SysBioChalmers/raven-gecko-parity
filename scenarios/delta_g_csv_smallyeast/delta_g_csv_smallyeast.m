@@ -1,18 +1,16 @@
 function results = delta_g_csv_smallyeast(ctx)
-% MATLAB side of the deltaG CSV loader scenario.
+% MATLAB side of the deltaG CSV load/save scenario.
 %
-% deltaGCSV('load', ...) and load_delta_g_csv agree on the ordinary case
-% --- match by id, leave anything the CSV doesn't mention untouched --- but
-% not on what a "no value" sentinel means. yeast-GEM's own side-car CSVs
-% use 10000000.0 to mean "no measurement"; deltaGCSV has no concept of
-% this sentinel at all and stores it as a literal number like any other.
-% load_delta_g_csv treats it as missing and leaves the entity unstamped
-% instead. See run.py and scenario.yml.
+% loadDeltaGCSV/saveDeltaGCSV and load_delta_g_csv/save_delta_g_csv agree
+% on the ordinary case --- match by id, leave anything the CSV doesn't
+% mention untouched --- and, since raven-gecko-parity#67/#16, on
+% yeast-GEM's own "no measurement" placeholder value too: neither side
+% interprets a CSV value at all any more. See run.py and scenario.yml.
 
 inputs = ctx.inputs;
 model = readYAMLmodel(inputs.model);
 
-model = deltaGCSV(model, 'load', 'metCsv', char(inputs.met_csv), 'rxnCsv', char(inputs.rxn_csv));
+model = loadDeltaGCSV(model, 'metCsv', char(inputs.met_csv), 'rxnCsv', char(inputs.rxn_csv));
 
 metIds = as_cellstr(inputs.met_ids);
 metRecords = cell(1, numel(metIds));
@@ -30,6 +28,17 @@ for k = 1:numel(rxnIds)
 end
 results.reactions = rxnRecords;
 
+% Both writes go to a temporary directory, not into the repository: the
+% point is what the writer produces, not an artefact anyone needs to keep.
+workdir = tempname;
+mkdir(workdir);
+cleanup = onCleanup(@() rmdir(workdir, 's'));
+outMetCsv = fullfile(workdir, 'met_out.csv');
+outRxnCsv = fullfile(workdir, 'rxn_out.csv');
+saveDeltaGCSV(model, 'metCsv', outMetCsv, 'rxnCsv', outRxnCsv);
+results.saved_metabolites = read_csv_rows(outMetCsv);
+results.saved_reactions = read_csv_rows(outRxnCsv);
+
 end
 
 
@@ -44,6 +53,21 @@ if isnan(value)
     out = 'NaN';
 else
     out = value;
+end
+end
+
+
+function records = read_csv_rows(path)
+% The full contents of a saved CSV, sorted by id --- what was actually
+% written, not what a later load of it would read back.
+G = readtable(path);
+ids = G.(G.Properties.VariableNames{1});
+values = G.(G.Properties.VariableNames{2});
+[~, order] = sort(ids);
+records = cell(1, numel(order));
+for k = 1:numel(order)
+    i = order(k);
+    records{k} = struct('entity', ids{i}, 'value', json_safe(values(i)));
 end
 end
 

@@ -131,17 +131,15 @@ kcat matching, protein pool limits. Do not try to cover everything, and do not d
 against Python at line level.
 
 Thirty-four cover the raven pair today, over forty-three `parity` rows; `parity scenarios` lists
-them with what each one claims to cover. Twenty-nine agree. Five report a difference on purpose, each with an open question
+them with what each one claims to cover. Thirty agree. Four report a difference on purpose, each with an open question
 behind it: `yaml_roundtrip_smallyeast` (the two YAML writers preserve the same model but do not
 produce the same file), `task_checking_smallyeast` (the two build a different LP for a
 metabolic task, so one of six task verdicts flips), `apply_condition_smallyeast` (a
 condition's exchange-reset direction is honoured by RAVEN and ignored by raven-toolbox, which
-resets every exchange regardless), `delta_g_csv_smallyeast` (yeast-GEM's own "no
-measurement" ΔG sentinel is stored as a literal number by RAVEN and treated as absent by
-raven-toolbox), and `export_to_excel_smallyeast` (RAVEN leaves a bound blank in its Excel export
-when it matches the model's own default; raven-toolbox always writes it literally). See
-[docs/behaviour-parity-plan.md](docs/behaviour-parity-plan.md) for both and for what is queued
-next.
+resets every exchange regardless), and `export_to_excel_smallyeast` (RAVEN leaves a bound blank in
+its Excel export when it matches the model's own default; raven-toolbox always writes it
+literally). See [docs/behaviour-parity-plan.md](docs/behaviour-parity-plan.md) for both and for
+what is queued next.
 
 Thirteen cover the gecko pair, over forty-five of its `parity` rows, all on GECKO's own
 unit-test model. Eleven agree on content: `ec_model_expansion_ectestgem`,

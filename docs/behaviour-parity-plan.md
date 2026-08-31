@@ -44,7 +44,7 @@ The scenarios, in the order they were written:
 | `apply_condition_smallyeast` | `applyCondition` | **differs** — reset_exchanges direction, see below |
 | `assign_sbo_terms_smallyeast` | `assignSBOterms` | match |
 | `standardize_gr_rules_smallyeast` | `standardizeGrRules` | match |
-| `delta_g_csv_smallyeast` | `deltaGCSV` | **differs** — ΔG sentinel handling, see below |
+| `delta_g_csv_smallyeast` | `loadDeltaGCSV`, `saveDeltaGCSV` | match |
 | `export_to_excel_smallyeast` | `exportToExcelFormat` | **differs** — default-bound hiding, see below |
 
 And the machinery around them, which the plan builds on rather than around:
@@ -175,11 +175,10 @@ A scenario should *assert* each difference, so a silent change to either side fa
 
 ### Divergences the scenarios found
 
-Seventeen so far. Five are asserted and currently red (`yaml_roundtrip_smallyeast`,
-`task_checking_smallyeast`, `apply_condition_smallyeast`, `delta_g_csv_smallyeast`,
-`export_to_excel_smallyeast`); the rest are recorded on their ledger rows because no fixture here
-reaches them, or because the scenario that does exist works around the divergence rather than
-asserting it.
+Sixteen so far. Four are asserted and currently red (`yaml_roundtrip_smallyeast`,
+`task_checking_smallyeast`, `apply_condition_smallyeast`, `export_to_excel_smallyeast`); the rest
+are recorded on their ledger rows because no fixture here reaches them, or because the scenario
+that does exist works around the divergence rather than asserting it.
 
 **`writeYAMLmodel` / `write_yaml_model` do not write the same file.** The *content* is at
 parity — the two readers produce the same model, and a read-write-read round trip is lossless
@@ -309,18 +308,6 @@ and uses `"out"`, not a bare boolean, as its own worked example — exactly the 
 a real yeast-GEM file plausibly writes. `apply_condition_smallyeast` asserts the split directly
 and is the third deliberately red scenario.
 
-**`deltaGCSV` and `load_delta_g_csv` disagree about yeast-GEM's ΔG "no measurement" sentinel
-(raven-gecko-parity#16).** Both match a CSV row to a model id and leave anything the CSV doesn't
-mention untouched — that much agrees. yeast-GEM's own side-car CSVs use `10000000.0` to mean "no
-measurement" (`load_delta_g_csv`'s own docstring cites yeast-GEM's `checkrxnDirection.m` gating on
-this exact value, true for 777 of its 4102 reaction rows). `deltaGCSV` has no concept of this
-sentinel and copies it verbatim into `metDeltaG`/`rxnDeltaG`, indistinguishable from a real
-measurement; `load_delta_g_csv` checks every matched value against it and leaves the entity
-unstamped when it matches, the same state a truly unmentioned id gets. Applying the identical CSV
-to the identical model leaves the two sides disagreeing about whether an entity has a ΔG value on
-record at all. `delta_g_csv_smallyeast` asserts the split directly and is the fourth deliberately
-red scenario.
-
 **`exportToExcelFormat` hides a bound that equals the model's own declared default;
 `export_to_excel` always writes it literally (raven-gecko-parity#17).** The two are a faithful,
 deliberate port on layout — same sheets, same headers, same column order, even RAVEN's own
@@ -332,7 +319,7 @@ literal bound. Not a corner case: smallYeast's bounds are drawn entirely from `{
 (its own declared defaults plus zero), so nearly every reaction's bound cells hit one of RAVEN's
 hiding rules — of five reactions tested, three come back fully blank from RAVEN and fully
 populated from raven-toolbox, and the other two agree only on the one bound that happens to
-differ from the default. `export_to_excel_smallyeast` asserts the split directly and is the fifth
+differ from the default. `export_to_excel_smallyeast` asserts the split directly and is the fourth
 deliberately red scenario.
 
 ## How it runs
