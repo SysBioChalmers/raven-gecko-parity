@@ -392,15 +392,13 @@ entries:
     scenarios:
       - kcat_chain_ectestgem
       - ec_model_full_yeastgem
-    notes: 'DIVERGENCE: criteria=''max''/''min'' match exactly (including the shared documented MATLAB-COMPAT
-      choices: geckopy lowercases ec.source and appends fuzzy wildcard/origin detail; returns updated reaction
-      ids instead of positions). criteria=''median''/''mean'' are dead code in MATLAB --- selectKcatValue.m
-      computes [selectedKcats(i),j] = median(...)/mean(...), a two-output call standard MATLAB median/mean do
-      not support (only max/min do), so it errors unconditionally with "Too many output arguments" on any
-      non-empty kcatList. GECKO''s own test/VerificationMatrix.tsv already flags this function as under-tested
-      (''we did not test all possible parameterizations here''), and no call site anywhere in the codebase,
-      including the function''s own docstring example, ever passes criteria=''median''/''mean''. geckopy''s
-      apply_kcat_list has no such restriction and computes both correctly.'
+    notes: 'criteria=''max''/''min'' match exactly (including the shared documented MATLAB-COMPAT choices:
+      geckopy lowercases ec.source and appends fuzzy wildcard/origin detail; returns updated reaction ids
+      instead of positions). criteria=''median''/''mean'' now also compute correctly on both sides
+      (raven-gecko-parity#73): selectKcatValue.m used to request a two-output [selectedKcats(i),j] =
+      median(...)/mean(...) call that standard MATLAB median/mean do not support (only max/min do), erroring
+      unconditionally on any non-empty kcatList. Fixed to compute the aggregate directly and, like geckopy''s
+      apply_kcat_list, attribute ec.source to the first matching kcatList row for both criteria (GECKO#467).'
   - matlab: sensitivityTuning
     python: geckopy.sensitivity_tuning
     status: parity
