@@ -74,18 +74,15 @@ inputs:
   fold_change: 2.0
   iter_per_enzyme: 5
 
-# One confirmed, asserted divergence in flexibilizeEnzConcs's post-loop refinement
-# pass, not in the loop itself: both sides flex exactly one protein (P5), the same
-# number of times (1), from the same starting concentration. MATLAB's refinement
-# solve pins growth into a narrow *band* around exp_growth (RAVEN's
-# setParam('var', bioRxn, expGrowth, 0.5) --- +/-0.25%) and, since the objective is
-# to *minimise* protein-pool usage, settles at the band's low edge (here, 2.49375,
-# not 2.5). geckopy's refinement solve pins growth to exp_growth *exactly*
-# (documented as a deliberate MATLAB-COMPAT choice in flexibilize_enz_concs.py).
-# Confirmed by direct execution: P5's flexed concentration and the final growth
-# rate both differ by a small, fully explained amount (flexConcs 0.173177 vs
-# 0.173611; growth 2.49375 vs 2.5); everything upstream of that one solve is
-# identical.
+# Both sides flex exactly one protein (P5), the same number of times (1), from
+# the same starting concentration, and now agree on the post-loop refinement pass
+# too (raven-gecko-parity#71): both pin growth into a narrow *band* around
+# exp_growth (RAVEN's setParam('var', bioRxn, expGrowth, 0.5) --- +/-0.25%) and,
+# since the objective is to *minimise* protein-pool usage, settle at the band's
+# low edge (2.49375, not 2.5). geckopy's refinement solve previously pinned growth
+# to exp_growth exactly instead; reconciled toward MATLAB's band rather than the
+# other way, so both P5's flexed concentration and the final growth rate now match
+# (flexConcs 0.173177, growth 2.49375).
 tolerance:
   rel: 1.0e-6
   abs: 1.0e-9
