@@ -126,13 +126,9 @@ entries:
     status: parity
     scenarios:
       - ec_fva_ectestgem
-    notes: 'DIVERGENCE: every reaction with a single enzyme (or none) agrees exactly; an isozyme-split reaction
-      does not. MATLAB reduces each ec-reaction''s own bound with min/max across every canonical group''s solve
-      first, then sums forward and subtracts reverse (the "envelope") --- a canonical group''s forward and
-      reverse variants can each be reduced against a different combination of the other, not necessarily one
-      jointly achievable in any single feasible flux distribution. geckopy instead reads the combined
-      forward-minus-reverse value directly off the one solve that actually optimised it (the "diagonal",
-      geckopy''s own MATLAB-COMPAT note in ec_fva.py), always a value some feasible distribution attains.'
+    notes: 'Both sides read each canonical reaction''s bound directly off its own group''s solve (the
+      "diagonal"): forward minus reverse variants from the one LP that jointly optimised them, always a
+      value some feasible flux distribution attains (GECKO#466).'
   - matlab: enzymeUsage
     python: geckopy.enzyme_usage
     status: parity
