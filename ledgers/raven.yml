@@ -282,7 +282,9 @@ entries:
     notes: 'Splits every reaction with rev ~= 0, including reversible exchange reactions (neither side
       special-cases them), into forward + _REV. A negative objective coefficient on a split reaction moves
       onto the new reverse reaction (sign-flipped positive) and is zeroed on the forward reaction, on both
-      sides.'
+      sides. Both sides also accept an optional rxns restriction (MATLAB''s rxns name-value arg / Python''s
+      rxns= parameter, default all reactions) letting a caller exclude a subset from splitting -- used by
+      makeEcModel.m/make_ec_model to keep exchange reactions unsplit (raven-gecko-parity#90).'
   - matlab: copyToComps
     python: raven_toolbox.manipulation.copy_to_compartment
     status: parity

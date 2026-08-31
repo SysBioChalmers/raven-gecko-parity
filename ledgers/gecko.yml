@@ -162,12 +162,9 @@ entries:
     status: parity
     scenarios:
       - flexibilize_concs_ectestgem
-    notes: 'DIVERGENCE in the post-loop refinement pass only: the iterative loop itself agrees exactly.
-      MATLAB''s refinement solve pins growth into a narrow band around expGrowth (RAVEN''s setParam(''var'',
-      bioRxn, expGrowth, 0.5), +/-0.25%) and, minimising protein-pool usage, settles at the band''s low edge
-      rather than at expGrowth itself; geckopy''s refinement solve pins growth to exp_growth exactly (a
-      deliberate MATLAB-COMPAT choice documented in flexibilize_enz_concs.py). The flexed concentration and
-      final growth rate differ by a small, fully explained amount.'
+    notes: 'The post-loop refinement solve pins growth into a narrow band around expGrowth (RAVEN''s
+      setParam(''var'', bioRxn, expGrowth, 0.5), +/-0.25%) and, minimising protein-pool usage, settles at the
+      band''s low edge rather than at expGrowth itself, on both sides (geckopy#41).'
   - matlab: fuzzyKcatMatching
     python: geckopy.fuzzy_kcat_matching
     status: parity
@@ -577,9 +574,11 @@ entries:
       keeps the equivalent logic inline in makeEcModel.m.
   - python: geckopy.ec_model.pipeline.convert_to_irreversible
     status: via-dependency
-    reason: MATLAB GECKO calls RAVEN's convertToIrrev (makeEcModel.m:194). geckopy re-implements it in the
-      build pipeline because the splitting is tied to GECKO's needs --- see geckopy docs/internal/raven_inventory.md
-      §2.
+    reason: MATLAB GECKO calls RAVEN's convertToIrrev (makeEcModel.m:194), passing nonExchRxns so exchange
+      reactions stay unsplit. geckopy re-exports raven_toolbox.manipulation.irreversible.convert_to_irreversible
+      as-is (see the RAVEN pair's convertToIrrev row) rather than re-implementing the split, and make_ec_model
+      reproduces the exchange exclusion at the call site, passing convert_to_irreversible a rxns= list built
+      the same way (reactions minus cobra's rxn.boundary) (raven-gecko-parity#90).
   - python: geckopy.ec_model.pipeline.expand_model
     status: via-dependency
     reason: MATLAB GECKO calls RAVEN's expandModel (makeEcModel.m:199). geckopy re-implements it over cobrapy's
