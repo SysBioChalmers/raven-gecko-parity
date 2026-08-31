@@ -7,7 +7,7 @@ description: >-
   and raven-toolbox treats as absent.
 
 entries:
-  - deltaGCSV
+  - loadDeltaGCSV
 
 inputs:
   model: "{matlab_repo}/tutorial/smallYeast.yml"
