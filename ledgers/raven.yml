@@ -307,26 +307,28 @@ entries:
     status: via-dependency
     reason: 'cobrapy covers this: cobra.manipulation.prune_unused_genes. raven_toolbox.manipulation.remove_genes
       also covers it.'
-  - matlab: deltaGCSV
+  - matlab: loadDeltaGCSV
     python: raven_toolbox.annotation.load_delta_g_csv
     status: parity
-    issue: SysBioChalmers/raven-gecko-parity#67
     scenarios:
       - delta_g_csv_smallyeast
-    notes: 'The read half; save_delta_g_csv is the write half, and this row is only about the read half ---
-      deltaGCSV(model, ''save'', ...) has no ledger row of its own yet. Both match a CSV row to a model id, stamp
-      its value, and leave anything the CSV does not mention untouched (RAVEN: metDeltaG/rxnDeltaG
-      pre-initialised to NaN and never touched for an unmentioned id; raven_toolbox: entity.notes never gets a
-      ''deltaG'' key for one). Both sides recognise yeast-GEM''s "no measurement" sentinel, 10000000.0 (named in
-      load_delta_g_csv''s own docstring, which cites yeast-GEM''s checkrxnDirection.m as gating on this exact
-      value, true for 777 of yeast-GEM''s 4102 reaction rows): by default, a sentinel-valued row is left
-      unstamped on both sides, the same state a genuinely unmentioned id gets. deltaGCSV also takes an opt-in
-      missingValue parameter for callers that want the value stamped literally instead, matching
-      load_delta_g_csv''s missing_value parameter. NOT THE DIVERGENCE, and not itself compared: where the value
-      ends up stored --- RAVEN keeps metDeltaG/rxnDeltaG as numeric array fields on the model struct;
-      raven_toolbox stores the same fact as a string on each entity''s own notes[''deltaG''] (cobra has no
-      per-entity numeric side-table to put it in). Both are normalised to a plain float (or NaN) before
-      comparison, so that representational difference never shows up as one.'
+    notes: 'Split from deltaGCSV (RAVEN#719), one function per direction, matching load_delta_g_csv /
+      save_delta_g_csv one-for-one instead of a single function bundling both behind a direction string.
+      DIVERGENCE, mid-migration: RAVEN#719 also dropped the missingValue sentinel-filtering argument entirely
+      (a matched CSV value, including yeast-GEM''s "no measurement" placeholder 10000000.0, is now always
+      recorded exactly as written), but raven_toolbox''s missing_value parameter is still present pending
+      raven-toolbox#119 --- until that merges, loadDeltaGCSV always records the sentinel literally while
+      load_delta_g_csv still leaves it unstamped by default. Rows whose identifier is not in the model are
+      silently skipped on both sides regardless. Where the value ends up stored differs (RAVEN:
+      metDeltaG/rxnDeltaG numeric array fields on the model struct; raven_toolbox: a string on each entity''s
+      own notes[''deltaG''], since cobra has no per-entity numeric side-table) but both are normalised to a
+      plain float before comparison, so that representational difference never shows up as one.'
+  - matlab: saveDeltaGCSV
+    python: raven_toolbox.annotation.save_delta_g_csv
+    status: parity
+    notes: 'The write half of the loadDeltaGCSV/saveDeltaGCSV split (RAVEN#719). Writes one row per entity in
+      model order; an entity with no value stored is written as NaN, unchanged from whatever the model field
+      holds, on both sides.'
   - matlab: diffModels
     python: raven_toolbox.comparison.diff_models
     status: parity
@@ -1159,9 +1161,6 @@ entries:
     status: python-only
     reason: Default-value constant, exported so callers can inspect and override it. RAVEN hard-codes the
       equivalent.
-  - python: raven_toolbox.annotation.save_delta_g_csv
-    status: python-only
-    reason: The write half of the deltaG CSV round-trip; RAVEN's deltaGCSV only reads.
   - python: raven_toolbox.biomass.BiomassComponent
     status: python-only
     reason: Parsed-data type. RAVEN passes structs and parallel cell arrays instead.
