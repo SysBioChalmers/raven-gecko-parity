@@ -157,8 +157,8 @@ of the repair.
 | biomass scaling | a model whose biomass reaction is worth scaling; smallYeast's is not |
 
 `checkTasks` and `mergeModels` are done. The id-collision convention was checked first, as this table
-used to require: both sides rename a clash to `<id>_<source model id>`, and they only part company on a
-*second* collision of the same id, which needs three or more models to reach.
+used to require: both sides rename a clash to `<id>_<source model id>`, and used to part company on a
+*second* collision of the same id --- fixed in RAVEN#718 (raven-gecko-parity#68).
 
 ### Divergences to encode, not fix
 
@@ -175,7 +175,7 @@ A scenario should *assert* each difference, so a silent change to either side fa
 
 ### Divergences the scenarios found
 
-Eighteen so far. Five are asserted and currently red (`yaml_roundtrip_smallyeast`,
+Seventeen so far. Five are asserted and currently red (`yaml_roundtrip_smallyeast`,
 `task_checking_smallyeast`, `apply_condition_smallyeast`, `delta_g_csv_smallyeast`,
 `export_to_excel_smallyeast`); the rest are recorded on their ledger rows because no fixture here
 reaches them, or because the scenario that does exist works around the divergence rather than
@@ -200,13 +200,6 @@ folded scalars, keeps single quotes, and has a latent bug where a list-valued `e
 the rest of the annotation block. The report carries the reproducers and a tiered plan; the
 short version is that the reader fixes belong in RAVEN and are needed whatever is decided about
 the writers, and that the writer layout is cheapest to settle on the Python side.
-
-**`convertToIrrev` splits reversible exchange reactions; `convert_to_irreversible` does not.**
-RAVEN splits every reaction with `rev ~= 0`; the Python side skips boundary reactions whatever
-their bounds. smallYeast has eight exchange reactions and none is reversible, so the scenario
-passes and would not on a model where one is. RAVEN also moves a negative objective coefficient
-onto the reverse reaction, which the Python side leaves in place; smallYeast's objective is a
-single positive coefficient.
 
 **`changeGrRules` leaves an unparseable grRule behind when appending onto a reaction with no GPR yet
 (raven-gecko-parity#12).** It unconditionally builds `"(old) or (new)"`, so on an empty `old` that is the

@@ -21,13 +21,13 @@ inputs:
 # What this fixture does *not* exercise, so nobody reads a pass as more than
 # it is:
 #
-#   * Reversible exchange reactions. RAVEN's convertToIrrev splits every
-#     reaction with rev ~= 0; raven-toolbox's convert_to_irreversible skips
-#     boundary reactions regardless of their bounds. smallYeast has eight
-#     exchange reactions and none of them is reversible, so the two agree
-#     here and would not on a model where one is. Recorded on the ledger row.
-#   * A negative objective coefficient on a reversible reaction, which RAVEN
-#     moves onto the reverse reaction and raven-toolbox leaves alone.
+#   * Reversible exchange reactions. Both sides split every reaction with
+#     rev ~= 0 / lb < 0, exchange reactions included (raven-toolbox#117;
+#     raven-gecko-parity#66). smallYeast has eight exchange reactions and
+#     none of them is reversible, so this fixture doesn't reach the case
+#     either way.
+#   * A negative objective coefficient on a reversible reaction, which both
+#     sides now move onto the reverse reaction (raven-toolbox#117).
 #     smallYeast's objective is a single positive coefficient.
 
 tolerance:

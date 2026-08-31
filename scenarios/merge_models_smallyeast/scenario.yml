@@ -27,10 +27,13 @@ inputs:
 # What is being compared, and why each part is worth comparing:
 #
 #   * the renaming convention. Both sides rename a colliding reaction id to
-#     "<id>_<source model id>". They diverge on a *second* collision --- the
-#     Python side goes on to "<id>_<source>_2" while RAVEN would emit the same
-#     id twice --- which this fixture deliberately does not reach, since two
-#     models cannot collide twice. Recorded on the ledger row.
+#     "<id>_<source model id>", incrementing to "<id>_<source>_2", "_3", ...
+#     on a *second* collision of the same id (RAVEN#718; raven-gecko-parity#68).
+#     This fixture doesn't reach that path itself --- it needs a source model
+#     with internally duplicate reaction ids, which smallYeast/smallYeastBad
+#     don't have --- so the second-collision path is covered by RAVEN's own
+#     regression test (tManipulation/mergeModelsSelfCollisionGetsUniqueIds)
+#     and raven_toolbox's existing unit tests instead.
 #   * unification. Metabolites are matched by name and compartment (RAVEN's
 #     metParam="metNames" default, the Python side's match_by="name"), genes by
 #     name. 52 metabolites and 61 genes out of two models that have 52 and 61
