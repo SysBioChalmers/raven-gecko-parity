@@ -2,18 +2,17 @@ id: sensitivity_tuning_ectestgem
 pair: gecko
 description: >-
   Automated kcat and sigma tuning on ecTestGEM's ecModel (sensitivityTuning,
-  sigmaFitter), plus the two solver-free BRENDA/table utilities that share
-  their source folder (findMaxValue, truncateValues).
+  sigmaFitter), plus the solver-free table utility that shares their source
+  folder (truncateValues).
 
 entries:
   - sensitivityTuning
   - sigmaFitter
-  - findMaxValue
   - truncateValues
 
 # The fourth scenario in this pair that needs an LP solver (sensitivityTuning,
-# sigmaFitter); findMaxValue and truncateValues are pure data manipulation and need
-# neither a solver nor an ecModel, so their checkpoints build nothing beyond a small
+# sigmaFitter); truncateValues is pure data manipulation and needs neither a
+# solver nor an ecModel, so its checkpoint builds nothing beyond a small
 # hand-written fixture.
 inputs:
   adapter_matlab: "{matlab_repo}/test/unit_tests/ecTestGEM/TestGEMAdapter.m"
@@ -56,35 +55,6 @@ inputs:
   sigma_p_tot: 0.5
   sigma_f: 4.0
 
-  # findMaxValue: a hand-built BRENDA-shaped fixture (no file I/O --- both
-  # findMaxValue.m and find_max_value take the tables directly, not a path), with
-  # deliberately overlapping EC codes so the "K_cat vs SA*Mw, whichever is bigger, per
-  # queried EC number, then the overall max across every EC number in a multi-gene
-  # query" logic has something real to choose between:
-  #
-  #   EC        kcat_max   sa_max    winner
-  #   1.1.1.1   50 (org1)  30 (org5) K_cat --- exact match, kcat wins
-  #   1.1.1.2   200 (org3) --        (only reachable via the wildcard query below)
-  #   1.1.2.1   10 (org4)  25 (org6) SA*Mw --- exact match, SA wins
-  #
-  # Five queries exercise every branch: an exact kcat-wins match, an exact SA-wins
-  # match, a multi-EC query (the overall max across two exact matches), a wildcard
-  # query, and a query matching nothing at all.
-  find_max_value:
-    kcat_max:
-      - {ec_code: "1.1.1.1", substrate: a, organism: org1, kcat: 50.0}
-      - {ec_code: "1.1.1.2", substrate: b, organism: org3, kcat: 200.0}
-      - {ec_code: "1.1.2.1", substrate: c, organism: org4, kcat: 10.0}
-    sa_max:
-      - {ec_code: "1.1.1.1", organism: org5, kcat: 30.0}
-      - {ec_code: "1.1.2.1", organism: org6, kcat: 25.0}
-    queries:
-      - "1.1.1.1"
-      - "1.1.2.1"
-      - "1.1.1.-"
-      - "1.1.1.1 1.1.2.1"
-      - "9.9.9.9"
-
   # truncateValues: one value per order-of-magnitude regime the function's own
   # docstring describes, plus a negative value, plus a value small enough to round
   # away to exactly zero under the "6 decimal places when order_magn=0" edge of the
@@ -99,8 +69,8 @@ inputs:
     - -55.5555555
     - 1.0e-8
 
-# Two confirmed divergences, both found by direct execution rather than assumed from
-# either side's comments:
+# One confirmed divergence, found by direct execution rather than assumed from either
+# side's comments:
 #
 # sigmaFitter --- a genuine MATLAB bug, not a design choice: the 100-point grid-search
 # loop reassigns `model` on every iteration, so by the time it ends the returned model's
@@ -111,18 +81,6 @@ inputs:
 # 2000, geckopy's 220 = Ptot*f*0.11*1000, the value at the *returned* sigma). Filed and
 # fixed: [GECKO #433]. This scenario's model-state checkpoint will read as matching
 # once that merges rather than needing a code change here.
-#
-# findMaxValue --- two confirmed bugs in a function with no callers anywhere in GECKO
-# (grep confirms it), so filed here as documentation rather than a fix, the same
-# judgment call kcat_chain_ectestgem made for selectKcatValue's dead 'median' branch:
-#   1. The wildcard branch's EC-prefix slice (`EC_cell{i}(strfind(EC_cell{i},'-')-1:end)`)
-#      keeps only the character *before* the dash plus the dash itself --- for any
-#      "X.Y.Z.-"-shaped wildcard, that is always exactly ".-", since a wildcard's
-#      dash is always preceded by a dot. Searching BRENDA for the literal substring
-#      ".-" can never match a real EC code, so every wildcard query returns nothing.
-#   2. When neither table matches at all, `Kcat>SA_Mw` compares 0 to 0 (false), so the
-#      function falls into the "SA won" branch and labels the (nonexistent) result
-#      'SA*Mw' instead of leaving the parameter blank.
 tolerance:
   rel: 1.0e-6
   abs: 1.0e-9
