@@ -197,7 +197,7 @@ def _checkpoint_set_kcat(adapter, conv, inputs: dict) -> dict:
 
 
 # --------------------------------------------------------------------------- #
-# copyECtoGEM / copy_ec_to_gem
+# applyECcodes / copy_ec_to_gem
 # --------------------------------------------------------------------------- #
 
 def _eccode_tokens(model, rxn_id: str) -> list[str]:

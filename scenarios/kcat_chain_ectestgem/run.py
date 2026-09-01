@@ -240,7 +240,7 @@ def _checkpoint_dlkcat(model, fuzzy_df, inputs: dict):
 
 
 # --------------------------------------------------------------------------- #
-# selection: selectKcatValue + applyCustomKcats + getKcatAcrossIsozymes
+# selection: assignKcatValues + applyCustomKcats + getKcatAcrossIsozymes
 # --------------------------------------------------------------------------- #
 
 def _checkpoint_selection(model, merged, inputs: dict):
@@ -249,7 +249,7 @@ def _checkpoint_selection(model, merged, inputs: dict):
     apply_kcat_list(model, merged, criteria="max")
     out["after_select_max"] = _kcat_rows(model, _all_ec_rxns(model))
 
-    # MATLAB's selectKcatValue.m computes [selectedKcats(i),j] = median(...)/mean(...)
+    # MATLAB's assignKcatValues.m computes [selectedKcats(i),j] = median(...)/mean(...)
     # for these two criteria --- a two-output call standard MATLAB median/mean do not
     # support (only max/min do). Confirmed by direct execution: this errors
     # unconditionally with "Too many output arguments" whenever it reaches a

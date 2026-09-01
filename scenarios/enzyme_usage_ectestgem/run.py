@@ -1,7 +1,7 @@
 """Python side of the enzyme-usage scenario.
 
 A single solved ecModel, walked through the three post-solve reporting functions in
-sequence: enzymeUsage's per-protein usage/capacity readout, reportEnzymeUsage's two
+sequence: getEnzymeUsage's per-protein usage/capacity readout, reportEnzymeUsage's two
 summary tables, and getConcControlCoeffs's growth-sensitivity coefficients.
 
 R2 and R4 are both blocked before the ecModel is built, leaving R3 --- ecTestGEM's only

@@ -668,7 +668,7 @@ entries:
     reason: Helper exported alongside write_dlkcat_input; MATLAB keeps it inline in writeDLKcatInput.m.
   - python: geckopy.gather_kcats.format_kcat_source
     status: python-only
-    reason: Helper exported alongside apply_kcat_list; MATLAB keeps it inline in selectKcatValue.m.
+    reason: Helper exported alongside apply_kcat_list; MATLAB keeps it inline in assignKcatValues.m.
   - python: geckopy.gather_kcats.normalize_source
     status: python-only
     reason: Helper exported alongside merge_kcats; MATLAB keeps it inline in mergeDLKcatAndFuzzyKcats.m.

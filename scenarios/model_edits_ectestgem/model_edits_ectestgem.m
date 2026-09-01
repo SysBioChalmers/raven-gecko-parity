@@ -91,20 +91,20 @@ end
 
 
 % --------------------------------------------------------------------------- %
-% copyECtoGEM
+% applyECcodes
 % --------------------------------------------------------------------------- %
 
 function out = checkpoint_copy_ec(model, adapter, inputs)
 target = inputs.overwrite_target_rxn;
 
 fillEmpty = fresh(model, adapter);
-fillEmpty = copyECtoGEM(fillEmpty, false);
+fillEmpty = applyECcodes(fillEmpty, false);
 out.fill_empty = eccodes_by_reaction(fillEmpty);
 
 overwriteNonempty = fresh(model, adapter);
-overwriteNonempty = copyECtoGEM(overwriteNonempty, false);
+overwriteNonempty = applyECcodes(overwriteNonempty, false);
 before = eccode_tokens(overwriteNonempty, target);
-overwriteNonempty = copyECtoGEM(overwriteNonempty, false); % idempotent: no new info, no change expected
+overwriteNonempty = applyECcodes(overwriteNonempty, false); % idempotent: no new info, no change expected
 out.overwrite_false_unchanged = isequal(before, eccode_tokens(overwriteNonempty, target));
 
 % Blank the ec.eccodes entry for `target` before copying, so overwrite=true is asked to
@@ -114,7 +114,7 @@ ecIdx = find(strcmp(overwriteEmpty.ec.rxns, target), 1);
 if ~isempty(ecIdx)
     overwriteEmpty.ec.eccodes{ecIdx} = '';
 end
-overwriteEmpty = copyECtoGEM(overwriteEmpty, true);
+overwriteEmpty = applyECcodes(overwriteEmpty, true);
 out.overwrite_true_with_empty = eccode_tokens(overwriteEmpty, target);
 end
 
