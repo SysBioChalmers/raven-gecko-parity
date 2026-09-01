@@ -126,21 +126,21 @@ end
 
 
 % --------------------------------------------------------------------------- %
-% selection: selectKcatValue + applyCustomKcats + getKcatAcrossIsozymes
+% selection: assignKcatValues + applyCustomKcats + getKcatAcrossIsozymes
 % --------------------------------------------------------------------------- %
 
 function [out, ecModel] = checkpoint_selection(ecModel, mergedList, kcatAdapter)
-ecModel = selectKcatValue(ecModel, mergedList, 'criteria', 'max');
+ecModel = assignKcatValues(ecModel, mergedList, 'criteria', 'max');
 out.after_select_max = kcat_rows(ecModel, ecModel.ec.rxns);
 
-% MATLAB's selectKcatValue.m computes [selectedKcats(i),j] = median(...)/mean(...)
+% MATLAB's assignKcatValues.m computes [selectedKcats(i),j] = median(...)/mean(...)
 % for these two criteria --- a two-output call standard MATLAB median/mean do not
 % support (only max/min do). Confirmed by direct execution: this errors
 % unconditionally with "Too many output arguments" whenever it reaches a reaction
 % needing aggregation, i.e. on any non-empty kcatList. geckopy's apply_kcat_list has
 % no such restriction. Asserted here rather than avoided.
 try
-    selectKcatValue(ecModel, mergedList, 'criteria', 'median');
+    assignKcatValues(ecModel, mergedList, 'criteria', 'median');
     out.select_median.raised = false;
 catch
     out.select_median.raised = true;

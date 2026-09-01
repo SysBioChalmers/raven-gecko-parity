@@ -2,7 +2,7 @@ function results = enzyme_usage_ectestgem(ctx)
 % MATLAB side of the enzyme-usage scenario.
 %
 % A single solved ecModel, walked through the three post-solve reporting functions in
-% sequence: enzymeUsage's per-protein usage/capacity readout, reportEnzymeUsage's two
+% sequence: getEnzymeUsage's per-protein usage/capacity readout, reportEnzymeUsage's two
 % summary tables, and getConcControlCoeffs's growth-sensitivity coefficients. Mirrors
 % run.py; see scenario.yml for why R2 and R4 are both blocked (a real LP degeneracy in
 % this fixture with either one left open, not a bug on either side) and what
@@ -46,7 +46,7 @@ ecModel = setProtPoolSize(ecModel, [], [], [], adapter);
 
 sol = solveLP(ecModel);
 
-usageData = enzymeUsage(ecModel, sol.x);
+usageData = getEnzymeUsage(ecModel, sol.x);
 results.usage.objective = double(sol.f);
 results.usage.proteins = usage_rows(usageData);
 

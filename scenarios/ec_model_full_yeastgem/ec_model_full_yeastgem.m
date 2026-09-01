@@ -31,7 +31,7 @@ results.expansion.ec_rxns = reshape(sort(ecModel.ec.rxns(:)), 1, []);
 results.expansion.enzymes = reshape(sort(ecModel.ec.enzymes(:)), 1, []);
 
 kcatList = fuzzyKcatMatching(ecModel, [], adapter);
-ecModel = selectKcatValue(ecModel, kcatList);
+ecModel = assignKcatValues(ecModel, kcatList);
 ecModel = applyKcatConstraints(ecModel);
 ecModel = setProtPoolSize(ecModel, [], [], [], adapter);
 
