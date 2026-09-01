@@ -1066,17 +1066,17 @@ entries:
   - matlab: simplifyModel
     python: raven_toolbox.manipulation.simplify_model
     status: parity
-    issue: SysBioChalmers/raven-gecko-parity#69
     scenarios:
       - model_simplification_smallyeast
     notes: 'Was paired with remove_dead_end_reactions, which is one of simplifyModel''s modes rather than its
       counterpart; simplify_model is the umbrella entry point mirroring the same boolean-flag interface, and the
-      per-mode functions are subsumed rows below it. DIVERGENCE when deleteInaccessible runs *alone*: RAVEN reads
-      dead ends off the sign pattern of S with reversible reactions counted both ways, while the Python side also
-      consults the bounds, so a reaction locked at zero flux is not counted as a producer. Composed in the
-      documented order the difference disappears, so it is a precondition rather than a disagreement about the
-      pass. deleteDuplicates is the contractModel divergence; deleteUnconstrained has no Python analogue (cobra
-      models carry boundary reactions, not an unconstrained field).'
+      per-mode functions are subsumed rows below it. Formerly diverged when deleteInaccessible ran *alone*
+      (SysBioChalmers/raven-gecko-parity#69): RAVEN reads dead ends off the sign pattern of S with reversible
+      reactions counted both ways and bounds otherwise ignored, while the Python side additionally consulted the
+      bounds, so a reaction locked at zero flux was not counted as a producer there. Fixed in raven-toolbox to
+      match RAVEN''s bounds-blind check; the scenario''s dead_end_alone checkpoint covers it running alone, not
+      just composed. deleteDuplicates is the contractModel divergence; deleteUnconstrained has no Python analogue
+      (cobra models carry boundary reactions, not an unconstrained field).'
   - matlab: solveLP
     status: via-dependency
     reason: 'cobrapy covers this: model.optimize().'

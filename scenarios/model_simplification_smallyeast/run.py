@@ -21,6 +21,7 @@ def run(ctx):
 
     zero_interval = read_yaml_model(path)
     dead_end = read_yaml_model(path)
+    dead_end_alone = read_yaml_model(path)
 
     cascade = read_yaml_model(path)
     cascade.remove_reactions(cascade_removed)
@@ -33,6 +34,7 @@ def run(ctx):
         "composed_cascade": _checkpoint(
             cascade, delete_zero_interval=True, delete_dead_end=True
         ),
+        "dead_end_alone": _checkpoint(dead_end_alone, delete_dead_end=True),
     }
 
 

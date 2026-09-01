@@ -21,6 +21,7 @@ results.composed = checkpoint(readYAMLmodel(modelPath), ...
     {'deleteZeroInterval', 'deleteInaccessible'});
 results.composed_cascade = checkpoint(cascadeModel, ...
     {'deleteZeroInterval', 'deleteInaccessible'});
+results.dead_end_alone = checkpoint(readYAMLmodel(modelPath), {'deleteInaccessible'});
 
 end
 

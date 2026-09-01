@@ -20,7 +20,7 @@ inputs:
     - PGI
     - ZWF
 
-# Three checkpoints, all solver-free:
+# Four checkpoints, all solver-free:
 #
 #   zero_interval     reactions with lb = ub = 0 only. smallYeast ships glcIN,
 #                     o2IN and ethIN shut, so all three go.
@@ -31,18 +31,17 @@ inputs:
 #                     iteration actually matters: 22 reactions and 20
 #                     metabolites, against six and none on the intact model. A
 #                     single pass would stop far short of that.
-#
-# The dead-end mode is deliberately not run *alone*, because the two sides do
-# not agree when it is, and the disagreement is about a precondition rather
-# than about the pass. RAVEN decides whether a metabolite is a dead end from
-# the sign pattern of S, with reversible reactions counted in both directions;
-# the Python side additionally consults the bounds, so a reaction locked at
-# zero flux does not count as a producer. Run on its own against smallYeast,
-# whose exchanges ship shut, the Python pass therefore removes glcIN, o2IN and
-# their cascade (5 reactions, or 21 on the stranded model) where RAVEN removes
-# nothing (or 2). Run after deleteZeroInterval --- which is how RAVEN documents
-# it and how ftINIT uses it --- the two agree exactly, reaction for reaction
-# and metabolite for metabolite. Recorded on the ledger row.
+#   dead_end_alone    deleteInaccessible on its own, against the intact model
+#                     (whose exchanges ship shut). Used to be excluded here:
+#                     RAVEN decides whether a metabolite is a dead end from the
+#                     sign pattern of S, with reversible reactions counted in
+#                     both directions and bounds otherwise ignored; the Python
+#                     side additionally consulted the bounds, so a reaction
+#                     locked at zero flux did not count as a producer there,
+#                     and it removed glcIN, o2IN and their cascade where RAVEN
+#                     removed nothing. Fixed in raven-toolbox to match RAVEN's
+#                     bounds-blind check (raven-gecko-parity#69); this
+#                     checkpoint now covers that it stays fixed.
 #
 # What simplifyModel's other modes do, and why they are not here:
 #
