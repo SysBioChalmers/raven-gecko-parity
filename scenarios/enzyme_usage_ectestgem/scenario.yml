@@ -1,12 +1,12 @@
 id: enzyme_usage_ectestgem
 pair: gecko
 description: >-
-  Post-solve enzyme-usage reporting on ecTestGEM: enzymeUsage's per-protein
+  Post-solve enzyme-usage reporting on ecTestGEM: getEnzymeUsage's per-protein
   usage/capacity readout, reportEnzymeUsage's high-capacity and top-usage
   summaries, and getConcControlCoeffs's growth-sensitivity coefficients.
 
 entries:
-  - enzymeUsage
+  - getEnzymeUsage
   - reportEnzymeUsage
   - getConcControlCoeffs
 

@@ -14,7 +14,7 @@ description: >-
 entries:
   - getReactionsFromEnzyme
   - setKcatForReactions
-  - copyECtoGEM
+  - applyECcodes
   - mapRxnsToConv
   - addNewRxnsToEC
 
@@ -24,9 +24,9 @@ inputs:
   adapter_python: "{python_repo}/examples/ecTestGEM"
 
   # getReactionsFromEnzyme: a known enzyme, a case-swapped spelling of it, and an unknown
-  # one. MATLAB matches case-insensitively and returns empty outputs for an unknown
-  # protein; geckopy is case-sensitive and raises. Both are documented shape differences,
-  # not bugs --- this checkpoint asserts them rather than working around them.
+  # one. Both sides now match case-insensitively; MATLAB returns empty outputs for an
+  # unknown protein, geckopy raises. This checkpoint asserts the remaining difference
+  # rather than working around it.
   known_enzyme: P1
   case_variant_enzyme: p1
   unknown_enzyme: NOSUCH

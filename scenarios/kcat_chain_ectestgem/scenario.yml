@@ -14,7 +14,7 @@ entries:
   - writeDLKcatInput
   - readDLKcatOutput
   - mergeKcats
-  - selectKcatValue
+  - assignKcatValues
   - applyCustomKcats
   - getKcatAcrossIsozymes
   - getStandardKcat
