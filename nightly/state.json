@@ -1,7 +1,7 @@
 {
   "revisions": {
-    "raven.matlab": "fa75a840848b74f2ac81962637e9a839f5e60f9b",
-    "raven.python": "49de0a5e79c255e841d6dd2e6e898bd6156856c7"
+    "raven.matlab": "7557145ea64ab2a17c5ba5775d442600d694015e",
+    "raven.python": "6e9a62357dd583c4d3f03c4b7e8b0a47d070e8c5"
   },
   "verdicts": {
     "add_reactions_from_equations_smallyeast": "MATCH",
@@ -15,7 +15,7 @@
     "close_model_smallyeast": "ERROR",
     "compare_multiple_models_smallyeast": "MATCH",
     "copy_to_compartment_smallyeast": "MATCH",
-    "delta_g_csv_smallyeast": "DIFFER",
+    "delta_g_csv_smallyeast": "ERROR",
     "diff_models_smallyeast": "MATCH",
     "duplicate_reactions_smallyeast": "MATCH",
     "elemental_balance_smallyeast": "MATCH",
