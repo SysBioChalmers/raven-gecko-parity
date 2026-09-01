@@ -218,9 +218,9 @@ entries:
     status: parity
     scenarios:
       - model_edits_ectestgem
-    notes: 'DIVERGENCE: MATLAB matches protein ids case-insensitively and returns empty outputs for an unknown
-      one; geckopy is case-sensitive and raises ValueError for both an unknown id and a case-mismatched known
-      one.'
+    notes: 'Both sides now match protein ids case-insensitively (raven-gecko-parity#70, GECKO#470,
+      geckopy#43). Kept as a deliberate divergence: MATLAB returns empty outputs for an unmatched id, geckopy
+      raises ValueError.'
   - matlab: getrSample
     status: internal
     reason: Helper of bayesianSensitivityTuning, not a standalone entry point. It will be absorbed into the
