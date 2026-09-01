@@ -52,10 +52,10 @@ entries:
     status: parity
     scenarios:
       - kcat_chain_ectestgem
-    notes: 'DIVERGENCE: for a mode-A row (reaction id only, no protein listed), MATLAB only writes ec.kcat,
-      leaving ec.source/ec.notes at whatever they already were; geckopy shares one write path across all
-      three modes and always sets source=''custom'' and appends the note. Not documented as a MATLAB-COMPAT
-      note upstream.'
+    notes: 'A mode-A row (reaction id only, no protein listed) now writes ec.source=''custom'' and appends
+      ec.notes on both sides (raven-gecko-parity#51): MATLAB used to only write ec.kcat there, silently
+      discarding any curator-supplied note rather than leaving it unset. Fixed to mirror the mode-B/C write
+      path geckopy already shared across all three modes (GECKO#469).'
   - matlab: applyKcatConstraints
     python: geckopy.apply_kcat_constraints
     status: parity
