@@ -1,0 +1,55 @@
+id: save_delta_g_csv_smallyeast
+pair: raven
+description: >-
+  Writing a model's ΔG values out to a two-column side-car CSV per side ---
+  the write half of delta_g_csv_smallyeast's read half, on the same
+  entities and the same yeast-GEM "no measurement" sentinel value.
+
+entries:
+  - saveDeltaGCSV
+
+inputs:
+  model: "{matlab_repo}/tutorial/smallYeast.yml"
+
+  # Same three-way split as delta_g_csv_smallyeast's read direction, this
+  # time as values to stamp onto the model before writing rather than CSV
+  # rows to load: MAL_m/PGI get an ordinary value, AKG_m/HXK get yeast-GEM's
+  # 10000000.0 "no measurement" sentinel, and GLC_c/ACO are deliberately
+  # left out of met_values/rxn_values so their written row exercises the
+  # "no value on this entity" case (RAVEN: metDeltaG/rxnDeltaG left NaN;
+  # raven_toolbox: entity.notes has no 'deltaG' key) rather than the CSV's.
+  met_values:
+    MAL_m: -50.5
+    AKG_m: 10000000.0
+  rxn_values:
+    PGI: 3.2
+    HXK: 10000000.0
+
+  met_ids: [MAL_m, AKG_m, GLC_c]
+  rxn_ids: [PGI, HXK, ACO]
+
+# saveDeltaGCSV and save_delta_g_csv both write one row per entity, in
+# model order, verbatim from whatever the model already holds (RAVEN:
+# metDeltaG/rxnDeltaG; raven_toolbox: entity.notes['deltaG']) --- neither
+# interprets or filters a value on the way out, so MAL_m/PGI and AKG_m/HXK
+# (the sentinel, included specifically to confirm the writer does not
+# special-case it either) both round-trip as the literal number stamped
+# on them, and GLC_c/ACO, which were never stamped, are written as NaN
+# rather than omitted. met_row_count/rxn_row_count confirm "one row per
+# entity" directly: both must equal smallYeast's own met/reaction count,
+# not just the three ids this scenario happens to check by id afterward.
+#
+# NOT COMPARABLE, and not attempted: saveDeltaGCSV's verbose flag (prints
+# a confirmation/skip line per file; save_delta_g_csv has no equivalent
+# option at all --- the read direction has the opposite asymmetry, where
+# load_delta_g_csv's verbose exists and loadDeltaGCSV's does not), and the
+# CSV-does-not-exist-yet / field-not-set-on-model case (saveDeltaGCSV
+# silently skips writing when the model has no metDeltaG/rxnDeltaG field
+# at all; not reachable here since both values dicts are non-empty).
+
+tolerance:
+  # The sentinel is written verbatim by both sides and compared exactly;
+  # the ordinary values (MAL_m, PGI) are hand-typed floats round-tripped
+  # through writetable/pandas, not solver output, so exact-enough is exact.
+  rel: 0.0
+  abs: 1.0e-9
