@@ -354,17 +354,17 @@ entries:
   - matlab: readDLKcatOutput
     python: geckopy.read_dlkcat_output
     status: parity
-    issue: SysBioChalmers/raven-gecko-parity#76
     scenarios:
       - kcat_chain_ectestgem
-    notes: 'DIVERGENCE: an unrecognised substrate name is fatal in
+    notes: 'Kept as a deliberate divergence in defaults (raven-gecko-parity#76): an unrecognised substrate
+      name is still fatal in
       [readDLKcatOutput](https://github.com/SysBioChalmers/GECKO/blob/develop4/src/gather_kcats/readDLKcatOutput.m#L1)
-      (aborts the whole read, even for a row whose kcat would otherwise be filtered out) but a non-fatal
-      per-row drop in
-      [read_dlkcat_output](https://github.com/SysBioChalmers/geckopy/blob/main/src/geckopy/gather_kcats/read_dlkcat_output.py#L32).
-      Substrate-name matching against model.metNames is case-insensitive on both sides. MATLAB''s "not found"
-      error paths now raise a normal error via ravenList (GECKO#454 replaced the deleted RAVEN dispEM
-      utility) instead of crashing.'
+      (aborts the whole read), while
+      [read_dlkcat_output](https://github.com/SysBioChalmers/geckopy/blob/main/src/geckopy/gather_kcats/read_dlkcat_output.py#L32)
+      drops just that row by default -- but now accepts strict=True to opt into MATLAB''s fail-fast behavior
+      (geckopy#44), and reports the non-numeric-kcat and unrecognised-substrate drop counts separately rather
+      than conflating them. Substrate-name matching against model.metNames is case-insensitive on both
+      sides.'
   - matlab: readOpenKineticsPredictorOutput
     python: geckopy.gather_kcats.open_kinetics_predictor.parse_okp_output
     status: parity

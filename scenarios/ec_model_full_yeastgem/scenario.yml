@@ -2,7 +2,7 @@ id: ec_model_full_yeastgem
 pair: gecko
 description: >-
   Tier 4: the full ecModel-building pipeline (makeEcModel, getECfromGEM,
-  fuzzyKcatMatching, selectKcatValue, applyKcatConstraints, setProtPoolSize)
+  fuzzyKcatMatching, assignKcatValues, applyKcatConstraints, setProtPoolSize)
   run at real genome scale on GECKO's own yeast-GEM tutorial model, rather
   than the 7-reaction ecTestGEM fixture every other scenario in this pair
   uses. DLKcat is intentionally excluded --- see below.
@@ -11,7 +11,7 @@ entries:
   - makeEcModel
   - getECfromGEM
   - fuzzyKcatMatching
-  - selectKcatValue
+  - assignKcatValues
   - applyKcatConstraints
   - setProtPoolSize
 
