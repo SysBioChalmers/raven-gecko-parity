@@ -372,11 +372,12 @@ entries:
       - okp_kcat_ectestgem
     notes: 'parse_okp_output does the same sequence->protein / SMILES->metabolite mapping over the same OKP
       output columns (kcat (1/s), Source kcat, Protein Sequence, Substrate) and produces the same kcatList
-      shape. DIVERGENCE: MATLAB prefixes each entry''s provenance with "OKP-" (kcatSource, e.g.
-      "OKP-CataPro"); parse_okp_output''s `source` column keeps the bare value from Source kcat (e.g.
-      "CataPro"), un-prefixed. Mechanism also differs --- MATLAB reads a file the user downloads by hand from
-      predictor.openkinetics.org; geckopy''s OKPClient fetches the same CSV shape over REST --- but that
-      difference is plumbing, not behaviour.'
+      shape, now including the "OKP-" provenance prefix MATLAB writes to kcatSource (e.g. "OKP-CataPro"),
+      which survives into model.ec.source on both sides (raven-gecko-parity#75, geckopy#46). merge_kcats
+      strips a recognised okp_ prefix before tiering/source_priority matching, so an OKP-tagged database row
+      (e.g. OKP-BRENDA) still routes to the database tiers like a bare one would. Mechanism still differs
+      --- MATLAB reads a file the user downloads by hand from predictor.openkinetics.org; geckopy''s
+      OKPClient fetches the same CSV shape over REST --- but that difference is plumbing, not behaviour.'
   - matlab: removeStandardKcat
     python: geckopy.remove_standard_kcat
     status: parity
