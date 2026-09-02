@@ -1,7 +1,7 @@
 {
   "revisions": {
-    "raven.matlab": "7557145ea64ab2a17c5ba5775d442600d694015e",
-    "raven.python": "6e9a62357dd583c4d3f03c4b7e8b0a47d070e8c5"
+    "raven.matlab": "e42cbfacb6efef704543dc042f74fdd942b168ad",
+    "raven.python": "f650876f545ba4ffc04191fcb3523585e8a60253"
   },
   "verdicts": {
     "add_reactions_from_equations_smallyeast": "MATCH",
@@ -15,7 +15,7 @@
     "close_model_smallyeast": "ERROR",
     "compare_multiple_models_smallyeast": "MATCH",
     "copy_to_compartment_smallyeast": "MATCH",
-    "delta_g_csv_smallyeast": "ERROR",
+    "delta_g_csv_smallyeast": "MATCH",
     "diff_models_smallyeast": "MATCH",
     "duplicate_reactions_smallyeast": "MATCH",
     "elemental_balance_smallyeast": "MATCH",
@@ -33,6 +33,7 @@
     "remove_genes_smallyeast": "MATCH",
     "remove_low_score_genes_smallyeast": "MATCH",
     "remove_metabolites_smallyeast": "MATCH",
+    "save_delta_g_csv_smallyeast": "MATCH",
     "set_variance_bounds_smallyeast": "MATCH",
     "standardize_gr_rules_smallyeast": "MATCH",
     "task_checking_smallyeast": "ERROR",
