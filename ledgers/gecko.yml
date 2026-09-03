@@ -428,17 +428,20 @@ entries:
   - matlab: setKcatForReactions
     python: geckopy.set_kcat_for_reactions
     status: parity
-    issue: SysBioChalmers/raven-gecko-parity#77
     scenarios:
       - model_edits_ectestgem
-    notes: 'DIVERGENCE: kcat values match exactly for a suffixed id and for a base name broadcasting one
-      scalar across its isozymes. Two differences: ec.source reads ''setKcatForReactions'' in MATLAB,
-      ''manual'' in geckopy; and
-      [setKcatForReactions](https://github.com/SysBioChalmers/GECKO/blob/develop4/src/change_model/setKcatForReactions.m#L1)
-      accepts a per-isozyme kcat list for an unsuffixed base name (relying on ec.rxns order, with no guard
-      against getting that order wrong), which
+    notes: 'Formerly diverged on two points (SysBioChalmers/raven-gecko-parity#77): ec.source label, and
+      whether a per-isozyme kcat list is accepted for an unsuffixed base name. Fixed in geckopy#47:
+      set_kcat_for_reactions now writes ec.source = ''setKcatForReactions'', matching
+      [setKcatForReactions](https://github.com/SysBioChalmers/GECKO/blob/develop4/src/change_model/setKcatForReactions.m#L1)''s
+      actual assignment (its docstring said ''from setKcatForReactions'', fixed separately in GECKO#474
+      to match the real behavior); and
       [set_kcat_for_reactions](https://github.com/SysBioChalmers/geckopy/blob/main/src/geckopy/ec_model/pipeline/set_kcat.py#L23)
-      refuses, asking for the suffixed ids explicitly instead.'
+      now accepts a per-isozyme kcat list for an unsuffixed base name, assigning positionally in ec.rxns
+      order to match MATLAB exactly (the ordering reliance is real but documented as fragile on both
+      sides; passing suffixed ids explicitly remains the safer alternative). geckopy''s own per-input-id
+      broadcast mode (a kcat list of length len(rxn_ids)) has no MATLAB equivalent at all -- kept as
+      additive, Python-only convenience, not a divergence.'
   - matlab: setProtPoolSize
     python: geckopy.set_prot_pool_size
     status: parity
