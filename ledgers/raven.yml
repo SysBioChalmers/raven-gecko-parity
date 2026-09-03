@@ -460,10 +460,15 @@ entries:
     notes: Walks reactions whose flux changed between two solutions. No port decision is recorded either way.
       Left in the queue rather than declared a divergence, so the choice stays visible.
   - matlab: followFluxes
-    status: python-pending
-    issue: SysBioChalmers/raven-gecko-parity#46
-    notes: Traces flux through a metabolite's producers and consumers. No port decision is recorded either
-      way. Left in the queue rather than declared a divergence, so the choice stays visible.
+    status: subsumed
+    reason: 'Prints reactions whose flux falls in a range, optionally alongside a second reference flux
+      vector. Its previous ledger note ("traces flux through a metabolite''s producers and consumers")
+      described walkFluxes, not this function -- corrected here (SysBioChalmers/raven-gecko-parity#46).
+      Nothing it does is missing on the Python side: the range/cutoff filtering is a strict subset of
+      printFluxes''s cutOffFlux (already matlab-only -- Python users print a pandas Series/DataFrame
+      directly), and its optional single-reference-flux comparison is a strict subset of followChanged''s
+      richer two-flux comparison (percent-change, absolute-value, and difference cutoffs, plus
+      metabolite-based subsetting; queued separately as #45).'
   - matlab: FSEOF
     python: raven_toolbox.analysis.fseof
     status: parity
