@@ -1,0 +1,22 @@
+{
+  "revisions": {
+    "gecko.matlab": "d2c55fc06b3c69e17e484f388ef81152b9f58f56",
+    "gecko.python": "9fa2507c945390fa031c233a4cac5b5b07045eea"
+  },
+  "verdicts": {
+    "ec_fseof_ectestgem": "DIFFER",
+    "ec_fva_ectestgem": "MATCH",
+    "ec_model_expansion_ectestgem": "MATCH",
+    "ec_model_full_yeastgem": "ERROR",
+    "ec_model_io_ectestgem": "DIFFER",
+    "enzyme_annotation_ectestgem": "MATCH",
+    "enzyme_usage_ectestgem": "MATCH",
+    "flexibilize_concs_ectestgem": "MATCH",
+    "kcat_chain_ectestgem": "MATCH",
+    "model_edits_ectestgem": "DIFFER",
+    "molecular_weight_sequences": "MATCH",
+    "okp_kcat_ectestgem": "MATCH",
+    "protein_pool_ectestgem": "MATCH",
+    "sensitivity_tuning_ectestgem": "MATCH"
+  }
+}
