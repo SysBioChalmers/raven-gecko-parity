@@ -164,6 +164,12 @@ jobs:
           path = "repos/raven-toolbox"
           EOF
           pip install "./repos/raven-toolbox[excel]"
+          # gurobipy registers "gurobi" as a solver interface with cobra/optlang; the
+          # Gurobi licence step below only provisions the licence file, which does
+          # nothing if the package itself was never installed. raven-toolbox's own
+          # parity-nightly.yml uses this exact same GUROBI_EDUARD secret this way
+          # already, successfully, every day.
+          pip install gurobipy
 
           if [ "${{ matrix.pair }}" = "gecko" ]; then
             cat >> parity.local.toml <<'EOF'
