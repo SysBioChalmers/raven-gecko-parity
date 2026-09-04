@@ -55,7 +55,17 @@ jobs:
             report_path: nightly/gecko-report.md
             state_path: nightly/gecko-state.json
     steps:
+      # ref: develop, not the default github.sha: for a schedule-triggered run,
+      # github.sha is fixed once for the whole run and shared by both matrix
+      # jobs. With max-parallel: 1 the raven entry runs first and pushes its
+      # own report commit mid-run, advancing develop -- but the gecko entry's
+      # checkout would still resolve to that same stale pre-run sha, making
+      # its own push a guaranteed non-fast-forward rejection. Pinning to the
+      # branch name instead makes each job's checkout fetch develop's actual
+      # current tip at the moment it runs.
       - uses: actions/checkout@v4
+        with:
+          ref: develop
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
