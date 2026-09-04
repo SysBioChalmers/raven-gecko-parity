@@ -641,9 +641,12 @@ entries:
       preliminary-objective-pinned pFBA solve, which never affects the actual MILP (it never
       references model.c) but can spuriously report infeasible when the model''s own objective
       alone is infeasible even though a feasible steady state exists -- not replicated. Also
-      not replicated: a latent MATLAB bug where an all-non-negative scores input silently
-      shrinks the scores array via max([]) on an empty selection, misaligning it two lines
-      later; get_min_nr_fluxes treats "nothing to clamp to" as clamp-to-0 instead. Verified
+      not replicated: an all-non-negative scores input crashed getMinNrFluxes.m outright
+      (scores(scores>=0)=max(scores(scores<0)) evaluates the right side to an empty array when
+      nothing is negative, and unlike the literal [] MATLAB treats as element deletion, an
+      empty array computed by max() just errors on the resulting size mismatch instead of
+      deleting anything) -- fixed in RAVEN too (SysBioChalmers/RAVEN#729), clamping to 0 in
+      that case, matching get_min_nr_fluxes''s own choice for the same edge case. Verified
       against real RAVEN output (getMinNrFluxes.m itself, via the scip solver -- glpk, RAVEN''s
       default, cannot solve MILPs) for a tie deterministically broken by scores, and an
       infeasible input, both MATCH. Active-set ties under equal scores are not asserted between
