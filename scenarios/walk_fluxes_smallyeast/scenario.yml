@@ -1,0 +1,53 @@
+id: walk_fluxes_smallyeast
+pair: raven
+description: >-
+  One navigation step of walkFluxes/walk_fluxes from a real, highly-connected
+  reaction: which neighbouring reactions get listed per metabolite, their
+  role (produces/consumes), and the display numbering, including
+  max_per_met truncation on real model connectivity.
+
+entries:
+  - walkFluxes
+
+inputs:
+  model: "{matlab_repo}/tutorial/smallYeast.yml"
+  start_rxn: ATPX
+  cutoff: 1.0e-8
+  max_per_met: 8
+  # A hand-picked, not solved, flux assignment: walkFluxes/walk_fluxes takes any
+  # flux vector as given, so a solved FBA result would risk alternate-optima
+  # non-determinism between the two solvers for no benefit here. ATPX (ATP -->
+  # ADP + phosphate) touches three metabolites (ADP_c, ATP_c, PI_c) each with
+  # 9-11 other real reactions in smallYeast already, which is enough on its own
+  # to exercise max_per_met truncation without inventing a synthetic model.
+  # Distinct, decreasing magnitudes make the descending-|flux| ranking (and its
+  # tie-free ordering) unambiguous; signs are arbitrary and picked only to
+  # exercise both produces/consumes roles.
+  fluxes:
+    ATPX: 10.0
+    PYC: 12.0
+    PCK: 11.0
+    FADHX: -10.0
+    ACS: 9.0
+    GROWTH: 8.0
+    PYK: 7.0
+    PGK: -6.0
+    HXK: 5.0
+    NADHX: 4.0
+    PFK: -3.0
+    LSC1LSC2: 2.0
+    GLD: 1.5
+    FBP: 1.2
+    GPP: 1.0
+
+# Reaction/metabolite *names* are compared too (not just ids), since
+# getRxnName_/getMetLabel_'s name-vs-id fallback is part of what's ported.
+# Not compared: the REPL's own text formatting (column widths, the 28-char
+# name truncation, fprintf layout) -- that is presentation, not a computed
+# result, the same reasoning already recorded against printFluxes.
+
+tolerance:
+  # All inputs are exact hand-picked values; every comparison is a bare
+  # coefficient * flux product, so nothing here is expected to differ at all.
+  rel: 1.0e-12
+  abs: 1.0e-15

@@ -1119,10 +1119,18 @@ entries:
     notes: Traces a carbon/flux path between two reactions. No port decision is recorded either way. Left
       in the queue rather than declared a divergence, so the choice stays visible.
   - matlab: walkFluxes
-    status: python-pending
-    issue: SysBioChalmers/raven-gecko-parity#47
-    notes: Graph walk over the flux network. No port decision is recorded either way. Left in the queue rather
-      than declared a divergence, so the choice stays visible.
+    python: raven_toolbox.analysis.walk_fluxes
+    status: parity
+    scenarios:
+      - walk_fluxes_smallyeast
+    notes: 'Interactive flux-network navigation: from a reaction, group every other flux-carrying
+      reaction connected through a shared metabolite by role (produces/consumes), ranked by its own
+      flux magnitude, and step to one by number. walk_fluxes is the literal terminal REPL (same
+      number/b/q navigation, built on FluxWalker below); the scenario compares FluxWalker''s
+      structured neighbour groups against a reimplementation of walkFluxes.m''s own per-step
+      computation (the interactive function itself has nothing to return). Not compared: the REPL''s
+      own text formatting (column widths, the 28-char name truncation) -- presentation, not a
+      computed result, same reasoning already recorded against printFluxes.'
   - matlab: writeExcel
     status: subsumed
     reason: Sheet writer; inside io.export_to_excel.
@@ -1150,10 +1158,21 @@ entries:
     status: python-only
     reason: Result type. RAVEN returns several parallel outputs; raven-toolbox returns one dataclass, so this
       has no MATLAB counterpart by design.
+  - python: raven_toolbox.analysis.FluxWalker
+    status: python-only
+    reason: 'Steppable, inspectable object (.groups/.step()/.back()) underlying walk_fluxes -- the
+      Pythonic non-blocking form of the same navigation for a script or notebook. No MATLAB
+      counterpart by design.'
   - python: raven_toolbox.analysis.FSEOFResult
     status: python-only
     reason: Result type. RAVEN returns several parallel outputs; raven-toolbox returns one dataclass, so this
       has no MATLAB counterpart by design.
+  - python: raven_toolbox.analysis.MetaboliteGroup
+    status: python-only
+    reason: Result type. Structured neighbour-group record returned by FluxWalker, no MATLAB counterpart by design.
+  - python: raven_toolbox.analysis.NeighborReaction
+    status: python-only
+    reason: Result type. Structured neighbour record returned by FluxWalker, no MATLAB counterpart by design.
   - python: raven_toolbox.analysis.RandomSamplingResult
     status: python-only
     reason: Result type. RAVEN returns several parallel outputs; raven-toolbox returns one dataclass, so this
