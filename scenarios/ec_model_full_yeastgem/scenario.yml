@@ -63,16 +63,18 @@ inputs:
 # before make_ec_model runs --- restoring parity input, not working around a divergence
 # in what is being compared.
 
-# BRENDA is vendored in two incompatible formats, same as kcat_chain_ectestgem found at
-# ecTestGEM scale: GECKO ships max_KCAT.txt / max_MW.txt / max_SA.txt, geckopy reads
-# kcat.tsv / mw.tsv / sa.tsv. At ecTestGEM's five rows both were hand-written; at
-# genome scale (30000 KCAT rows) the Python side of this scenario converts GECKO's own
-# files at run time instead --- same (EC, substrate, organism, value) triples, `EC`
-# prefix and `//taxonomy//abbrev` organism suffix stripped, `kcat_median` set equal to
-# `kcat_max` and `n=1` throughout (GECKO's own files carry only one value per triple,
-# already itself a maximum, so there is no underlying distribution to derive a true
-# median from --- the same simplification docs/brenda-reconciliation.md's ecTestGEM
-# fixture already uses). See docs/brenda-reconciliation.md for the full mapping.
+# GECKO's databases/ (databases_dir, above) now ships kcat.tsv / mw.tsv / sa.tsv
+# directly --- the same files, same format, geckopy's load_brenda_data already reads,
+# produced by geckopy's own `brenda-refresh` CLI and vendored into GECKO unchanged (see
+# databases/README.md in the GECKO checkout). No format conversion is needed or done
+# here; both sides now read the identical BRENDA snapshot. This was not always so: GECKO
+# used to ship its own max_KCAT.txt / max_MW.txt / max_SA.txt snapshot in a different
+# layout, and this scenario carried a run-time converter for it. That converter silently
+# went stale --- raven-gecko-parity#100 --- once GECKO's databases/ moved to the shared
+# format and those three files stopped existing at all, which is why this scenario
+# reported ERROR (FileNotFoundError) rather than a result for a stretch. kcat_chain_ectestgem
+# is unaffected by any of this: its own five-row BRENDA fixture is hand-written directly
+# in geckopy's format on both sides, not read from GECKO's databases/ directory.
 
 # fuzzyKcatMatching's organism-phylogenetic-distance escalation needs a real KEGG
 # taxonomy artefact (RAVEN's external/kegg/keggPhylDist.mat) that this repo does not

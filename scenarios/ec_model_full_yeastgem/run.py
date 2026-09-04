@@ -3,15 +3,11 @@
 Runs the full non-DLKcat pipeline --- make_ec_model, fill_eccodes_from_gem,
 fuzzy_kcat_matching, apply_kcat_list, apply_kcat_constraints, set_prot_pool_size --- on
 GECKO's own yeast-GEM tutorial model. See scenario.yml for why DLKcat is out of scope,
-why eccodes and the BRENDA files each need a small amount of scenario-side data
-preparation before the pipeline can run at all, and the one confirmed divergence
-(EC-code validation strictness) this scenario asserts.
+why eccodes needs a small amount of scenario-side data preparation before the pipeline
+can run at all, and the one confirmed divergence (EC-code validation strictness) this
+scenario asserts.
 """
 
-import csv
-import importlib.util
-import sys
-import tempfile
 from pathlib import Path
 
 import cobra
@@ -75,54 +71,6 @@ def _patch_eccodes_from_yaml(conv: cobra.Model, yaml_path: Path) -> None:
             rxn.annotation["ec-code"] = eccodes_by_id[rxn.id]
 
 
-def _strip_ec(ec: str) -> str:
-    return ec[2:] if ec.startswith("EC") else ec
-
-
-def _strip_organism(org: str) -> str:
-    return org.split("//", 1)[0]
-
-
-def _convert_brenda(src_dir: Path, dst_dir: Path) -> None:
-    """GECKO's max_KCAT.txt/max_MW.txt/max_SA.txt -> geckopy's kcat.tsv/mw.tsv/sa.tsv.
-
-    Same (EC, substrate, organism, value) triples, EC prefix and organism taxonomy
-    suffix stripped, `kcat_median` set equal to `kcat_max` and `n=1` throughout ---
-    GECKO's own files carry only one, already-maximal value per triple, so there is no
-    underlying distribution to derive a true median from. See
-    docs/brenda-reconciliation.md for the mapping, confirmed at ecTestGEM scale; this
-    just applies it at genome scale.
-    """
-
-    def convert_wide(src_name: str, dst_name: str) -> None:
-        with open(src_dir / src_name, encoding="utf-8") as f_in, \
-             open(dst_dir / dst_name, "w", encoding="utf-8", newline="") as f_out:
-            w = csv.writer(f_out, delimiter="\t", lineterminator="\n")
-            w.writerow(["ec_code", "substrate", "organism", "kcat_max", "kcat_median", "n", "references"])
-            for line in f_in:
-                parts = line.rstrip("\n").split("\t")
-                if len(parts) < 5:
-                    continue
-                ec, substrate, organism, value, refs = parts[:5]
-                w.writerow([_strip_ec(ec), substrate, _strip_organism(organism), value, value, "1", refs])
-
-    def convert_mw(src_name: str, dst_name: str) -> None:
-        with open(src_dir / src_name, encoding="utf-8") as f_in, \
-             open(dst_dir / dst_name, "w", encoding="utf-8", newline="") as f_out:
-            w = csv.writer(f_out, delimiter="\t", lineterminator="\n")
-            w.writerow(["ec_code", "substrate", "organism", "mw", "n", "references"])
-            for line in f_in:
-                parts = line.rstrip("\n").split("\t")
-                if len(parts) < 5:
-                    continue
-                ec, substrate, organism, value, refs = parts[:5]
-                w.writerow([_strip_ec(ec), substrate, _strip_organism(organism), value, "1", refs])
-
-    convert_wide("max_KCAT.txt", "kcat.tsv")
-    convert_mw("max_MW.txt", "mw.tsv")
-    convert_wide("max_SA.txt", "sa.tsv")
-
-
 def _source_token(source: str) -> str:
     """The base provenance token, stripping geckopy's bracketed wildcard/origin detail.
 
@@ -159,10 +107,7 @@ def run(ctx):
         "eccodes_populated": sum(1 for e in model.ec.eccodes if e),
     }
 
-    with tempfile.TemporaryDirectory() as tmp:
-        brenda_dir = Path(tmp)
-        _convert_brenda(Path(inputs["databases_dir"]), brenda_dir)
-        brenda = load_brenda_data(brenda_dir)
+    brenda = load_brenda_data(Path(inputs["databases_dir"]))
 
     phyl_dist = load_phyl_dist(Path(inputs["adapter_matlab"]).parent / "PhylDist.mat")
     fuzzy_df = fuzzy_kcat_matching(model, brenda, phyl_dist)
