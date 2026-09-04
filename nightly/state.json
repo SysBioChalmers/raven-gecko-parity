@@ -1,12 +1,12 @@
 {
   "revisions": {
-    "raven.matlab": "e42cbfacb6efef704543dc042f74fdd942b168ad",
-    "raven.python": "af522ccec0fee563f52ac5c97de8a5ebd54cdff6"
+    "raven.matlab": "573f277b2fb2ecdb541e5e6064edd4f71a77b961",
+    "raven.python": "b90890a2a1c5f0fd8483e30c3ea99cc3d4fbcaa8"
   },
   "verdicts": {
     "add_reactions_from_equations_smallyeast": "MATCH",
     "add_reactions_from_model_smallyeast": "MATCH",
-    "add_transport_reactions_smallyeast": "ERROR",
+    "add_transport_reactions_smallyeast": "MATCH",
     "apply_condition_smallyeast": "ERROR",
     "assign_sbo_terms_smallyeast": "MATCH",
     "change_gene_rules_smallyeast": "MATCH",
@@ -38,6 +38,6 @@
     "standardize_gr_rules_smallyeast": "MATCH",
     "task_checking_smallyeast": "ERROR",
     "task_list_parsing": "MATCH",
-    "yaml_roundtrip_smallyeast": "DIFFER"
+    "yaml_roundtrip_smallyeast": "MATCH"
   }
 }
