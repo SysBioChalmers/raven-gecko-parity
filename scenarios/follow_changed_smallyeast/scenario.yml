@@ -1,0 +1,72 @@
+id: follow_changed_smallyeast
+pair: raven
+description: >-
+  followChanged/follow_changed on smallYeast: which reactions clear all
+  three cutoffs (absolute flux floor, absolute difference floor, percent
+  change) between two hand-picked flux vectors, including a zero-flux case,
+  a sign flip, two cases isolating each cutoff's independent veto, and a
+  metabolite-name filter (with one deliberately missing name).
+
+entries:
+  - followChanged
+
+inputs:
+  model: "{matlab_repo}/tutorial/smallYeast.yml"
+  cutoff_flux: 1
+  cutoff_diff: 0.5
+  cutoff_change: 5
+  metabolite_list:
+    - ATP
+    - totally-fake-metabolite-xyz
+  # Hand-picked, not solved -- same reasoning as walk_fluxes_smallyeast: a
+  # solved FBA result risks alternate-optima non-determinism between the two
+  # solvers for no benefit here, since followChanged just compares two given
+  # flux vectors. Unlisted reactions are implicitly 0 on both sides.
+  #
+  #   ATPX   10 -> 10     identical, no change
+  #   PYC    10 -> 10.2   diff 0.2 < cutoff_diff -- excluded
+  #   PCK    10 -> 12     diff 2, ratio 1.2 >= quota(1.05) -- included
+  #   FADHX   1 -> 1.4    diff 0.4 < cutoff_diff (would pass % if it got that
+  #                       far) -- excluded; isolates the diff cutoff's own veto
+  #   ACS   100 -> 102    diff 2 and both clear cutoff_flux, but ratio 1.02 is
+  #                       within [1/quota, quota) -- excluded; isolates the
+  #                       percent-change cutoff's own veto
+  #   PYK     0 -> 5      zero-flux-A case, |B| clears cutoff_flux -- included
+  #   PGK     0 -> 0.5    zero-flux-A case, |B| below cutoff_flux -- excluded
+  #   HXK     5 -> -5     sign flip -- included
+  #   TPI    10 -> 20     a clear, large change, but TPI touches neither ATP_c
+  #                       nor any other "ATP"-named metabolite -- excluded by
+  #                       the metabolite_list filter specifically (would be
+  #                       included with no filter; see the ledger scenario
+  #                       notes on why this isn't a second checkpoint)
+  fluxes_a:
+    ATPX: 10
+    PYC: 10
+    PCK: 10
+    FADHX: 1
+    ACS: 100
+    PYK: 0
+    PGK: 0
+    HXK: 5
+    TPI: 10
+  fluxes_b:
+    ATPX: 10
+    PYC: 10.2
+    PCK: 12
+    FADHX: 1.4
+    ACS: 102
+    PYK: 5
+    PGK: 0.5
+    HXK: -5
+    TPI: 20
+
+# Reduced to a sorted-by-id list (order is not itself a claim here, unlike
+# walk_fluxes_smallyeast's numbering; sorting sidesteps needing both sides'
+# YAML-load reaction order to agree). Not compared: any printed message text
+# -- same reasoning as walk_fluxes_smallyeast and printFluxes; followChanged.m
+# additionally has a real quirk here (a supplied-but-unmentioned cutoffDiff
+# is silently missing from one of its three header variants), not worth
+# preserving in a designed-in-Python-first report.
+tolerance:
+  rel: 1.0e-12
+  abs: 1.0e-15

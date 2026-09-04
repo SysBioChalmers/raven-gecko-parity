@@ -457,10 +457,27 @@ entries:
     notes: 'Not a case of "no plausible match" --- fill_tasks is a real candidate, just already claimed by
       ftINITFillGapsForAllTasks in this ledger''s one-python-function-per-row model.'
   - matlab: followChanged
-    status: python-pending
-    issue: SysBioChalmers/raven-gecko-parity#45
-    notes: Walks reactions whose flux changed between two solutions. No port decision is recorded either way.
-      Left in the queue rather than declared a divergence, so the choice stays visible.
+    python: raven_toolbox.analysis.follow_changed
+    status: parity
+    scenarios:
+      - follow_changed_smallyeast
+    notes: 'Reactions whose flux changed between two solutions, past three independent cutoffs
+      (absolute flux floor, absolute difference floor, percent change -- all three must pass;
+      a reaction with zero flux in the test case is judged solely by the flux floor, since a
+      percent change from zero is undefined) and an optional metabolite-name filter.
+      follow_changed returns structured data (ChangedReaction records); print_changed_fluxes is
+      a simple Pythonic console rendering, not a literal reproduction of followChanged.m''s text
+      (which itself has a real quirk not worth preserving: a supplied-but-non-default cutOffDiff
+      is silently missing from the printed header whenever cutOffFlux was left at its default).
+      The metabolite filter matches by metabolite *name*, case-insensitively, not by id --
+      matching followChanged.m exactly, including a wart the MATLAB source flags on itself
+      ("Should use id maybe"); a name matching nothing is reported rather than raised, on both
+      sides. Verified against a reimplementation of followChanged.m''s own selection logic (the
+      real function only prints and returns nothing, so has nothing to call directly, the same
+      situation as walk_fluxes/walkFluxes.m) on smallYeast with a hand-picked (not solved, to
+      avoid alternate-optima non-determinism) flux-vector pair exercising each cutoff''s
+      independent veto, a zero-flux case, a sign flip, and the metabolite filter with one
+      deliberately-missing name. MATCH.'
   - matlab: FSEOF
     python: raven_toolbox.analysis.fseof
     status: parity
@@ -1191,6 +1208,9 @@ entries:
       needs the key present. sort_ids=true previously diverged on compartments (write_yaml_model rebuilt it
       as a plain dict rather than an OrderedDict, dropping the !!omap tag readYAMLmodel.m keys its parsing
       on) --- fixed in SysBioChalmers/raven-toolbox#124.'
+  - python: raven_toolbox.analysis.ChangedReaction
+    status: python-only
+    reason: Result type. Structured record returned by follow_changed, no MATLAB counterpart by design.
   - python: raven_toolbox.analysis.find_good_reactions
     status: python-only
     reason: The non-loop flux screen randomSampling performs inline when choosing random objectives.
@@ -1203,6 +1223,10 @@ entries:
     reason: 'Steppable, inspectable object (.groups/.step()/.back()) underlying walk_fluxes -- the
       Pythonic non-blocking form of the same navigation for a script or notebook. No MATLAB
       counterpart by design.'
+  - python: raven_toolbox.analysis.FollowChangedResult
+    status: python-only
+    reason: Result type. Wraps follow_changed's changed-reaction list plus any metabolite names
+      that matched nothing, no MATLAB counterpart by design.
   - python: raven_toolbox.analysis.FSEOFResult
     status: python-only
     reason: Result type. RAVEN returns several parallel outputs; raven-toolbox returns one dataclass, so this
@@ -1217,6 +1241,11 @@ entries:
   - python: raven_toolbox.analysis.NeighborReaction
     status: python-only
     reason: Result type. Structured neighbour record returned by FluxWalker, no MATLAB counterpart by design.
+  - python: raven_toolbox.analysis.print_changed_fluxes
+    status: python-only
+    reason: 'Simple console rendering of follow_changed''s result -- not a literal reproduction of
+      followChanged.m''s own text (see the followChanged row''s notes on why), so kept as its own
+      additive entry point rather than folded into the parity row itself.'
   - python: raven_toolbox.analysis.RandomSamplingResult
     status: python-only
     reason: Result type. RAVEN returns several parallel outputs; raven-toolbox returns one dataclass, so this
