@@ -2,8 +2,8 @@ id: export_to_excel_smallyeast
 pair: raven
 description: >-
   Writing a model to RAVEN's five-sheet Excel format --- a faithful,
-  deliberate port on layout, but not on whether a reaction's bound gets
-  written at all when it equals the model's own declared default.
+  deliberate port, including whether a reaction's bound gets written at
+  all when it equals the model's own declared default.
 
 entries:
   - exportToExcelFormat
@@ -28,20 +28,15 @@ inputs:
 #     print LB only if LB ~= 0
 #   print UB only if UB ~= defaultUB
 #
-# export_to_excel has no equivalent logic at all --- it always writes
-# rxn.lower_bound / rxn.upper_bound literally (confirmed by reading
-# raven_toolbox/io/excel.py in full). Since every one of smallYeast's
-# bounds is drawn from exactly {-1000, 0, 1000} (checked directly), this
-# is not a corner case reachable only by an unusual value: it is the fate
-# of nearly every reaction's LOWER BOUND cell and most of its UPPER BOUND
-# cells. PGI and FBA (reversible, at the default on both sides) come back
-# with both cells blank from RAVEN and both cells filled with -1000/1000
-# from raven_toolbox. HXK (irreversible, at 0/default) comes back fully
-# blank from RAVEN and fully filled (0/1000) from raven_toolbox. glcIN and
-# o2IN are the partial case: the irreversible-zero rule still blanks
-# LOWER BOUND, but UPPER BOUND (0) differs from the default and RAVEN
-# prints it --- the one column, of the five reactions tested, where both
-# sides actually agree.
+# export_to_excel's own _rxn_bound_cells (raven_toolbox/io/excel.py,
+# added in raven-toolbox#101) implements the identical rule, so on
+# smallYeast --- whose bounds are drawn entirely from {-1000, 0, 1000}
+# --- every one of the five reactions tested here is expected to MATCH:
+# PGI and FBA (reversible, at the default on both sides) come back with
+# both cells blank from both sides. HXK (irreversible, at 0/default)
+# comes back fully blank from both. glcIN and o2IN are the partial case:
+# the irreversible-zero rule still blanks LOWER BOUND, but UPPER BOUND
+# (0) differs from the default and both sides print it literally.
 #
 # Neither side provides a reader for its own export --- "Excel import is
 # intentionally excluded", stated in both docstrings --- so this reads the

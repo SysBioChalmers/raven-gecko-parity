@@ -6,8 +6,8 @@ function results = export_to_excel_smallyeast(ctx)
 % (model.annotation.defaultLB/defaultUB --- smallYeast declares
 % -1000/1000), and hides an irreversible reaction's lower bound
 % separately whenever it is exactly 0, regardless of the declared
-% default. export_to_excel always writes the literal bound. See run.py
-% and scenario.yml for why this is not a corner case on this model.
+% default. export_to_excel matches this exactly (see run.py and
+% scenario.yml). Both sides are expected to agree here.
 %
 % Neither side provides a reader for its own export ("Excel import is
 % intentionally excluded", by both docstrings), so this reads the
@@ -43,11 +43,15 @@ end
 
 function out = cell_to_value(rawCell)
 % A hidden bound comes back from readcell as missing (an empty cell) or
-% as an empty char; jsonencode turns a NaN scalar into JSON null the same
-% way Python's None does, so both "no value" cases land on the same JSON
-% shape without this scenario needing its own has-value flag.
+% as an empty char. parity_run.m's canonicalize_for_json reserves NaN for
+% a genuinely missing NUMERIC value (which it turns into the string
+% "NaN", matching the Python side's own _canonical()) --- a hidden RXNS
+% bound cell is a different thing, a deliberate absence, the same as
+% Python's None, so it must come back as MATLAB's own `missing` (left
+% untouched by canonicalize_for_json, and jsonencode's it to JSON null)
+% rather than NaN, or it would wrongly collide with the NaN convention.
 if (isa(rawCell, 'missing')) || (ischar(rawCell) && isempty(rawCell))
-    out = NaN;
+    out = missing;
 else
     out = rawCell;
 end

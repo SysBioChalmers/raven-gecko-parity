@@ -3,15 +3,16 @@
 export_to_excel is a faithful, deliberate port --- same sheets, same
 headers, same column order, even the same "RXNS' ID column is the real
 id but METS' ID column is name[comp], with the real id moved to
-REPLACEMENT ID" convention RAVEN itself uses. Where the two diverge is
-LOWER BOUND / UPPER BOUND: exportToExcelFormat hides a bound that equals
-the model's own declared default (model.annotation.defaultLB/defaultUB,
-smallYeast declares -1000/1000) --- an irreversible reaction's lower bound
-is hidden separately, only when it is exactly 0 --- leaving the cell
-blank rather than printing a redundant value; export_to_excel has no such
-logic and always writes the literal bound. On smallYeast, whose bounds
-are drawn entirely from {-1000, 0, 1000}, this is not a corner case: it
-is the fate of nearly every reaction's bound cells.
+REPLACEMENT ID" convention RAVEN itself uses. This includes LOWER BOUND /
+UPPER BOUND: exportToExcelFormat hides a bound that equals the model's
+own declared default (model.annotation.defaultLB/defaultUB, smallYeast
+declares -1000/1000) --- an irreversible reaction's lower bound is hidden
+separately, only when it is exactly 0 --- leaving the cell blank rather
+than printing a redundant value; export_to_excel's own _rxn_bound_cells
+matches this exactly (raven_toolbox#101). On smallYeast, whose bounds are
+drawn entirely from {-1000, 0, 1000}, this is not a corner case: it is
+the fate of nearly every reaction's bound cells, so both sides are
+expected to agree on all five reactions tested here.
 
 Neither side provides a reader for its own export ("Excel import is
 intentionally excluded", by both docstrings), so this reads the freshly
