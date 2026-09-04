@@ -243,6 +243,22 @@ jobs:
           fi
           echo "GRB_LICENSE_FILE=$licence" >> "$GITHUB_ENV"
 
+      # The licence alone gets Python working (gurobipy bundles Gurobi's own runtime),
+      # but RAVEN calls a plain MATLAB function, gurobi(prob, params) -- that comes from
+      # Gurobi's MATLAB interface, which ships only inside the full optimizer
+      # distribution, not as anything setup-matlab or a licence file provides.
+      # packages.gurobi.com's versioned tarballs are plain, unauthenticated downloads
+      # (the licence is what gates solving, not fetching the software); MATLABPATH is
+      # picked up by MATLAB at startup, so nothing about the per-scenario matlab_side.m
+      # generated below needs to change.
+      - name: Install Gurobi's MATLAB interface
+        if: steps.state.outputs.changed == 'true'
+        run: |
+          curl -fsSL https://packages.gurobi.com/13.0/gurobi13.0.3_linux64.tar.gz -o gurobi.tar.gz
+          tar -xzf gurobi.tar.gz
+          echo "LD_LIBRARY_PATH=$PWD/gurobi1303/linux64/lib:$LD_LIBRARY_PATH" >> "$GITHUB_ENV"
+          echo "MATLABPATH=$PWD/gurobi1303/linux64/matlab" >> "$GITHUB_ENV"
+
       # A scenario that crashes must not stop the others: the report distinguishes a
       # missing result from a matching one, so a crash is recorded, not hidden.
       - id: scenarios
