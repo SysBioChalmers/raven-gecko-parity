@@ -459,16 +459,6 @@ entries:
     issue: SysBioChalmers/raven-gecko-parity#45
     notes: Walks reactions whose flux changed between two solutions. No port decision is recorded either way.
       Left in the queue rather than declared a divergence, so the choice stays visible.
-  - matlab: followFluxes
-    status: subsumed
-    reason: 'Prints reactions whose flux falls in a range, optionally alongside a second reference flux
-      vector. Its previous ledger note ("traces flux through a metabolite''s producers and consumers")
-      described walkFluxes, not this function -- corrected here (SysBioChalmers/raven-gecko-parity#46).
-      Nothing it does is missing on the Python side: the range/cutoff filtering is a strict subset of
-      printFluxes''s cutOffFlux (already matlab-only -- Python users print a pandas Series/DataFrame
-      directly), and its optional single-reference-flux comparison is a strict subset of followChanged''s
-      richer two-flux comparison (percent-change, absolute-value, and difference cutoffs, plus
-      metabolite-based subsetting; queued separately as #45).'
   - matlab: FSEOF
     python: raven_toolbox.analysis.fseof
     status: parity
@@ -533,13 +523,18 @@ entries:
       ported. No port decision is recorded either way. Left in the queue rather than declared a divergence,
       so the choice stays visible.
   - matlab: generateNewIds
-    status: python-pending
-    issue: SysBioChalmers/raven-gecko-parity#54
-    notes: Generates the next free id in a model's numbering scheme. add_transport_reactions and
-      batch_curate_from_tsv already reimplement this inline (their own sequential-id logic) rather
-      than sharing a port of this function, but it's kept as its own port target since a user may
-      want to generate ids directly when adding metabolites/reactions by hand, not only via those
-      two callers.
+    python: raven_toolbox.utils.generate_new_ids
+    status: parity
+    notes: 'Generates the next free id in a model''s numbering scheme. Matches generateNewIds.m
+      exactly, quirks included: the existing maximum and the numeric width to use are both taken
+      from a string sort of the stripped ids, not an integer sort, so a prefix mixing widths
+      (r_9 alongside r_10) can disagree with what a numeric sort would give -- not fixed here, since
+      the point of a parity port is matching the real behaviour rather than improving on it. Verified
+      against real RAVEN output (SysBioChalmers/raven-toolbox#126) for five cases: no existing match,
+      a normal increment, a wider explicit num_length, the mixed-width quirk, and a non-numeric
+      suffix -- all byte-identical. add_transport_reactions and batch_curate_from_tsv keep their own
+      narrower inline id logic rather than being refactored onto this; this is an additive,
+      general-purpose port alongside them, not a replacement for either.'
   - matlab: getAllowedBounds
     status: via-dependency
     reason: 'cobrapy covers this: cobra.flux_analysis.flux_variability_analysis.'
