@@ -1,0 +1,40 @@
+id: min_nr_fluxes_toy
+pair: raven
+description: >-
+  getMinNrFluxes/get_min_nr_fluxes on a minimal hand-built model (no shared
+  fixture file needed: three reactions, one metabolite): does the MILP
+  correctly prefer a single active source over splitting flux across two,
+  does an explicit score break a tie deterministically, and is an
+  infeasible input reported as such on both sides.
+
+entries:
+  - getMinNrFluxes
+
+inputs:
+  # X <- source1, X <- source2, X -> demand (fixed at exactly 5, so mass
+  # balance forces source1 + source2 = 5). Splitting across both sources
+  # satisfies mass balance just as well as using either alone, but costs an
+  # extra active reaction -- with equal, unweighted scores this is a genuine
+  # tie (either source alone is equally optimal), broken deterministically
+  # here by discouraging source2 far more heavily than source1.
+  to_minimize:
+    - source1
+    - source2
+    - demand
+  scores:
+    - -1
+    - -100
+    - -1
+
+# Reduced to structured, solver-tie-free data on both sides: which of
+# to_minimize ended up active (a set, not an ordered list -- MILP solvers
+# don't promise iteration order), and the flux vector. Not compared: the
+# exact big-M value or any solver-internal warm start/tolerance detail --
+# get_min_nr_fluxes deliberately estimates big-M from the model's own bounds
+# rather than replicating getMinNrFluxes.m's preliminary-solve-based
+# estimate (see raven_toolbox.analysis.min_flux_count's module docstring);
+# both must still reach the same true MILP optimum regardless of that
+# internal scale choice.
+tolerance:
+  rel: 1.0e-9
+  abs: 1.0e-9

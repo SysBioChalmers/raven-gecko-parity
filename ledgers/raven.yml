@@ -626,10 +626,29 @@ entries:
     status: via-dependency
     reason: 'cobrapy covers this: cobra.medium.minimal_medium.'
   - matlab: getMinNrFluxes
-    status: python-pending
-    issue: SysBioChalmers/raven-gecko-parity#42
-    notes: Minimal-cardinality flux set (a MILP, not cobra's L1 pFBA). No port decision is recorded either
-      way. Left in the queue rather than declared a divergence, so the choice stays visible.
+    python: raven_toolbox.analysis.get_min_nr_fluxes
+    status: parity
+    scenarios:
+      - min_nr_fluxes_toy
+    notes: 'Minimal-cardinality flux set via a big-M MILP (a different, harder problem than
+      cobra''s L1 pFBA, which minimizes the sum of flux magnitudes, not the count of nonzero
+      fluxes). Two disclosed simplifications, neither changing the MILP actually solved: no
+      irreversible-splitting (cobrapy/optlang handle a reversible reaction directly via two
+      |v|<=M*y constraints on one indicator, rather than MATLAB''s two-indicator split-reaction
+      trick -- equivalent at the cardinality optimum, since paying for two indicators on one
+      reaction is never cheaper than zeroing the smaller direction and keeping the net flux);
+      and big-M estimated from the model''s own bounds rather than getMinNrFluxes.m''s
+      preliminary-objective-pinned pFBA solve, which never affects the actual MILP (it never
+      references model.c) but can spuriously report infeasible when the model''s own objective
+      alone is infeasible even though a feasible steady state exists -- not replicated. Also
+      not replicated: a latent MATLAB bug where an all-non-negative scores input silently
+      shrinks the scores array via max([]) on an empty selection, misaligning it two lines
+      later; get_min_nr_fluxes treats "nothing to clamp to" as clamp-to-0 instead. Verified
+      against real RAVEN output (getMinNrFluxes.m itself, via the scip solver -- glpk, RAVEN''s
+      default, cannot solve MILPs) for a tie deterministically broken by scores, and an
+      infeasible input, both MATCH. Active-set ties under equal scores are not asserted between
+      implementations (inherent MILP degeneracy, same caveat as raven_toolbox''s own
+      fill_gaps_kumar_milp).'
   - matlab: getModelFromHomology
     python: raven_toolbox.reconstruction.homology.get_model_from_homology
     status: parity
@@ -1188,6 +1207,10 @@ entries:
   - python: raven_toolbox.analysis.MetaboliteGroup
     status: python-only
     reason: Result type. Structured neighbour-group record returned by FluxWalker, no MATLAB counterpart by design.
+  - python: raven_toolbox.analysis.MinNrFluxesResult
+    status: python-only
+    reason: Result type. RAVEN returns several parallel outputs; raven-toolbox returns one dataclass, so this
+      has no MATLAB counterpart by design.
   - python: raven_toolbox.analysis.NeighborReaction
     status: python-only
     reason: Result type. Structured neighbour record returned by FluxWalker, no MATLAB counterpart by design.
