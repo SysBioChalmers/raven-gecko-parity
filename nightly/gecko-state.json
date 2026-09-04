@@ -7,7 +7,7 @@
     "ec_fseof_ectestgem": "DIFFER",
     "ec_fva_ectestgem": "MATCH",
     "ec_model_expansion_ectestgem": "MATCH",
-    "ec_model_full_yeastgem": "ERROR",
+    "ec_model_full_yeastgem": "MATCH",
     "ec_model_io_ectestgem": "DIFFER",
     "enzyme_annotation_ectestgem": "MATCH",
     "enzyme_usage_ectestgem": "MATCH",
