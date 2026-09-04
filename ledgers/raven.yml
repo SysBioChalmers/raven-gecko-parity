@@ -403,19 +403,12 @@ entries:
       METS/COMPS/GENES/MODEL sheets, the MIRIAM column''s cross-namespace join order (RAVEN preserves
       editMiriam''s own insertion order; raven_toolbox sorts by namespace --- a real, separate risk on a model
       with more than one MIRIAM namespace per entity), and the ENZYMES/ENZRXNS sheets (GECKO-only, smallYeast has
-      no model.ec). Neither side provides a reader for its own export. exportToExcelFormat''s
-      bare-path fallback to exportToTabDelimited (silently switching output format when
-      fileName looked like a directory rather than a filename) is being removed
-      (SysBioChalmers/RAVEN#727) as dead/contradictory: it disagreed with this same function''s
-      own error message, which already claims only xlsx is supported.'
-  - matlab: exportToTabDelimited
-    status: subsumed
-    reason: 'Its only call site was exportToExcelFormat''s bare-path fallback, itself being
-      removed as dead/contradictory code (SysBioChalmers/RAVEN#727, not yet merged --- this row
-      will be deleted outright once it lands, the same as followFluxes). What it wrote (5
-      tab-delimited files mirroring exportToExcelFormat''s own sheets) needs no bespoke Python
-      port: the same row data export_to_excel already builds is one pandas
-      ``DataFrame.to_csv(sep="\t")`` away for anyone who wants it.'
+      no model.ec). Neither side provides a reader for its own export. exportToExcelFormat used
+      to fall back to exportToTabDelimited when fileName looked like a directory rather than a
+      filename, silently switching output format; removed as dead/contradictory
+      (SysBioChalmers/RAVEN#727) since it disagreed with this same function''s own error
+      message, which already claimed only xlsx is supported. export_to_excel never had an
+      equivalent fallback.'
     notes: Tab-delimited model export. No port decision is recorded either way. Left in the queue rather than
       declared a divergence, so the choice stays visible.
   - matlab: extractMiriam
