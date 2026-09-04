@@ -852,6 +852,13 @@ entries:
   - matlab: printOrange
     status: internal
     reason: Coloured console output. Python uses the logging module.
+  - matlab: processProteinFastaFile
+    status: python-pending
+    issue: SysBioChalmers/raven-gecko-parity#53
+    notes: Renames protein FASTA headers via a gene mapping table, part of the same
+      homology-reconstruction genome-data workflow as getGeneData/downloadGenomeData/
+      renameModelGenes above. Briefly removed as unreferenced, then restored
+      (SysBioChalmers/RAVEN#711, #728). No port decision is recorded either way.
   - matlab: progressReport
     status: internal
     reason: Console progress display. Python uses logging / tqdm.
@@ -1136,9 +1143,18 @@ entries:
   - matlab: writeExcel
     status: subsumed
     reason: Sheet writer; inside io.export_to_excel.
+  - matlab: writeFasta
+    status: subsumed
+    reason: 'Generic {Header,Sequence} struct-array FASTA writer. Briefly removed as unreferenced,
+      then restored (SysBioChalmers/RAVEN#711, #728) once processProteinFastaFile needed it
+      again. raven_toolbox.localization.write_fasta (below) covers the practical need on the
+      Python side -- writing sequences for a localization-prediction tool -- with a different,
+      more specific shape (dict of id -> sequence, DeepLoc batching, whitespace-in-id
+      validation), not a like-for-like port of this one.'
   - python: raven_toolbox.localization.write_fasta
     status: python-only
-    reason: No MATLAB counterpart --- writeFasta.m was removed from RAVEN as dead code.
+    reason: 'No MATLAB counterpart to this specific shape: writeFasta.m (see above) is a plain
+      struct-array writer with no batching or id validation.'
   - matlab: writeYAMLmodel
     python: raven_toolbox.io.write_yaml_model
     status: parity
