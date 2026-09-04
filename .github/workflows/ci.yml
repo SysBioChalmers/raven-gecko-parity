@@ -14,8 +14,8 @@ jobs:
   tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - run: pip install -e ".[dev]"
@@ -24,8 +24,8 @@ jobs:
   parity:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - run: pip install -e .
@@ -37,22 +37,22 @@ jobs:
       - id: refs
         run: parity refs --format shell >> "$GITHUB_OUTPUT"
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           repository: SysBioChalmers/RAVEN
           ref: ${{ steps.refs.outputs.raven_matlab_ref }}
           path: repos/RAVEN
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           repository: SysBioChalmers/raven-toolbox
           ref: ${{ steps.refs.outputs.raven_python_ref }}
           path: repos/raven-toolbox
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           repository: SysBioChalmers/GECKO
           ref: ${{ steps.refs.outputs.gecko_matlab_ref }}
           path: repos/GECKO
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           repository: SysBioChalmers/geckopy
           ref: ${{ steps.refs.outputs.gecko_python_ref }}
@@ -80,7 +80,7 @@ jobs:
       - name: Render the parity reports
         run: parity report -o build/
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: parity-reports
           path: build/
