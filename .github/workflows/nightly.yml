@@ -153,7 +153,7 @@ jobs:
           [pairs.raven.python]
           path = "repos/raven-toolbox"
           EOF
-          pip install ./repos/raven-toolbox
+          pip install "./repos/raven-toolbox[excel]"
 
           if [ "${{ matrix.pair }}" = "gecko" ]; then
             cat >> parity.local.toml <<'EOF'
