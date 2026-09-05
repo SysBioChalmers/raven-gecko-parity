@@ -1055,10 +1055,38 @@ entries:
       (RenameGenesResult.unmapped) is covered directly by raven-toolbox''s own unit tests
       instead.'
   - matlab: replaceMets
-    status: python-pending
-    issue: SysBioChalmers/raven-gecko-parity#52
-    notes: Substitutes one metabolite for another across the model. No port decision is recorded either way.
-      Left in the queue rather than declared a divergence, so the choice stays visible.
+    python: raven_toolbox.manipulation.replace_metabolite
+    status: parity
+    scenarios:
+      - replace_metabolite_toy
+    notes: 'Merges a metabolite into another already in the model (RAVEN''s own example: a model
+      with both "oxygen" and "o2" as names). No cobrapy equivalent exists (checked
+      cobra.manipulation''s full public API), unlike renameModelGenes''s cobra.manipulation.
+      rename_genes -- a genuine gap, not a thin wrapper. identifiers=True is a direct 1:1 merge
+      by id; identifiers=False (name-based) additionally re-scans the whole model for any
+      metabolite sharing a (name, compartment) with a just-renamed one and merges those too, not
+      just the ones explicitly named -- replicated exactly. The post-merge duplicate-reaction
+      cleanup (contractModel restricted to reactions touching the replacement) is shared with
+      remove_duplicate_reactions via a new restrict_to_metabolites parameter, rather than
+      reimplemented. Two disclosed decisions: (1) identifiers=True''s stoichiometry reassignment
+      sums into any pre-existing coefficient the replacement already has in a reaction, where
+      replaceMets.m overwrites (a plain assignment) -- both agree unless a reaction already
+      references both metabolites, an edge case unlikely in a real model, and summing is the more
+      correct choice if it ever does; (2) replaceMets.m''s identity copy (name/formula/charge/
+      MIRIAM/deltaG/inchi/smiles from the replacement) onto the to-be-replaced metabolite is dead
+      code in the identifiers=True path specifically -- that row is deleted immediately after, so
+      the copy has no observable effect and the survivor keeps its own original identity
+      unchanged (verified directly against real RAVEN output: the survivor''s charge was NOT
+      overwritten by the old metabolite''s). Not replicated. In the name-based path the same copy
+      is real (a renamed-but-not-colliding metabolite survives with it), and is applied.
+      Verified against real RAVEN output (replaceMets.m itself, which transforms and returns the
+      model, unlike walkFluxes/followChanged) on two hand-built models: a name-based merge that
+      creates a genuine reaction duplicate (correctly cleaned up) while leaving an unrelated
+      pre-existing duplicate alone, and a separate identifiers-based merge. A real bug was found
+      and fixed while building this scenario: the first implementation passed the pre-merge
+      replacement list to the duplicate-cleanup restriction, which went stale (empty) whenever
+      the replacement itself was the metabolite merged away, silently skipping cleanup entirely;
+      fixed to track the actual post-merge survivor. MATCH.'
   - matlab: reporterMetabolites
     python: raven_toolbox.analysis.reporter_metabolites
     status: parity

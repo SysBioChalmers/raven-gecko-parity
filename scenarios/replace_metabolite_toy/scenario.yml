@@ -1,0 +1,32 @@
+id: replace_metabolite_toy
+pair: raven
+description: >-
+  replaceMets/replace_metabolite on two minimal hand-built models (no
+  shared fixture needed): a name-based merge that creates a genuine
+  reaction duplicate (cleaned up) while leaving an unrelated pre-existing
+  duplicate alone, and a separate identifiers-based merge.
+
+entries:
+  - replaceMets
+
+inputs:
+  # Name-based checkpoint: a(name=oxygen,c) and b(name=o2,c) share a
+  # compartment -- merging "oxygen" into "o2" collides them. r1 (a->x)
+  # becomes a duplicate of the pre-existing r2 (b->x) and gets removed;
+  # unrelated1/unrelated2 (both d->) are already duplicates of each other
+  # before this call and must survive untouched, since contractModel's own
+  # mets restriction (used internally by replaceMets) only checks reactions
+  # touching the replacement.
+  name_based:
+    metabolite: oxygen
+    replacement: o2
+
+  # Identifiers-based checkpoint: a plain 1:1 merge by id on a separate,
+  # smaller model.
+  identifiers_based:
+    metabolite: a
+    replacement: b
+
+tolerance:
+  rel: 1.0e-12
+  abs: 1.0e-15
