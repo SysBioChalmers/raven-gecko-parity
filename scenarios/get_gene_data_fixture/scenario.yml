@@ -1,0 +1,33 @@
+id: get_gene_data_fixture
+pair: raven
+description: >-
+  getGeneData/get_gene_data parsing a local GFF3 file (no network needed --
+  both sides accept a local path directly, bypassing downloadGenomeData).
+  Exercises the eukaryote CDS->mRNA->gene chain with exon dedup, the
+  prokaryote CDS->gene direct chain, the protein_id-via-Dbxref-GenBank
+  fallback, and percent-encoded attribute decoding.
+  # A CDS whose Parent resolves to no known gene is deliberately NOT
+  # exercised here: it crashes getGeneData.m outright (its emptyGene
+  # fallback struct has no uniProt field, so `g.uniProt` errors with
+  # "Unrecognized field name"). Fixed separately in RAVEN
+  # (SysBioChalmers/RAVEN#730); get_gene_data's own handling of this case
+  # (falls back to an all-empty gene record instead of crashing) is covered
+  # by raven-toolbox's own unit tests, which don't need real MATLAB output
+  # to compare against something that never produces one.
+
+entries:
+  - getGeneData
+  - downloadGenomeData
+
+inputs:
+  gff: sample.gff
+
+# downloadGenomeData itself is not exercised here -- it only wraps a live
+# NCBI API call with no pure logic of its own to compare offline, matching
+# getGeneData.m's own test suite (tGenomeData.m), which guards and skips its
+# one download test when there is no network. get_gene_data/getGeneData
+# accepting a local file path directly (bypassing the download) already
+# covers every line of parsing logic either function has.
+tolerance:
+  rel: 1.0e-12
+  abs: 1.0e-15

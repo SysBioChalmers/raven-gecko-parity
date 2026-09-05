@@ -356,10 +356,15 @@ entries:
       DiffReport on the Python side folds the same facts into the free-text differences list only, with no
       structured equivalent.'
   - matlab: downloadGenomeData
-    status: python-pending
-    issue: SysBioChalmers/raven-gecko-parity#53
-    notes: Fetches genome/proteome files for a reconstruction. No port decision is recorded either way. Left
-      in the queue rather than declared a divergence, so the choice stays visible.
+    python: raven_toolbox.curation.download_genome_data
+    status: parity
+    notes: 'Downloads the GFF3 annotation + protein FASTA pair for an NCBI genome assembly via
+      the NCBI Datasets v2 API, skipping the fetch if both files already exist. No pure logic to
+      compare offline (it is one HTTP call, an unzip, and two file moves) and no scenario --
+      matches getGeneData.m''s own test suite (tGenomeData.m), which guards and skips its one
+      download test when there is no network. Unit-tested with the HTTP/zip layer mocked
+      instead: prefix validation, the skip-if-present path, extract-and-move, and the
+      missing-annotation error.'
   - matlab: editMiriam
     status: matlab-only
     reason: 'cobra''s .annotation is already a {namespace: id(s)} dict — read/write it directly.'
@@ -602,10 +607,30 @@ entries:
     notes: Z-scores fluxes across a sample set. No port decision is recorded either way. Left in the queue
       rather than declared a divergence, so the choice stays visible.
   - matlab: getGeneData
-    status: python-pending
-    issue: SysBioChalmers/raven-gecko-parity#53
-    notes: Retrieves per-gene annotation for curation. No port decision is recorded either way. Left in the
-      queue rather than declared a divergence, so the choice stays visible.
+    python: raven_toolbox.curation.get_gene_data
+    status: parity
+    scenarios:
+      - get_gene_data_fixture
+    notes: 'Parses an NCBI GFF3 annotation into a gene/protein mapping table for
+      rename_model_genes: locus_tag, old_locus_tag, GeneID, gene_name, GenBank_protein, UniProt,
+      one row per CDS (deduplicated across exons on every column except UniProt, matching
+      getGeneData.m''s own dedup key exactly), resolving the owning gene through the Parent
+      chain (CDS -> mRNA -> gene for eukaryotes, CDS -> gene for prokaryotes). Accepts either a
+      local GFF3 path or an NCBI accession (downloaded automatically via download_genome_data).
+      get_gene_data.m''s docstring claims rows without a locus_tag are silently discarded; the
+      actual code does no such filtering (verified by reading it end to end) -- not replicated,
+      since matching the real behaviour rather than a stale doc comment is the point of a parity
+      port. Verified against real RAVEN output (getGeneData.m itself, called with a local file
+      path to bypass downloadGenomeData, which has nothing to compare offline) on a hand-built
+      GFF3 fixture exercising the eukaryote and prokaryote Parent chains, the
+      protein_id-via-Dbxref-GenBank fallback, and percent-encoded attribute decoding. MATCH. One
+      case is deliberately excluded from the scenario: a CDS whose Parent resolves to no known
+      gene crashes getGeneData.m outright (its emptyGene fallback struct was missing a uniProt
+      field, so `g.uniProt` errored with "Unrecognized field name") -- fixed in RAVEN
+      (SysBioChalmers/RAVEN#730); get_gene_data''s own handling of this case (falls back to an
+      all-empty gene record instead of crashing) is covered by raven-toolbox''s own unit tests,
+      which do not need real MATLAB output to compare against something that, before the fix,
+      never produced one.'
   - matlab: getGenesFromGrRules
     status: via-dependency
     reason: 'cobrapy covers this: GPR.genes on the parsed syntax tree.'
@@ -1340,6 +1365,12 @@ entries:
     status: python-only
     reason: Default-value constant, exported so callers can inspect and override it. RAVEN hard-codes the
       equivalent.
+  - python: raven_toolbox.curation.parse_gff_gene_table
+    status: python-only
+    reason: The GFF3-parsing core getGeneData.m keeps as an unexported nested function
+      (parseGFF), factored out here as its own public, independently-testable entry point. No
+      behavioural difference from getGeneData -- get_gene_data is a thin wrapper around this
+      plus accession/path resolution and optional TSV writing.
   - python: raven_toolbox.curation.RenameGenesResult
     status: python-only
     reason: Result type. Renamed-count plus unmapped-gene bookkeeping renameModelGenes.m only
