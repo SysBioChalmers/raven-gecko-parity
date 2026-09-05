@@ -1,0 +1,42 @@
+id: rename_model_genes_smallyeast
+pair: raven
+description: >-
+  renameModelGenes/rename_model_genes on smallYeast: rename a handful of
+  the model's 61 real genes via a mapping table, leaving the rest
+  unmapped, including a reaction (HXK) with a three-gene isozyme rule
+  where only one of the three genes is renamed.
+
+entries:
+  - renameModelGenes
+
+inputs:
+  model: "{matlab_repo}/tutorial/smallYeast.yml"
+  from_col: locus_tag
+  to_col: gene_name
+  # HXK's rule is an OR of three genes (YCL040W, YFR053C, YGL253W); only the
+  # first is renamed here, to exercise a partial rename within a multi-gene
+  # rule alongside the plain single-gene cases (ACS, PGI, TPI, FBA).
+  gene_ids:
+    - YAL054C
+    - YBR196C
+    - YCL040W
+    - YDR050C
+    - YKL060C
+  gene_names:
+    - ACS1
+    - PGI1
+    - HXK1
+    - TPI1
+    - FBA1
+
+# Compared as gene *sets* per reaction (not grRule strings): cobra's own GPR
+# pretty-printer and RAVEN's standardizeGrRules use different formatting
+# conventions even for a logically identical rule (spacing, parenthesization),
+# so a raw-string comparison would risk a false mismatch over cosmetics.
+# Both sides already maintain the gene-per-reaction association natively
+# (rxnGeneMat on the MATLAB side, reaction.genes on the Python side), so
+# reading that off directly is both more robust and more exactly what
+# renaming is supposed to get right.
+tolerance:
+  rel: 1.0e-12
+  abs: 1.0e-15

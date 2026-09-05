@@ -986,10 +986,33 @@ entries:
     reason: 'cobrapy covers this: model.remove_reactions(remove_orphans=...). IMPROVEMENTS.md records the
       decision: with orphan cleanup kept coupled the wrapper added nothing, so it was removed entirely.'
   - matlab: renameModelGenes
-    status: python-pending
-    issue: SysBioChalmers/raven-gecko-parity#53
-    notes: Renames genes across GPRs and the gene list. No port decision is recorded either way. Left in the
-      queue rather than declared a divergence, so the choice stays visible.
+    python: raven_toolbox.curation.rename_model_genes
+    status: parity
+    scenarios:
+      - rename_model_genes_smallyeast
+    notes: 'Renames genes across the gene list and every GPR that references them, from a
+      from_col/to_col mapping table (first non-empty pair wins for a duplicated from_col value;
+      rows missing either side are skipped). Delegates the actual rename to
+      cobra.manipulation.rename_genes rather than reimplementing RAVEN''s own regex-based
+      word-boundary GPR rewrite: cobra parses the GPR into an AST and renames the matched gene
+      nodes directly, so it cannot suffer the partial-match failure mode ("gene1" matching
+      inside "gene10") RAVEN''s regex specifically guards against, and correctly merges the
+      underlying gene objects when a rename target already exists elsewhere in the model (the
+      GPR string still references it as many times as before, e.g. "G1 or G1" -- renaming
+      doesn''t algebraically simplify a rule) -- RAVEN''s own version has no such merge check
+      and can leave a model with two model.genes entries sharing an id; not treated as a
+      parity-breaking divergence, since it is strictly more correct. cobra also keeps GPR syntax
+      normalised on assignment, so removeUnnecessaryParentheses/standardizeGrRules have nothing
+      to do here either. Verified against real RAVEN output (renameModelGenes.m itself, which
+      does transform and return the model, unlike walkFluxes/followChanged) on smallYeast''s 61
+      real genes, renaming five (including one of HXK''s three isozyme genes, exercising a
+      partial rename within a multi-gene rule) and leaving the rest unmapped. Compared as gene
+      *sets* per reaction (rxnGeneMat vs reaction.genes), not raw grRule strings, since cobra''s
+      GPR pretty-printer and standardizeGrRules use different formatting conventions even for a
+      logically identical rule. MATCH. renameModelGenes.m''s own notFound-gene warning has no
+      structured return value to compare; rename_model_genes''s equivalent
+      (RenameGenesResult.unmapped) is covered directly by raven-toolbox''s own unit tests
+      instead.'
   - matlab: replaceMets
     status: python-pending
     issue: SysBioChalmers/raven-gecko-parity#52
@@ -1317,6 +1340,10 @@ entries:
     status: python-only
     reason: Default-value constant, exported so callers can inspect and override it. RAVEN hard-codes the
       equivalent.
+  - python: raven_toolbox.curation.RenameGenesResult
+    status: python-only
+    reason: Result type. Renamed-count plus unmapped-gene bookkeeping renameModelGenes.m only
+      warns to the console about, no MATLAB counterpart by design.
   - python: raven_toolbox.gapfilling.FastLPResult
     status: python-only
     reason: Result type. RAVEN returns several parallel outputs; raven-toolbox returns one dataclass, so this
