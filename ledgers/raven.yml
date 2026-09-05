@@ -917,12 +917,23 @@ entries:
     status: internal
     reason: Coloured console output. Python uses the logging module.
   - matlab: processProteinFastaFile
-    status: python-pending
-    issue: SysBioChalmers/raven-gecko-parity#53
-    notes: Renames protein FASTA headers via a gene mapping table, part of the same
-      homology-reconstruction genome-data workflow as getGeneData/downloadGenomeData/
-      renameModelGenes above. Briefly removed as unreferenced, then restored
-      (SysBioChalmers/RAVEN#711, #728). No port decision is recorded either way.
+    python: raven_toolbox.curation.process_protein_fasta_file
+    status: parity
+    scenarios:
+      - process_protein_fasta_fixture
+    notes: 'Renames protein FASTA headers via a gene mapping table (e.g. get_gene_data''s
+      output), part of the same homology-reconstruction genome-data workflow as
+      getGeneData/downloadGenomeData/renameModelGenes above. Briefly removed as unreferenced,
+      then restored (SysBioChalmers/RAVEN#711, #728). A row is skipped only if its
+      GenBank_protein is empty, not if the target column is -- matched faithfully: an accession
+      mapped to an empty target value still renames that sequence''s header to an empty string,
+      rather than being skipped or left unchanged. Reads/writes FASTA by hand (private
+      _read_fasta/_write_fasta helpers) rather than adding a dependency (e.g. Biopython) for
+      something this simple, matching readFasta.m/writeFasta.m''s own reasoning for being
+      hand-rolled. Verified against real RAVEN output (processProteinFastaFile.m itself, which
+      transforms and writes a file, unlike walkFluxes/followChanged) on a hand-built FASTA
+      fixture exercising normal renaming plus the empty-target-value quirk; an unmatched
+      sequence (kept as-is) is covered by raven-toolbox''s own unit tests instead. MATCH.'
   - matlab: progressReport
     status: internal
     reason: Console progress display. Python uses logging / tqdm.
@@ -944,8 +955,13 @@ entries:
     status: internal
     reason: Enumerates the RAVEN struct's field names --- meaningless in an object model.
   - matlab: readFasta
-    status: via-dependency
-    reason: Biopython's SeqIO covers FASTA parsing; raven-toolbox reads sequences through it.
+    status: subsumed
+    reason: 'No Biopython dependency actually exists in raven-toolbox (this row''s previous
+      reason was stale --- found while porting processProteinFastaFile). FASTA reading lives as
+      a private _read_fasta helper inside process_protein_fasta.py, matching readFasta.m/
+      writeFasta.m''s own reasoning for being hand-rolled rather than pulling in a dependency for
+      something this simple; not exposed as its own public entry point, mirroring writeFasta''s
+      own row.'
   - matlab: readYAMLmodel
     python: raven_toolbox.io.read_yaml_model
     status: parity

@@ -1,0 +1,28 @@
+id: process_protein_fasta_fixture
+pair: raven
+description: >-
+  processProteinFastaFile/process_protein_fasta_file renaming a protein
+  FASTA's headers from a gene mapping table: two sequences renamed
+  normally, and a third mapped to an *empty* target value -- exercising
+  processProteinFastaFile.m's own quirk of only checking GenBank_protein
+  for emptiness, not the target column, so a mapped-but-blank row still
+  rewrites that header to "" rather than leaving it or skipping it.
+
+entries:
+  - processProteinFastaFile
+
+inputs:
+  faa: sample.faa
+  header_col: locus_tag
+  protein_ids:
+    - NP_111.1
+    - NP_222.1
+    - NP_999.9
+  header_values:
+    - LT1
+    - LT2
+    - ""
+
+tolerance:
+  rel: 1.0e-12
+  abs: 1.0e-15
