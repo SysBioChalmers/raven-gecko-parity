@@ -1,7 +1,7 @@
 {
   "revisions": {
-    "raven.matlab": "509255c7e1b1ed8e217a367344b0610553bc4c3b",
-    "raven.python": "786cfec72ee5ab0033f2785be0b7deb6cda8ca39"
+    "raven.matlab": "0669acc9dc0c5a3e6e53ba1b83342fef00dc1022",
+    "raven.python": "0e42f94938994b829c5512fcff74680bf3e90fb8"
   },
   "verdicts": {
     "add_reactions_from_equations_smallyeast": "MATCH",
@@ -19,7 +19,8 @@
     "diff_models_smallyeast": "MATCH",
     "duplicate_reactions_smallyeast": "MATCH",
     "elemental_balance_smallyeast": "MATCH",
-    "export_to_excel_smallyeast": "DIFFER",
+    "export_to_excel_smallyeast": "MATCH",
+    "follow_changed_smallyeast": "MATCH",
     "gapfill_connect_smallyeast": "MATCH",
     "gapfill_topology_smallyeast": "MATCH",
     "gpr_dnf_rules": "MATCH",
@@ -28,6 +29,7 @@
     "init_scores_smallyeast": "MATCH",
     "merge_compartments_smallyeast": "MATCH",
     "merge_models_smallyeast": "MATCH",
+    "min_nr_fluxes_toy": "ERROR",
     "model_manipulation_smallyeast": "MATCH",
     "model_simplification_smallyeast": "MATCH",
     "remove_genes_smallyeast": "MATCH",
@@ -38,6 +40,7 @@
     "standardize_gr_rules_smallyeast": "MATCH",
     "task_checking_smallyeast": "MATCH",
     "task_list_parsing": "MATCH",
+    "walk_fluxes_smallyeast": "MATCH",
     "yaml_roundtrip_smallyeast": "MATCH"
   }
 }
