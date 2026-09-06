@@ -265,8 +265,8 @@ entries:
   - matlab: consumeSomething
     status: subsumed
     reason: 'Deprecated wrapper (SysBioChalmers/RAVEN#732) forwarding to findLeakMetabolite(model,''consume'',...);
-      see that row (still python-pending, #44) for the Python side. Kept in deprecated/ so existing scripts keep
-      working, and will be removed at the next major release.'
+      see that row for the Python side (raven_toolbox.gapfilling.find_leak_metabolite). Kept in deprecated/ so
+      existing scripts keep working, and will be removed at the next major release.'
   - matlab: contractModel
     python: raven_toolbox.manipulation.remove_duplicate_reactions
     status: parity
@@ -453,10 +453,31 @@ entries:
     status: via-dependency
     reason: 'cobrapy covers this: cobra.flux_analysis.single_gene_deletion / double_gene_deletion.'
   - matlab: findLeakMetabolite
-    status: python-pending
-    issue: SysBioChalmers/raven-gecko-parity#44
-    notes: Finds metabolites produced from nothing (leaks). No port decision is recorded either way. Left
-      in the queue rather than declared a divergence, so the choice stays visible.
+    python: raven_toolbox.gapfilling.find_leak_metabolite
+    status: parity
+    scenarios:
+      - find_leak_metabolite_toy
+    notes: 'Grafts a throwaway exchange reaction onto every metabolite, forces at least one unit of
+      combined flux through them via a synthetic metabolite, and minimizes the L1 norm of the result
+      (findLeakMetabolite.m''s own minFlux=1 second solveLP stage, with model.c uniformly zero, is
+      exactly cobra.flux_analysis.pfba against a zero objective --- reimplemented directly against
+      model.problem rather than calling pfba(), since there is no real objective to pin first). One
+      simplification: ignoreMets only accepts metabolite ids/names (isNames), not a logical or index
+      vector --- there is no positional model-array equivalent to index into in cobrapy. Verified
+      against real RAVEN output (findLeakMetabolite.m itself, glpk --- this is LP-only, no MILP
+      solver needed) on a hand-built four-metabolite model (raven_toolbox''s own unit tests use the
+      same fixture, tests/test_gapfilling_leak.py): a produce-direction leak where two candidate
+      metabolites are both reachable but one is cheaper (the minimal-flux search correctly prefers
+      it), a consume-direction leak where two metabolites can only be exchanged as a pair (neither
+      alone can feed the one reaction that consumes both, matching the docstring''s own "situations
+      where metabolites can only be exchanged in pairs" case), ignoring every candidate reported as
+      infeasible, and ignoring by name resolving to the same answer as by id. All four MATCH. NOT
+      COMPARED: min_nr_fluxes=true --- on that same fixture the two candidate routes tie exactly on
+      active-reaction count (four each), a genuine MILP tie the search is free to break either way,
+      the same caveat already recorded against get_min_nr_fluxes''s own active-set ties; covered
+      instead by a Python-only unit test that checks the wiring rather than which tied answer comes
+      back. ignoreIntBounds is also not scenario-covered --- a mechanically simple bounds relaxation,
+      lower-risk than the core LP construction the scenario above exercises.'
   - matlab: findPotentialErrors
     status: subsumed
     reason: Structural checks folded into utils.check_model's report.
@@ -809,8 +830,8 @@ entries:
   - matlab: makeSomething
     status: subsumed
     reason: 'Deprecated wrapper (SysBioChalmers/RAVEN#732) forwarding to findLeakMetabolite(model,''produce'',...);
-      see that row (still python-pending, #44) for the Python side. Kept in deprecated/ so existing scripts keep
-      working, and will be removed at the next major release.'
+      see that row for the Python side (raven_toolbox.gapfilling.find_leak_metabolite). Kept in deprecated/ so
+      existing scripts keep working, and will be removed at the next major release.'
   - matlab: mapCompartments
     status: matlab-only
     reason: 'No Python counterpart: mapCompartments post-processes a gene x compartment prediction-score
@@ -1445,6 +1466,10 @@ entries:
   - python: raven_toolbox.gapfilling.KumarGapFillResult
     status: python-only
     reason: Result type. RAVEN returns several parallel outputs; raven-toolbox returns one dataclass, so this
+      has no MATLAB counterpart by design.
+  - python: raven_toolbox.gapfilling.LeakMetaboliteResult
+    status: python-only
+    reason: Result type. RAVEN returns two positional outputs; raven-toolbox returns one dataclass, so this
       has no MATLAB counterpart by design.
   - python: raven_toolbox.gapfilling.TopologicalAnalysisResult
     status: python-only

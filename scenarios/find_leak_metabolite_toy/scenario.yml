@@ -1,0 +1,49 @@
+id: find_leak_metabolite_toy
+pair: raven
+description: >-
+  findLeakMetabolite/find_leak_metabolite on a minimal hand-built model (no
+  shared fixture file needed: four metabolites, three reactions): does the
+  default produce-direction search pick the cheaper of two possible leaks,
+  does consume-direction correctly report a pair of metabolites that can
+  only leak together, is ignoring every candidate reported as infeasible,
+  and does ignoring by name resolve to the same metabolite as by id.
+
+entries:
+  - findLeakMetabolite
+
+inputs:
+  # A -> B -> 2A (R1, R2) nets +1 A per cycle for a flux cost of 4 (v1=v2=e_A=1);
+  # netting +1 B instead needs the cycle run twice as hard (v1=2, v2=1, e_B=1)
+  # for a cost of 5, so the minimal-flux search always prefers A over B. Both
+  # only work in 'produce' direction: consume has no relaxation, and running
+  # either reaction without the other unbalances whichever one has no other
+  # reaction to reabsorb it (verified in raven_toolbox's own unit tests,
+  # tests/test_gapfilling_leak.py).
+  #
+  # C + D -> (R3) consumes both and produces neither, and nothing else touches
+  # C or D -- a 'consume' leak needs both metabolites' probes active at once
+  # (feeding R3 half a unit each), and neither alone can run R3 without the
+  # other, so this is the "metabolites exchanged in pairs" case
+  # findLeakMetabolite.m's own docstring calls out.
+  ignore_all:
+    - A
+    - B
+    - C
+    - D
+  ignore_by_name:
+    - alanine  # A's metName, for the isNames=true path
+
+# Reduced to structured, solver-tie-free data on both sides: status, the
+# sorted metabolite id(s) implicated, and the flux vector over the three
+# named reactions. Not compared: min_nr_fluxes=true -- cardinality
+# minimization ties exactly between the A and B routes on this fixture (both
+# activate four reactions), a genuine MILP tie already covered, and
+# deliberately not asserted between implementations, in
+# raven_toolbox.analysis.get_min_nr_fluxes's own ledger notes; covered
+# instead by a Python-only unit test that only checks the wiring, not which
+# tied answer comes back. ignoreIntBounds is not exercised here either --
+# mechanically simple (bounds relaxation, well-defined) and lower-risk than
+# the core LP construction this scenario is for.
+tolerance:
+  rel: 1.0e-9
+  abs: 1.0e-9
