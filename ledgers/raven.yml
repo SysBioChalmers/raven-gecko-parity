@@ -258,9 +258,12 @@ entries:
       (2) An unmatched metabolite name is a warning in MATLAB and a missing_metabolites list on the
       Python result, so there is nothing to diff for that path; raven-toolbox covers it in its own
       unit tests. The Python result also carries a name column and n_considered, both strict
-      additions. NOT YET RUN AGAINST MATLAB: the scenario''s Python side produces the expected
-      selection, order and labels, but no MATLAB was available to run the other half, so this row
-      is an intent-to-match rather than a verified MATCH.'
+      additions. Verified against real RAVEN output (compareFluxes.m itself, which returns a
+      struct) on smallYeast with a hand-picked (not solved, to avoid alternate-optima
+      non-determinism) flux-vector pair: six changed reactions in one order, each classification
+      exercised once, a NaN relative change for the reaction with no baseline, three reactions
+      excluded for three different reasons, and the metabolite filter dropping a seventh that
+      would otherwise rank last. MATCH.'
   - matlab: compareMultipleModels
     python: raven_toolbox.comparison.compare_models
     status: parity

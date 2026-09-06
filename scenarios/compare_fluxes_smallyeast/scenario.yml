@@ -55,7 +55,9 @@ inputs:
     ATPX: 10
 
 # Two checkpoints: "unfiltered" pins the selection, the descending sort and all
-# three classifications; "filtered" pins the metabolite filter on top of them.
+# three classifications; "filtered" pins the metabolite filter on top of them --
+# TPI is the only reaction the filter removes, and it is the one the unfiltered
+# checkpoint ranks last, so the two differ by exactly that row.
 # rel_change is NaN for a reaction with no baseline flux, which both harnesses
 # canonicalise to the string "NaN" before comparing.
 #
