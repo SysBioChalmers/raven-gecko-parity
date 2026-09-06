@@ -68,10 +68,26 @@ entries:
       transport. Reaction ids are not compared --- both sides mint fresh sequential ids unrelated to the
       transport itself.'
   - matlab: analyzeSampling
-    status: python-pending
-    issue: SysBioChalmers/raven-gecko-parity#41
-    notes: Correlates per-reaction expression t-scores with flux samples. No port decision is recorded either
-      way. Left in the queue rather than declared a divergence, so the choice stays visible.
+    python: raven_toolbox.analysis.analyze_sampling
+    status: parity
+    scenarios:
+      - differential_sampling_toy
+    notes: 'Combines get_flux_z''s Z-score with a per-reaction expression t-score into three
+      probabilities: flux and expression changed together (concordant), expression changed but flux
+      did not, and flux changed but expression did not (or they moved in opposite directions). Two
+      simplifications: analyzeSampling.m computes an "opposite flux direction" branch
+      (pM=erf(|Z|), pH=(1-pM)*..., pR=0) whose results are unconditionally overwritten by the very
+      next branch before scores is ever read anywhere --- dead code, confirmed by tracing every
+      assignment through to the return value, not replicated. And it bundles its own pure-MATLAB
+      tcdf (a fallback for when the Statistics Toolbox is not installed); this uses
+      scipy.stats.t.cdf directly, exact and always available, rather than porting the fallback.
+      Verified against real RAVEN output (analyzeSampling.m itself, calling the real getFluxZ.m ---
+      no solver dependency at all, both functions only reduce a given sample matrix) on hand-built
+      sample matrices covering the concordant case, the discordant case, and analyzeSampling''s own
+      domain-specific flux-sign flip for a more-negative mean (paired with get_flux_z''s own
+      checkpoints in the same scenario). All MATCH. Verified against SysBioChalmers/RAVEN#742
+      (open, not yet merged into develop3 as of this port) rather than develop3 directly --- see the
+      getFluxZ row below for why.'
   - matlab: applyCondition
     python: raven_toolbox.conditions.apply_condition
     status: parity
@@ -363,6 +379,12 @@ entries:
     reason: 'Warn-once-per-session helper (SysBioChalmers/RAVEN#732) behind the deprecated/ convention, backing
       canProduce/canConsume/makeSomething/consumeSomething. Session-scoped MATLAB warning state; Python has no
       deprecated/ shim layer to back.'
+  - matlab: legacyMethodNotice
+    status: internal
+    reason: 'Warn-once-per-session helper (SysBioChalmers/RAVEN#739), the same pattern as deprecationWarning but
+      for a function that stays supported rather than being scheduled for removal: getINITModel and runINIT
+      (tINIT/getINITModel.m, tINIT/runINIT.m) point callers at ftINIT. Session-scoped MATLAB warning state; no
+      Python counterpart to point at, since raven_toolbox never had a separate tINIT-vs-ftINIT split.'
   - matlab: loadDeltaGCSV
     python: raven_toolbox.annotation.load_delta_g_csv
     status: parity
@@ -680,10 +702,29 @@ entries:
     status: subsumed
     reason: Inverse of the reaction-scoring step, folded into the init scoring functions.
   - matlab: getFluxZ
-    status: python-pending
-    issue: SysBioChalmers/raven-gecko-parity#41
-    notes: Z-scores fluxes across a sample set. No port decision is recorded either way. Left in the queue
-      rather than declared a divergence, so the choice stays visible.
+    python: raven_toolbox.analysis.get_flux_z
+    status: parity
+    scenarios:
+      - differential_sampling_toy
+    notes: 'Per-reaction Z-score for a flux change between two sets of sampled flux vectors: the
+      general formula (mean difference over the pooled standard deviation) for any reaction with
+      nonzero variance in either condition, +-100 for a reaction with zero variance in both (a
+      genuine change with no spread to normalize by), 0 when the means are equal, and the whole
+      result clamped to [-100, 100]. Takes samples x reactions (rows are samples, reaction ids are
+      columns, matching random_sampling''s own FluxSamplingResult.samples and cobra.sampling''s
+      convention) rather than getFluxZ.m''s reactions x samples, so a sampling result passes straight
+      through with no manual transpose --- a deliberate orientation adaptation, not a literal port
+      of which axis MATLAB happens to reduce over. Fixes a real sign bug in getFluxZ.m''s
+      zero-variance branch as it stands on develop3 as of this port: a flux *decrease* with no
+      variance in either condition scored +100 there, backwards relative to the general formula''s
+      own sign convention (a flux increase is positive). SysBioChalmers/RAVEN#742 makes the
+      identical correction upstream but had not yet merged into develop3 when this was verified, so
+      the scenario was run against that PR''s branch directly rather than develop3 --- re-verify
+      once #742 lands (the fix is a one-line sign flip, `mA(I)>mB(I)` to `mB(I)>mA(I)`, so a
+      re-verification is not expected to find anything new). No callers besides analyzeSampling in
+      RAVEN (SysBioChalmers/raven-gecko-parity#41, which cannot be usefully ported without this),
+      but kept as its own public entry point since it is independently documented and useful on its
+      own, unlike e.g. canExchange.'
   - matlab: getGeneData
     python: raven_toolbox.curation.get_gene_data
     status: parity
