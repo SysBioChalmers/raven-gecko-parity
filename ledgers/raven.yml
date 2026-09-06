@@ -554,9 +554,6 @@ entries:
       uses, which can produce different degenerate optima), and fill_tasks extends the reference-model
       candidate pool with each task''s own temporary equations while fitTasks does not (a real gap for tasks
       with custom equations).'
-  - matlab: ftINITFillGapsMILP
-    status: subsumed
-    reason: The inner MILP of the ftINIT task gap-fill; inside init.fill_tasks.
   - matlab: ftINITInternalAlg
     python: raven_toolbox.init.run_ftinit
     status: parity
@@ -679,9 +676,6 @@ entries:
   - matlab: getExchangeRxns
     status: via-dependency
     reason: 'cobrapy covers this: model.exchanges.'
-  - matlab: getExprForRxnScore
-    status: subsumed
-    reason: Inverse of the reaction-scoring step, folded into the init scoring functions.
   - matlab: getFluxZ
     status: python-pending
     issue: SysBioChalmers/raven-gecko-parity#41
