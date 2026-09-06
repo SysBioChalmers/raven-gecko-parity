@@ -1,0 +1,29 @@
+id: differential_sampling_toy
+pair: raven
+description: >-
+  getFluxZ/get_flux_z and analyzeSampling/analyze_sampling on hand-built
+  sampled-flux matrices (no model needed -- both functions work on raw
+  reactions-x-samples arrays). Covers the general Z-score formula, the
+  zero-variance branch's sign (including the case SysBioChalmers/RAVEN#742
+  fixes), equal-means, clamping, and analyzeSampling's concordant/discordant
+  classification plus its own-direction flux sign flip.
+
+entries:
+  - getFluxZ
+  - analyzeSampling
+
+inputs: {}
+# Six rows for get_flux_z, each isolating one branch (see the .m/run.py
+# construction for the exact numbers), and three more for analyze_sampling
+# (concordant, discordant, and the negative-flux sign-flip case), paired with
+# t-scores [3, -3, 3] at df=10.
+#
+# Verified against SysBioChalmers/RAVEN#742 (open at the time this scenario
+# was written), which fixes a real sign bug in getFluxZ.m's zero-variance
+# branch -- a flux *decrease* with no variance in either condition scored
+# +100 on unpatched develop3, backwards relative to the general formula.
+# This scenario is written against the corrected behaviour; re-verify once
+# #742 merges into develop3.
+tolerance:
+  rel: 1.0e-9
+  abs: 1.0e-9

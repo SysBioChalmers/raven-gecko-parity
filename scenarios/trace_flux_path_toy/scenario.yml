@@ -1,0 +1,41 @@
+id: trace_flux_path_toy
+pair: raven
+description: >-
+  traceFluxPath/trace_flux_path on a minimal hand-built model (no shared
+  fixture file needed: seven metabolites, six reactions): does the best-first
+  search find the higher-fraction branch of a junction, do fractions compound
+  correctly across two hops, is the lower-fraction branch still found, does
+  the default currency-metabolite filter block an ATP-mediated route, does
+  disabling it reveal that route, and does max_hops prune a path that needs
+  more hops than allowed.
+
+entries:
+  - traceFluxPath
+
+inputs: {}
+# R1 produces B and ATP together; B splits 70/30 into R2a/R2b, which rejoin
+# at D via R3/R4. ATP instead heads straight to a dead end (R5) with no
+# material link at all -- the same fixture as raven_toolbox's own unit tests
+# (tests/test_analysis_trace_flux_path.py), so both harnesses build the
+# identical model rather than sharing a file.
+#
+#   R1: A -> B + ATP    flux 10
+#   R2a: B -> C         flux 7   (70% of B)
+#   R2b: B -> E         flux 3   (30% of B)
+#   R3: C -> D          flux 7
+#   R4: E -> D          flux 3
+#   R5: ATP -> D2       flux 10  (currency-only route, no material link)
+#
+# Hand-picked, not solved -- traceFluxPath takes any flux vector as given, so
+# a solved FBA result would risk alternate-optima non-determinism between the
+# two solvers for no benefit here. Every fraction below is a bare 7/10, 3/10
+# or 1.0, not a tie the two implementations could break differently.
+
+# Not compared: exclude_mets (a plain string-list extension of the currency
+# filter, mechanically simple) and carbon_only (cobra's Metabolite.elements
+# vs. traceFluxPath.m's own regex are a deliberate, documented divergence --
+# see trace_flux_path's own docstring). Both are covered by raven_toolbox's
+# unit tests instead.
+tolerance:
+  rel: 1.0e-12
+  abs: 1.0e-15

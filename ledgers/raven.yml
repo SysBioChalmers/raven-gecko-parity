@@ -70,17 +70,24 @@ entries:
   - matlab: analyzeSampling
     python: raven_toolbox.analysis.analyze_sampling
     status: parity
-    notes: 'Correlates per-reaction expression t-scores with flux-sampling results, calling
-      getFluxZ directly --- ported together with it for the same reason (raven_toolbox''s own
-      docstring: cannot be usefully ported without it). Renames the three score columns for
-      clarity: pR/pH/pM become concordant/expression_only/flux_only_or_discordant. ONE DELIBERATE
-      SIMPLIFICATION: analyzeSampling.m computes an "opposite flux direction" branch
+    scenarios:
+      - differential_sampling_toy
+    notes: 'Combines get_flux_z''s Z-score with a per-reaction expression t-score into three
+      probabilities: flux and expression changed together (concordant), expression changed but flux
+      did not, and flux changed but expression did not (or they moved in opposite directions). Two
+      simplifications: analyzeSampling.m computes an "opposite flux direction" branch
       (pM=erf(|Z|), pH=(1-pM)*..., pR=0) whose results are unconditionally overwritten by the very
-      next branch before scores is ever read --- dead code, verified by tracing every assignment,
-      not replicated. Also drops the pure-MATLAB tcdf fallback (for when the Statistics Toolbox is
-      absent) in favour of scipy.stats.t.cdf, which is exact and always available. ONE CURRENT
-      DIVERGENCE, inherited via getFluxZ rather than analyzeSampling''s own logic --- see that
-      row --- tracked by SysBioChalmers/RAVEN#742 (open, not yet merged).'
+      next branch before scores is ever read anywhere --- dead code, confirmed by tracing every
+      assignment through to the return value, not replicated. And it bundles its own pure-MATLAB
+      tcdf (a fallback for when the Statistics Toolbox is not installed); this uses
+      scipy.stats.t.cdf directly, exact and always available, rather than porting the fallback.
+      Verified against real RAVEN output (analyzeSampling.m itself, calling the real getFluxZ.m ---
+      no solver dependency at all, both functions only reduce a given sample matrix) on hand-built
+      sample matrices covering the concordant case, the discordant case, and analyzeSampling''s own
+      domain-specific flux-sign flip for a more-negative mean (paired with get_flux_z''s own
+      checkpoints in the same scenario). All MATCH. Verified against SysBioChalmers/RAVEN#742
+      (open, not yet merged into develop3 as of this port) rather than develop3 directly --- see the
+      getFluxZ row below for why.'
   - matlab: applyCondition
     python: raven_toolbox.conditions.apply_condition
     status: parity
@@ -378,11 +385,10 @@ entries:
       deprecated/ shim layer to back.'
   - matlab: legacyMethodNotice
     status: internal
-    reason: 'Warn-once-per-session helper, added alongside the INIT/ftINIT reorganization to point a caller of a
-      still-supported-but-superseded function (e.g. getINITModel) at the recommended replacement without
-      promising removal -- deprecationWarning''s counterpart for "keeps working" rather than "will stop working".
-      Same reason deprecationWarning is internal: session-scoped MATLAB warning state, and Python has nothing
-      resembling the deprecated/ convention this backs.'
+    reason: 'Warn-once-per-session helper (SysBioChalmers/RAVEN#739), the same pattern as deprecationWarning but
+      for a function that stays supported rather than being scheduled for removal: getINITModel and runINIT
+      (tINIT/getINITModel.m, tINIT/runINIT.m) point callers at ftINIT. Session-scoped MATLAB warning state; no
+      Python counterpart to point at, since raven_toolbox never had a separate tINIT-vs-ftINIT split.'
   - matlab: loadDeltaGCSV
     python: raven_toolbox.annotation.load_delta_g_csv
     status: parity
@@ -541,21 +547,33 @@ entries:
   - matlab: fitParameters
     python: raven_toolbox.biomass.fit_parameters
     status: parity
-    notes: 'Fits stoichiometric parameters (e.g. maintenance ATP) to measured flux data by
-      nonlinear least squares (fminsearch / scipy.optimize.minimize, Nelder-Mead both sides).
-      parameterPositions'' cell-array-of-S-matrix-linear-indices becomes ParameterPosition, a list
-      of (reaction_id, metabolite_id) pairs --- keyed by identifier rather than raw linear index,
-      so it survives a model copy. plotFitting has no port: a plotting convenience with no bearing
-      on the fit itself, callers can already plot resulting_fluxes against their own measurements.
-      exitFlag (fminsearch''s 1/0/-1 codes) has no equivalent; success carries scipy''s own
-      convergence flag instead --- different optimizer, different bookkeeping, not a comparable
-      value. CURRENT DIVERGENCE, a MATLAB bug rather than a design choice: fitParameters.m''s
-      getRSS sets model.ub(xRxnsIndexes)=xValues(i) for every data point, which for more than one
-      xRxn reads only part of one row of xValues instead of row i in full --- lb is already
-      correct (xValues(i,:)) a few lines above. fit_parameters applies the full row to both
-      bounds. SysBioChalmers/RAVEN#742 (open, not yet merged) makes the identical correction
-      upstream and describes the same bug independently. Once #742 merges the two will match
-      exactly; until then this only shows up with more than one xRxn.'
+    scenarios:
+      - fit_parameters_toy
+    notes: 'Fits one or more stoichiometric-matrix coefficients (a maintenance ATP cost is the
+      usual example) by nonlinear least squares: for each data point, a set of reactions is fixed
+      to measured values, the model is re-solved, and the resulting flux at another set of
+      reactions is compared against its own measurements, minimized (via a derivative-free simplex
+      optimizer, MATLAB''s fminsearch / scipy''s Nelder-Mead) across every data point at once.
+      Fitted parameter magnitudes are expected to differ slightly between implementations (a
+      different general-purpose optimizer, different convergence tolerances), the same caveat
+      already recorded against other numerical-optimization-based ports; the scenario below sidesteps
+      it by construction rather than by loose tolerance, using a toy model where the correct fit is
+      analytically exact (mass balance alone, no objective, pins the fitted reaction''s flux to a
+      closed-form function of the inputs). plotFitting has no port: a plotting convenience with no
+      bearing on the fit itself. A real usability gap fixed rather than replicated: fitParameters.m''s
+      documented 4th output, the model with fitted parameters applied, is only ever assigned inside
+      the `if plotFitting==true` branch --- requesting it via nargout without also plotting is a
+      MATLAB "output argument not assigned" error, confirmed by reading every assignment path. The
+      Python port always returns the fitted model. Also fixes a real bug in fitParameters.m as it
+      stands on develop3 as of this port: `model.ub(xRxnsIndexes)=xValues(i)` reads only the first
+      column of xValues for every xRxn''s upper bound instead of row i in full (`lb` already used
+      the correct `xValues(i,:)`) --- invisible with a single xRxn, silently wrong with more than
+      one. SysBioChalmers/RAVEN#742 makes the identical one-line fix upstream but had not yet
+      merged when this was verified, so the scenario (built with two xRxns specifically to exercise
+      this) runs against that PR''s branch rather than develop3 --- re-verify once #742 lands.
+      Verified against real RAVEN output (fitParameters.m itself, calling the real fminsearch, glpk
+      --- this is LP-only): the fitted parameter, fitness score (zero, a perfect noiseless fit), and
+      the resulting model coefficient all MATCH.'
   - matlab: fitTasks
     status: matlab-only
     reason: 'No dedicated Python entry point: fill_tasks implements essentially the same algorithm (task by
@@ -717,15 +735,27 @@ entries:
   - matlab: getFluxZ
     python: raven_toolbox.analysis.get_flux_z
     status: parity
-    notes: 'Z-score per reaction for a flux change between two random-sampling runs. CURRENT
-      DIVERGENCE, a MATLAB bug rather than a design choice: getFluxZ.m''s zero-variance branch
-      (both conditions have identical, non-varying flux samples) has an inverted sign relative to
-      its own general-case formula --- a flux decrease with no variance in either condition scores
-      +100, backwards. get_flux_z implements the corrected sign. SysBioChalmers/RAVEN#742 (open,
-      not yet merged) makes the identical correction upstream and describes the same bug
-      independently, so this is confirmed rather than suspected. Once #742 merges the two will
-      match exactly; until then, a reaction whose sampled fluxes are literally constant in both
-      conditions being compared disagrees on the sign of that reaction''s Z-score.'
+    scenarios:
+      - differential_sampling_toy
+    notes: 'Per-reaction Z-score for a flux change between two sets of sampled flux vectors: the
+      general formula (mean difference over the pooled standard deviation) for any reaction with
+      nonzero variance in either condition, +-100 for a reaction with zero variance in both (a
+      genuine change with no spread to normalize by), 0 when the means are equal, and the whole
+      result clamped to [-100, 100]. Takes samples x reactions (rows are samples, reaction ids are
+      columns, matching random_sampling''s own FluxSamplingResult.samples and cobra.sampling''s
+      convention) rather than getFluxZ.m''s reactions x samples, so a sampling result passes straight
+      through with no manual transpose --- a deliberate orientation adaptation, not a literal port
+      of which axis MATLAB happens to reduce over. Fixes a real sign bug in getFluxZ.m''s
+      zero-variance branch as it stands on develop3 as of this port: a flux *decrease* with no
+      variance in either condition scored +100 there, backwards relative to the general formula''s
+      own sign convention (a flux increase is positive). SysBioChalmers/RAVEN#742 makes the
+      identical correction upstream but had not yet merged into develop3 when this was verified, so
+      the scenario was run against that PR''s branch directly rather than develop3 --- re-verify
+      once #742 lands (the fix is a one-line sign flip, `mA(I)>mB(I)` to `mB(I)>mA(I)`, so a
+      re-verification is not expected to find anything new). No callers besides analyzeSampling in
+      RAVEN (SysBioChalmers/raven-gecko-parity#41, which cannot be usefully ported without this),
+      but kept as its own public entry point since it is independently documented and useful on its
+      own, unlike e.g. canExchange.'
   - matlab: getGeneData
     python: raven_toolbox.curation.get_gene_data
     status: parity
@@ -881,8 +911,16 @@ entries:
   - matlab: guessComposition
     status: python-pending
     issue: SysBioChalmers/raven-gecko-parity#37
-    notes: Infers biomass composition from a related organism. No port decision is recorded either way. Left
-      in the queue rather than declared a divergence, so the choice stays visible.
+    notes: 'Infers missing metabolite formulas from elemental mass balance within the model''s own
+      reactions (not, as previously recorded here, from a related organism -- that description was
+      wrong). Real RAVEN never divides by the resolving reaction''s own coefficient for the metabolite
+      being solved for, so any reaction where that coefficient is not +-1 gets an incorrectly scaled
+      formula (SysBioChalmers/RAVEN#743, opened to fix this upstream, not yet merged). Port open at
+      SysBioChalmers/raven-toolbox#145: applies that division and is correct in general; the
+      cross-language scenario (guess_composition_toy) is restricted to coefficient +-1 cases, where
+      current develop3 is also correct, and the coefficient-aware correction itself is covered only by
+      Python-only unit tests, since real MATLAB has no correct answer to compare against there. Move to
+      parity once #145 merges; re-verify against develop3 once #743 also lands.'
   - matlab: haveFlux
     status: via-dependency
     reason: 'cobrapy covers this: cobra.flux_analysis.find_blocked_reactions. Tolerance semantics differ
@@ -949,10 +987,15 @@ entries:
       candidate id, whether from the existing model or from duplicate ids within the same source model).
       cobra''s merge is pairwise / strict-by-id.'
   - matlab: modelSummary
-    status: python-pending
-    issue: SysBioChalmers/raven-gecko-parity#38
-    notes: Console/struct model summary. No port decision is recorded either way. Left in the queue rather
-      than declared a divergence, so the choice stays visible.
+    status: via-dependency
+    reason: 'cobrapy covers this, and exceeds it: cobra.Model.summary() (also
+      Reaction.summary()/Metabolite.summary(), which RAVEN has no equivalent of at all) auto-solves via
+      pFBA when no flux vector is given (modelSummary.m requires one), adds optional FVA min/max ranges
+      per exchange and a per-element (e.g. carbon) flux-percentage breakdown that modelSummary.m has
+      nothing like, and returns a real ModelSummary object with .uptake_flux/.secretion_flux DataFrames
+      plus .to_string()/.to_html() rather than printing only and returning nothing. The one thing
+      modelSummary.m shows that Model.summary() does not -- reaction/metabolite/gene/compartment counts
+      -- is one line each (len(model.reactions), etc.), not worth a dedicated port on its own.'
   - matlab: optimizeProb
     status: via-dependency
     reason: 'cobrapy covers this: model.optimize(), with optlang underneath.'
@@ -1381,17 +1424,32 @@ entries:
   - matlab: traceFluxPath
     python: raven_toolbox.analysis.trace_flux_path
     status: parity
-    notes: 'Best-first search for the highest-flux-fraction path between two reactions, splitting
-      flux proportionally among consumers at each metabolite junction; excludes currency/cofactor
-      metabolites by default so the path follows material flow. print_flux_path is a separate,
-      simpler console rendering (not a literal reproduction of traceFluxPath.m''s diagram); the
-      structured result (TraceFluxPathResult) is what parity is claimed against, not the printed
-      text. ONE DIVERGENCE, a MATLAB bug rather than a design choice: carbonOnly''s carbon count
-      uses a naive regexp ("C(\d*)") that matches the letter C anywhere in a formula, so a
-      calcium-only metabolite (e.g. formula "Ca2") is miscounted as carbon-bearing. trace_flux_path
-      uses cobra Metabolite.elements, which parses the formula properly instead. Not tracked by any
-      open RAVEN issue/PR at this writing --- found independently during this ledger update, not
-      inherited from #742.'
+    scenarios:
+      - trace_flux_path_toy
+    notes: 'Best-first (greedy) search for the highest-cumulative-fraction path between two reactions:
+      at each metabolite junction flux splits proportionally among every net-consuming reaction, and the
+      search explores highest-fraction branches first (a priority queue kept in descending-fraction
+      order, ties broken FIFO), pruned by maxHops and a per-reaction best-fraction-so-far table that
+      blocks a strictly-worse re-visit. Forward-only: it follows metabolites fromRxn actually produces
+      (by the sign of its own flux) to reactions that actually consume them, so two reactions in parallel
+      branches, or connected only in reverse, yield no path. By default excludes a large hardcoded
+      currency/cofactor metabolite list (ATP, NAD, CoA, H2O, ...) matched case-insensitively by name or
+      by id with the compartment suffix stripped; carbonOnly additionally requires at least one carbon
+      atom per intermediate metabolite. Two simplifications: traceFluxPath.m''s own currency list
+      duplicates every entry in both cases only because its own match is already case-insensitive, so
+      the port keeps one canonical lowercase spelling per compound instead of the redundant pair; and
+      carbonOnly uses cobra''s own Metabolite.elements (proper formula parsing) rather than
+      traceFluxPath.m''s naive `C(\d*)` regex, which would misparse an element like calcium as
+      carbon-bearing --- not a behavioural port, a correctness improvement, same reasoning already
+      applied in get_elemental_balance. Verified against real RAVEN output (traceFluxPath.m itself; no
+      solver dependency at all, since it only reads S and a given flux vector) on a hand-built junction
+      model (A -> B + ATP, B splitting 70/30 into two branches that rejoin, ATP heading to a currency-only
+      dead end): the higher-fraction branch, fraction compounding across two hops, the lower-fraction
+      branch, the default currency filter blocking the ATP route, trace_material=false revealing it, and
+      maxHops pruning a path that needs more hops than allowed. All six MATCH. NOT COMPARED: excludeMets
+      (a plain string-list extension of the same filter) and carbonOnly (the divergence noted above makes
+      a MATLAB comparison meaningless for it) --- both covered by raven_toolbox''s own unit tests instead
+      (tests/test_analysis_trace_flux_path.py).'
   - matlab: walkFluxes
     python: raven_toolbox.analysis.walk_fluxes
     status: parity
@@ -1467,12 +1525,10 @@ entries:
     status: python-only
     reason: Result type. Structured neighbour record returned by FluxWalker, no MATLAB counterpart by design.
   - python: raven_toolbox.analysis.print_flux_path
-    status: subsumed
-    reason: 'A simpler, Pythonic console rendering of trace_flux_path''s result --- not a literal
-      reproduction of traceFluxPath.m''s diagram, its own docstring says so. The capability itself
-      (printing the path) is traceFluxPath.m''s own verbose=true option, not a separate entry
-      point, so this is subsumed rather than python-only: the structured TraceFluxPathResult is
-      what parity is claimed against.'
+    status: python-only
+    reason: 'Simple console rendering of trace_flux_path''s result -- not a literal reproduction of
+      traceFluxPath.m''s own fprintf diagram, so kept as its own additive entry point rather than folded
+      into the parity row itself (same reasoning as followChanged/print_changed_fluxes).'
   - python: raven_toolbox.analysis.RandomSamplingResult
     status: python-only
     reason: Result type. RAVEN returns several parallel outputs; raven-toolbox returns one dataclass, so this
@@ -1483,8 +1539,8 @@ entries:
       has no MATLAB counterpart by design.
   - python: raven_toolbox.analysis.TraceFluxPathResult
     status: python-only
-    reason: Result type. Wraps trace_flux_path's reaction/metabolite path lists and cumulative fraction in
-      one dataclass instead of RAVEN's three parallel outputs; no MATLAB counterpart by design.
+    reason: Result type. RAVEN returns three positional outputs; raven-toolbox returns one dataclass, so this
+      has no MATLAB counterpart by design.
   - python: raven_toolbox.annotation.DEFAULT_BIOMASS_MET_NAMES
     status: python-only
     reason: Default-value constant, exported so callers can inspect and override it. RAVEN hard-codes the
@@ -1505,13 +1561,14 @@ entries:
     reason: Parsed-data type. RAVEN passes structs and parallel cell arrays instead.
   - python: raven_toolbox.biomass.FitParametersResult
     status: python-only
-    reason: Result type. Bundles fit_parameters' fitted parameters, fitness score, convergence flag,
-      fitted model and resulting fluxes in one dataclass instead of RAVEN's four parallel outputs;
-      no MATLAB counterpart by design.
+    reason: Result type. RAVEN returns several parallel outputs (and its 4th, the fitted model, is
+      only ever reachable via plotFitting=true); raven-toolbox returns one dataclass, always
+      populated, so this has no MATLAB counterpart by design.
   - python: raven_toolbox.biomass.ParameterPosition
     status: python-only
-    reason: Parsed-data type. RAVEN passes a struct of parallel cell arrays (parameterPositions.position/
-      isNegative) instead.
+    reason: Parsed-data type. RAVEN passes parallel cell arrays of raw S-matrix linear indices
+      instead; the Python port addresses each entry by (reaction id, metabolite id) pair, which a
+      cobra.Model has no linear-index equivalent for in the first place.
   - python: raven_toolbox.comparison.DEFAULT_ANNOTATION_KEYS
     status: python-only
     reason: Default-value constant, exported so callers can inspect and override it. RAVEN hard-codes the
