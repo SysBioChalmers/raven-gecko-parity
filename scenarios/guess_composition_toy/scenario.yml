@@ -1,0 +1,22 @@
+id: guess_composition_toy
+pair: raven
+description: >-
+  guessComposition/guess_composition on a hand-built A -> B -> C chain (A's
+  formula known, B and C unknown) plus an orphan metabolite with no
+  reactions at all. Exercises the fixed-point loop (C only resolves once B
+  has been assigned, in a later pass) and the "no reactions -> unresolvable"
+  path, without exercising a resolving coefficient other than +-1: real
+  RAVEN's guessComposition does not divide by that coefficient
+  (SysBioChalmers/RAVEN#743), so a scenario with a non-unit coefficient
+  would not reach a genuine MATCH against develop3 until #743 merges. The
+  coefficient-aware correction itself is covered by Python-only unit tests
+  instead (raven_toolbox's tests/test_utils_composition.py), since real
+  MATLAB has no correct answer to compare against there.
+
+entries:
+  - guessComposition
+
+inputs: {}
+tolerance:
+  rel: 1.0e-9
+  abs: 1.0e-9
