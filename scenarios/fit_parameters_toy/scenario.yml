@@ -1,0 +1,38 @@
+id: fit_parameters_toy
+pair: raven
+description: >-
+  fitParameters/fit_parameters on a hand-built model with two fixed input
+  reactions (A, B) feeding a single fitted-parameter output (GROWTH). Two
+  input reactions, not one, is the point: SysBioChalmers/RAVEN#742's fix to
+  fitParameters.m (model.ub(xRxnsIndexes)=xValues(i,:), not xValues(i)) only
+  changes behaviour once there is a second xRxns column to read incorrectly.
+
+entries:
+  - fitParameters
+
+inputs: {}
+# glc/gal-style model: A -> (RA) -> x, B -> (RB) -> x, k*x -> (GROWTH). A and
+# B each have exactly one producer and one consumer, so fixing their exact
+# flux per data point uniquely determines RA/RB (no objective needed), and
+# x has exactly one producer (RA+RB) and one consumer (GROWTH), so mass
+# balance alone pins GROWTH = (a+b)/k for any k -- an analytically exact
+# target, not something either optimizer could land on differently.
+#
+# Data points deliberately use a != b (and one a == b control row) per
+# point: under the unpatched bug, GROWTH's ub read the first (A) column for
+# every xRxn, so B's fixed value would silently become A's, giving a wrong
+# GROWTH prediction whenever a != b:
+#
+#   (a=2, b=4): true sum 6, buggy sum 2a=4
+#   (a=4, b=2): true sum 6, buggy sum 2a=8
+#   (a=6, b=6): true sum 12, buggy sum 2a=12 -- coincides, a==b row included
+#               to confirm the fixture isn't accidentally insensitive to
+#               the bug in every row
+#
+# true k=2, so values_to_fit = [3, 3, 6]. initial_guess=1 for both sides.
+#
+# Verified against SysBioChalmers/RAVEN#742 (open at the time this scenario
+# was written) rather than develop3 directly -- see the ledger row for why.
+tolerance:
+  rel: 1.0e-4
+  abs: 1.0e-4

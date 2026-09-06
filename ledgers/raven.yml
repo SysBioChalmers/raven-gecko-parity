@@ -536,10 +536,35 @@ entries:
     status: subsumed
     reason: Structural checks folded into utils.check_model's report.
   - matlab: fitParameters
-    status: python-pending
-    issue: SysBioChalmers/raven-gecko-parity#39
-    notes: Fits growth-associated maintenance parameters to measured data. No port decision is recorded either
-      way. Left in the queue rather than declared a divergence, so the choice stays visible.
+    python: raven_toolbox.biomass.fit_parameters
+    status: parity
+    scenarios:
+      - fit_parameters_toy
+    notes: 'Fits one or more stoichiometric-matrix coefficients (a maintenance ATP cost is the
+      usual example) by nonlinear least squares: for each data point, a set of reactions is fixed
+      to measured values, the model is re-solved, and the resulting flux at another set of
+      reactions is compared against its own measurements, minimized (via a derivative-free simplex
+      optimizer, MATLAB''s fminsearch / scipy''s Nelder-Mead) across every data point at once.
+      Fitted parameter magnitudes are expected to differ slightly between implementations (a
+      different general-purpose optimizer, different convergence tolerances), the same caveat
+      already recorded against other numerical-optimization-based ports; the scenario below sidesteps
+      it by construction rather than by loose tolerance, using a toy model where the correct fit is
+      analytically exact (mass balance alone, no objective, pins the fitted reaction''s flux to a
+      closed-form function of the inputs). plotFitting has no port: a plotting convenience with no
+      bearing on the fit itself. A real usability gap fixed rather than replicated: fitParameters.m''s
+      documented 4th output, the model with fitted parameters applied, is only ever assigned inside
+      the `if plotFitting==true` branch --- requesting it via nargout without also plotting is a
+      MATLAB "output argument not assigned" error, confirmed by reading every assignment path. The
+      Python port always returns the fitted model. Also fixes a real bug in fitParameters.m as it
+      stands on develop3 as of this port: `model.ub(xRxnsIndexes)=xValues(i)` reads only the first
+      column of xValues for every xRxn''s upper bound instead of row i in full (`lb` already used
+      the correct `xValues(i,:)`) --- invisible with a single xRxn, silently wrong with more than
+      one. SysBioChalmers/RAVEN#742 makes the identical one-line fix upstream but had not yet
+      merged when this was verified, so the scenario (built with two xRxns specifically to exercise
+      this) runs against that PR''s branch rather than develop3 --- re-verify once #742 lands.
+      Verified against real RAVEN output (fitParameters.m itself, calling the real fminsearch, glpk
+      --- this is LP-only): the fitted parameter, fitness score (zero, a perfect noiseless fit), and
+      the resulting model coefficient all MATCH.'
   - matlab: fitTasks
     status: matlab-only
     reason: 'No dedicated Python entry point: fill_tasks implements essentially the same algorithm (task by
@@ -1518,6 +1543,16 @@ entries:
   - python: raven_toolbox.biomass.BiomassConfig
     status: python-only
     reason: Parsed-data type. RAVEN passes structs and parallel cell arrays instead.
+  - python: raven_toolbox.biomass.FitParametersResult
+    status: python-only
+    reason: Result type. RAVEN returns several parallel outputs (and its 4th, the fitted model, is
+      only ever reachable via plotFitting=true); raven-toolbox returns one dataclass, always
+      populated, so this has no MATLAB counterpart by design.
+  - python: raven_toolbox.biomass.ParameterPosition
+    status: python-only
+    reason: Parsed-data type. RAVEN passes parallel cell arrays of raw S-matrix linear indices
+      instead; the Python port addresses each entry by (reaction id, metabolite id) pair, which a
+      cobra.Model has no linear-index equivalent for in the first place.
   - python: raven_toolbox.comparison.DEFAULT_ANNOTATION_KEYS
     status: python-only
     reason: Default-value constant, exported so callers can inspect and override it. RAVEN hard-codes the
