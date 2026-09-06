@@ -554,9 +554,6 @@ entries:
       uses, which can produce different degenerate optima), and fill_tasks extends the reference-model
       candidate pool with each task''s own temporary equations while fitTasks does not (a real gap for tasks
       with custom equations).'
-  - matlab: ftINITFillGapsMILP
-    status: subsumed
-    reason: The inner MILP of the ftINIT task gap-fill; inside init.fill_tasks.
   - matlab: ftINITInternalAlg
     python: raven_toolbox.init.run_ftinit
     status: parity
@@ -1343,10 +1340,34 @@ entries:
     status: matlab-only
     reason: RAVEN struct field ordering is moot in an object model; cobra has no field order to standardise.
   - matlab: traceFluxPath
-    status: python-pending
-    issue: SysBioChalmers/raven-gecko-parity#48
-    notes: Traces a carbon/flux path between two reactions. No port decision is recorded either way. Left
-      in the queue rather than declared a divergence, so the choice stays visible.
+    python: raven_toolbox.analysis.trace_flux_path
+    status: parity
+    scenarios:
+      - trace_flux_path_toy
+    notes: 'Best-first (greedy) search for the highest-cumulative-fraction path between two reactions:
+      at each metabolite junction flux splits proportionally among every net-consuming reaction, and the
+      search explores highest-fraction branches first (a priority queue kept in descending-fraction
+      order, ties broken FIFO), pruned by maxHops and a per-reaction best-fraction-so-far table that
+      blocks a strictly-worse re-visit. Forward-only: it follows metabolites fromRxn actually produces
+      (by the sign of its own flux) to reactions that actually consume them, so two reactions in parallel
+      branches, or connected only in reverse, yield no path. By default excludes a large hardcoded
+      currency/cofactor metabolite list (ATP, NAD, CoA, H2O, ...) matched case-insensitively by name or
+      by id with the compartment suffix stripped; carbonOnly additionally requires at least one carbon
+      atom per intermediate metabolite. Two simplifications: traceFluxPath.m''s own currency list
+      duplicates every entry in both cases only because its own match is already case-insensitive, so
+      the port keeps one canonical lowercase spelling per compound instead of the redundant pair; and
+      carbonOnly uses cobra''s own Metabolite.elements (proper formula parsing) rather than
+      traceFluxPath.m''s naive `C(\d*)` regex, which would misparse an element like calcium as
+      carbon-bearing --- not a behavioural port, a correctness improvement, same reasoning already
+      applied in get_elemental_balance. Verified against real RAVEN output (traceFluxPath.m itself; no
+      solver dependency at all, since it only reads S and a given flux vector) on a hand-built junction
+      model (A -> B + ATP, B splitting 70/30 into two branches that rejoin, ATP heading to a currency-only
+      dead end): the higher-fraction branch, fraction compounding across two hops, the lower-fraction
+      branch, the default currency filter blocking the ATP route, trace_material=false revealing it, and
+      maxHops pruning a path that needs more hops than allowed. All six MATCH. NOT COMPARED: excludeMets
+      (a plain string-list extension of the same filter) and carbonOnly (the divergence noted above makes
+      a MATLAB comparison meaningless for it) --- both covered by raven_toolbox''s own unit tests instead
+      (tests/test_analysis_trace_flux_path.py).'
   - matlab: walkFluxes
     python: raven_toolbox.analysis.walk_fluxes
     status: parity
@@ -1421,6 +1442,11 @@ entries:
   - python: raven_toolbox.analysis.NeighborReaction
     status: python-only
     reason: Result type. Structured neighbour record returned by FluxWalker, no MATLAB counterpart by design.
+  - python: raven_toolbox.analysis.print_flux_path
+    status: python-only
+    reason: 'Simple console rendering of trace_flux_path''s result -- not a literal reproduction of
+      traceFluxPath.m''s own fprintf diagram, so kept as its own additive entry point rather than folded
+      into the parity row itself (same reasoning as followChanged/print_changed_fluxes).'
   - python: raven_toolbox.analysis.RandomSamplingResult
     status: python-only
     reason: Result type. RAVEN returns several parallel outputs; raven-toolbox returns one dataclass, so this
@@ -1428,6 +1454,10 @@ entries:
   - python: raven_toolbox.analysis.ReporterResult
     status: python-only
     reason: Result type. RAVEN returns several parallel outputs; raven-toolbox returns one dataclass, so this
+      has no MATLAB counterpart by design.
+  - python: raven_toolbox.analysis.TraceFluxPathResult
+    status: python-only
+    reason: Result type. RAVEN returns three positional outputs; raven-toolbox returns one dataclass, so this
       has no MATLAB counterpart by design.
   - python: raven_toolbox.annotation.DEFAULT_BIOMASS_MET_NAMES
     status: python-only
