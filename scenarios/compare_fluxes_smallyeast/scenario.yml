@@ -1,0 +1,71 @@
+id: compare_fluxes_smallyeast
+pair: raven
+description: >-
+  compareFluxes/compare_fluxes on smallYeast: which reactions changed between
+  two hand-picked flux vectors, in which order, and how each is classified --
+  turned on, turned off, reversed, or changed in magnitude. Run twice, once
+  over the whole model and once restricted to the reactions touching ATP.
+
+entries:
+  - compareFluxes
+
+inputs:
+  model: "{matlab_repo}/tutorial/smallYeast.yml"
+  cutoff: 0.5
+  metabolite_list:
+    - ATP
+  # Hand-picked, not solved -- same reasoning as walk_fluxes_smallyeast: a
+  # solved FBA result risks alternate-optima non-determinism between the two
+  # solvers for no benefit here, since compareFluxes just compares two given
+  # flux vectors. Unlisted reactions are implicitly 0 on both sides.
+  #
+  # Every |delta| below is distinct, so the descending sort is a real claim and
+  # not a tie-break the two languages could disagree on.
+  #
+  #   HXK      5 -> -6    |d| 11, both active, sign flip     -- "flip"
+  #   ACS    100 -> 108   |d| 8,  both active                -- ""
+  #   PYK      0 -> 5     |d| 5,  inactive -> active         -- "on"
+  #   PCK     10 -> 14    |d| 4,  both active                -- ""
+  #   FADHX    3 -> 0     |d| 3,  active -> inactive         -- "off"
+  #   TPI     10 -> 12    |d| 2,  both active                -- ""; touches no
+  #                       metabolite named ATP, so the filtered checkpoint
+  #                       drops it while the unfiltered one keeps it
+  #   PYC     10 -> 10.2  |d| 0.2 <= cutoff                  -- excluded
+  #   PGK      0 -> 0.3   neither flux clears the cutoff     -- excluded
+  #   ATPX    10 -> 10    no change at all                   -- excluded
+  fluxes_1:
+    HXK: 5
+    ACS: 100
+    PYK: 0
+    PCK: 10
+    FADHX: 3
+    TPI: 10
+    PYC: 10
+    PGK: 0
+    ATPX: 10
+  fluxes_2:
+    HXK: -6
+    ACS: 108
+    PYK: 5
+    PCK: 14
+    FADHX: 0
+    TPI: 12
+    PYC: 10.2
+    PGK: 0.3
+    ATPX: 10
+
+# Two checkpoints: "unfiltered" pins the selection, the descending sort and all
+# three classifications; "filtered" pins the metabolite filter on top of them --
+# TPI is the only reaction the filter removes, and it is the one the unfiltered
+# checkpoint ranks last, so the two differ by exactly that row.
+# rel_change is NaN for a reaction with no baseline flux, which both harnesses
+# canonicalise to the string "NaN" before comparing.
+#
+# Not compared: RAVEN's printed table (verbose is off) -- presentation, not a
+# computed result, same reasoning already recorded against printFluxes. Nor the
+# unmatched-metabolite path: compareFluxes warns and returns nothing for it,
+# while compare_fluxes returns the names on its result, so there is nothing to
+# diff. raven-toolbox covers that path in its own unit tests.
+tolerance:
+  rel: 1.0e-12
+  abs: 1.0e-15
