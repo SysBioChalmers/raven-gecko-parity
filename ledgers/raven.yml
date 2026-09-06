@@ -973,10 +973,15 @@ entries:
       candidate id, whether from the existing model or from duplicate ids within the same source model).
       cobra''s merge is pairwise / strict-by-id.'
   - matlab: modelSummary
-    status: python-pending
-    issue: SysBioChalmers/raven-gecko-parity#38
-    notes: Console/struct model summary. No port decision is recorded either way. Left in the queue rather
-      than declared a divergence, so the choice stays visible.
+    status: via-dependency
+    reason: 'cobrapy covers this, and exceeds it: cobra.Model.summary() (also
+      Reaction.summary()/Metabolite.summary(), which RAVEN has no equivalent of at all) auto-solves via
+      pFBA when no flux vector is given (modelSummary.m requires one), adds optional FVA min/max ranges
+      per exchange and a per-element (e.g. carbon) flux-percentage breakdown that modelSummary.m has
+      nothing like, and returns a real ModelSummary object with .uptake_flux/.secretion_flux DataFrames
+      plus .to_string()/.to_html() rather than printing only and returning nothing. The one thing
+      modelSummary.m shows that Model.summary() does not -- reaction/metabolite/gene/compartment counts
+      -- is one line each (len(model.reactions), etc.), not worth a dedicated port on its own.'
   - matlab: optimizeProb
     status: via-dependency
     reason: 'cobrapy covers this: model.optimize(), with optlang underneath.'
