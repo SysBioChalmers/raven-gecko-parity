@@ -1,0 +1,28 @@
+id: remove_bad_reactions_toy
+pair: raven
+description: >-
+  removeBadRxns/remove_bad_reactions on a minimal hand-built model (no shared
+  fixture file needed: two metabolites, two reactions): does the default
+  search correctly blame and remove the one elementally-unbalanced reaction
+  in an unbalanced cycle, and does excluding both metabolites from the
+  search leave the model untouched.
+
+entries:
+  - removeBadRxns
+
+inputs:
+  # A -> B (R1, 1 C = 1 C, balanced) and B -> 2A (R2, 1 C -> 2 C, unbalanced)
+  # form the same unbalanced-cycle leak as find_leak_metabolite_toy's
+  # produce_default checkpoint, now with real carbon formulas so
+  # getElementalBalance/get_elemental_balance can tell R1 and R2 apart.
+  # Removing R2 (and only R2) leaves R1 alone, which cannot leak by itself
+  # -- deterministic, no random tie-break to worry about (that case is
+  # deliberately not scenario-covered; see remove_bad_reactions's own
+  # docstring and raven_toolbox's unit tests instead).
+  ignore_both:
+    - A
+    - B
+
+tolerance:
+  rel: 0.0
+  abs: 0.0

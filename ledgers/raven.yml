@@ -1020,10 +1020,31 @@ entries:
       matches the same "missing compartment defaults to the first one" behaviour. The two readers produce the
       same model down to bounds, formulae, compartments, gene sets and stoichiometry.'
   - matlab: removeBadRxns
-    status: python-pending
-    issue: SysBioChalmers/raven-gecko-parity#50
-    notes: Flags reactions with structural problems for review. No port decision is recorded either way. Left
-      in the queue rather than declared a divergence, so the choice stays visible.
+    python: raven_toolbox.manipulation.remove_bad_reactions
+    status: parity
+    scenarios:
+      - remove_bad_reactions_toy
+    notes: 'Repeatedly probes with findLeakMetabolite/find_leak_metabolite (produce, then
+      consume) and removes one flux-carrying reaction per leak found --- preferring one that is
+      elementally unbalanced (getElementalBalance/get_elemental_balance) over one whose balance
+      could not be determined, over an arbitrary one --- until no leak remains. Two things not
+      ported: the refModel option (checking a deletion keeps a reference model feasible) is an
+      unsupported stub in RAVEN itself, which only warns "currently not supported" and otherwise
+      ignores it; and getElementalBalance''s own validation that every requested balanceElement
+      actually appears somewhere in the model (errors otherwise) is not replicated --- a
+      requested element that never appears at all is just silently never a source of imbalance
+      on the Python side, rather than an upfront error. When more than one reaction ties for "the"
+      culprit, MATLAB and Python both pick at random from their own independent generators, so
+      which one is removed is never compared. Verified against real RAVEN output
+      (removeBadRxns.m itself, glpk --- this is LP-only) on a hand-built two-reaction unbalanced
+      cycle (formula ''C1'' throughout, the same fixture find_leak_metabolite_toy uses without
+      formulas): the one elementally-unbalanced reaction is correctly identified and removed,
+      and excluding both metabolites from the search leaves the model untouched. Both MATCH.
+      Every other rxnRules branch (unparsable formulas, the arbitrary-removal fallback, the
+      per-branch warnings) is covered by raven_toolbox''s own unit tests instead
+      (tests/test_manipulation_bad_reactions.py), not by a MATLAB comparison, since they either
+      involve the same solver tie mentioned above or are otherwise about which warning fires
+      rather than a comparable numeric result.'
   - matlab: removeGenes
     python: raven_toolbox.manipulation.remove_genes
     status: parity
