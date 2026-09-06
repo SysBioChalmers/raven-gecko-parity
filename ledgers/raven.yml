@@ -218,8 +218,8 @@ entries:
     status: parity
     scenarios:
       - close_model_smallyeast
-    notes: 'Both sides detect the same "unit exchange" reactions by the same rule (sum(|coefficient|) == 1, a
-      single-metabolite exchange/sink/demand with unit coefficient) --- eight reactions on smallYeast (acOUT,
+    notes: 'Both sides detect the same boundary reactions by the same rule --- metabolites on only one side (no
+      substrates or no products), matching RAVEN''s own getExchangeRxns --- eight reactions on smallYeast (acOUT,
       biomassOUT, co2OUT, ethIN, ethOUT, glcIN, glyOUT, o2IN). What each side does to those eight afterwards
       shares no structure at all. closeModel appends a boundary metabolite --- in a new ''b'' compartment --- to
       each one and never writes to lb/ub anywhere in its own source. close_model leaves every metabolite and
@@ -234,15 +234,17 @@ entries:
       boundary metabolite with model.b = 0 pins its slack to 0, which forces the one reaction touching it to zero
       flux despite that reaction''s own lb/ub being left exactly as they were. NOT COMPARABLE: raw model shape
       after closure --- closeModel adds a metabolite and compartment per closed reaction; close_model does
-      not. KNOWN BUG, shared: the sum(|coeff|) == 1 rule is coefficient-magnitude-based, not structural, so a
-      single-metabolite reaction with |coeff| != 1 (e.g. a scaled sink/demand) is left open on both sides, and a
-      multi-metabolite one-sided reaction (e.g. 2 A + 3 B =>) is closed on neither side unless its magnitudes
-      happen to sum to exactly 1 by coincidence -- and even then, both sides'' construction of the closed state
-      only accounts for the first of its several metabolites. close_model''s own docstring calls this out
-      explicitly as intentionally mirroring RAVEN''s rule rather than cobra''s own Reaction.boundary (any
-      single-metabolite reaction, any coefficient). Tracked as SysBioChalmers/RAVEN#735; both sides now have an
-      open fix switching to a structural rule instead (metabolites on only one side, matching RAVEN''s own
-      getExchangeRxns) -- SysBioChalmers/RAVEN#734 and SysBioChalmers/raven-toolbox#136, not yet merged.'
+      not. FIXED (was a shared bug, SysBioChalmers/RAVEN#735): both sides used to detect via
+      sum(|coefficient|) == 1 instead, which is coefficient-magnitude-based rather than structural, so a
+      single-metabolite reaction with |coeff| != 1 (e.g. a scaled sink/demand) was left open, and a
+      multi-metabolite one-sided reaction (e.g. 2 A + 3 B =>) was closed only when its magnitudes happened to sum
+      to exactly 1 by coincidence --- and even then, both sides'' construction of the closed state accounted for
+      only the first of its several metabolites. Fixed together in SysBioChalmers/RAVEN#734 and
+      SysBioChalmers/raven-toolbox#136. smallYeast''s own eight reactions are unaffected by the rule change ---
+      verified directly against smallYeast.yml on both sides, same eight reactions, same growth-drop numbers ---
+      since every one of them was already a plain single-metabolite, unit-coefficient exchange with nothing for
+      the old rule to miss or mishandle; the scenario''s two independently-restated rule checks were updated to
+      match regardless, so they keep testing current behaviour rather than the retired rule.'
   - matlab: compareFluxes
     status: python-pending
     issue: SysBioChalmers/raven-gecko-parity#40

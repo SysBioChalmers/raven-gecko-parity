@@ -1,9 +1,9 @@
 function results = close_model_smallyeast(ctx)
 % MATLAB side of the model-closing scenario.
 %
-% closeModel and close_model agree on which reactions are "unit exchange"
-% (coefficients summing to 1 in absolute value) but close them through
-% mechanisms that share no structure at all: closeModel appends a new
+% closeModel and close_model agree on which reactions are boundary reactions
+% (metabolites on only one side: no substrates or no products) but close
+% them through mechanisms that share no structure at all: closeModel appends a new
 % boundary metabolite --- in a fresh 'b' compartment --- to each one, and
 % never touches its bounds; close_model leaves the model's metabolites and
 % compartments untouched and zeroes the reaction's own bounds directly.
@@ -45,9 +45,11 @@ model.ub(i) = double(inputs.glc_uptake);
 i = find(strcmp(model.rxns, 'o2IN'), 1);
 model.ub(i) = double(inputs.o2_uptake);
 
+% RAVEN's own rule, restated: metabolites on only one side.
 unitExchange = {};
 for i = 1:numel(model.rxns)
-    if full(sum(abs(model.S(:,i)))) == 1
+    col = full(model.S(:,i));
+    if any(col) && ~(any(col > 0) && any(col < 0))
         unitExchange{end+1} = model.rxns{i}; %#ok<AGROW>
     end
 end

@@ -1,8 +1,8 @@
 """Python side of the model-closing scenario.
 
-RAVEN's closeModel and close_model agree on which reactions are "unit
-exchange" (coefficients summing to 1 in absolute value) but close them
-through mechanisms that share no structure at all --- see
+RAVEN's closeModel and close_model agree on which reactions are boundary
+reactions (metabolites on only one side: no substrates or no products) but
+close them through mechanisms that share no structure at all --- see
 close_model_smallyeast.m for what closeModel actually does (appends a
 metabolite, never touches bounds) and why that still locks the reaction to
 zero flux. This compares the one thing both mechanisms are answerable to
@@ -27,10 +27,12 @@ from raven_toolbox.manipulation import close_model
 cobra.Configuration().processes = 1
 
 
-def _is_unit_exchange(rxn):
-    """RAVEN's own rule, restated: sum(|coeff|) == 1."""
-    total = sum(abs(c) for c in rxn.metabolites.values())
-    return abs(total - 1.0) < 1e-9
+def _is_boundary_reaction(rxn):
+    """RAVEN's own rule, restated: metabolites on only one side."""
+    coeffs = list(rxn.metabolites.values())
+    if not coeffs:
+        return False
+    return all(c >= 0 for c in coeffs) or all(c <= 0 for c in coeffs)
 
 
 def _flux_range(model, rxn_id):
@@ -60,7 +62,7 @@ def run(ctx):
     model.reactions.get_by_id("o2IN").upper_bound = float(inputs["o2_uptake"])
     model.solver = str(inputs["python_solver"])
 
-    unit_exchange = sorted(rxn.id for rxn in model.reactions if _is_unit_exchange(rxn))
+    unit_exchange = sorted(rxn.id for rxn in model.reactions if _is_boundary_reaction(rxn))
 
     growth_before = float(model.slim_optimize())
 

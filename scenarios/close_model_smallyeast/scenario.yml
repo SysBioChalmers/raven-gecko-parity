@@ -36,13 +36,18 @@ inputs:
   matlab_solver: gurobi
   python_solver: gurobi
 
-# Both functions detect the same reactions by the same rule ---
-# sum(|coefficient|) == 1, a single-metabolite exchange/sink/demand with
-# unit coefficient --- stated in both docstrings and restated independently
+# Both functions detect the same reactions by the same rule --- metabolites
+# on only one side (no substrates or no products), matching RAVEN's own
+# getExchangeRxns --- stated in both docstrings and restated independently
 # on each side of this scenario rather than taken from either
 # implementation, so agreeing on unit_exchange_reactions is itself a real
 # check, not a tautology. On smallYeast that is eight reactions: acOUT,
-# biomassOUT, co2OUT, ethIN, ethOUT, glcIN, glyOUT, o2IN.
+# biomassOUT, co2OUT, ethIN, ethOUT, glcIN, glyOUT, o2IN --- unchanged from
+# before this rule became structural (verified directly against
+# smallYeast.yml: the two rules pick the same eight reactions there, since
+# every one of them is already a plain single-metabolite, unit-coefficient
+# exchange with nothing for the old coefficient-magnitude rule to miss or
+# mishandle).
 #
 # What happens to those eight afterwards has NO shared representation to
 # compare. closeModel adds a boundary metabolite per reaction, in a new 'b'
