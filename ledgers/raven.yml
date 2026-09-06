@@ -116,10 +116,19 @@ entries:
     reason: 'cobrapy covers this: reaction.build_reaction_string(use_metabolite_names=...).'
   - matlab: canConsume
     status: via-dependency
-    reason: 'cobrapy covers this: analyse_topology plus cobra.flux_analysis.find_blocked_reactions.'
+    reason: 'Deprecated wrapper (SysBioChalmers/RAVEN#732) forwarding to canExchange(model,''consume'',...); see that
+      row for the Python equivalent. Kept in deprecated/ so existing scripts keep working, and will be removed at
+      the next major release.'
+  - matlab: canExchange
+    status: via-dependency
+    reason: 'cobrapy covers this: analyse_topology plus cobra.flux_analysis.find_blocked_reactions. Merges the
+      former canProduce/canConsume (SysBioChalmers/RAVEN#732), which differed only in exchange direction, into one
+      function taking a ''produce''/''consume'' direction argument.'
   - matlab: canProduce
     status: via-dependency
-    reason: 'cobrapy covers this: analyse_topology plus cobra.flux_analysis.find_blocked_reactions.'
+    reason: 'Deprecated wrapper (SysBioChalmers/RAVEN#732) forwarding to canExchange(model,''produce'',...); see
+      that row for the Python equivalent. Kept in deprecated/ so existing scripts keep working, and will be removed
+      at the next major release.'
   - matlab: changeGrRules
     python: raven_toolbox.manipulation.change_gene_reaction_rules
     status: parity
@@ -178,9 +187,6 @@ entries:
   - matlab: checkProduction
     status: via-dependency
     reason: 'cobrapy covers this: analyse_topology plus cobra.flux_analysis.find_blocked_reactions.'
-  - matlab: checkRxn
-    status: subsumed
-    reason: Single-reaction feasibility probe, used inside the gap-analysis entry points.
   - matlab: checkSolution
     status: via-dependency
     reason: 'cobrapy covers this: the Solution object carries status, objective_value and fluxes.'
@@ -258,7 +264,9 @@ entries:
     reason: 'cobrapy covers this: cobra.util.array.create_stoichiometric_matrix.'
   - matlab: consumeSomething
     status: subsumed
-    reason: Consumption probe used inside the gap analysis; not a separate Python entry point.
+    reason: 'Deprecated wrapper (SysBioChalmers/RAVEN#732) forwarding to findLeakMetabolite(model,''consume'',...);
+      see that row (still python-pending, #44) for the Python side. Kept in deprecated/ so existing scripts keep
+      working, and will be removed at the next major release.'
   - matlab: contractModel
     python: raven_toolbox.manipulation.remove_duplicate_reactions
     status: parity
@@ -309,6 +317,11 @@ entries:
     status: via-dependency
     reason: 'cobrapy covers this: cobra.manipulation.prune_unused_genes. raven_toolbox.manipulation.remove_genes
       also covers it.'
+  - matlab: deprecationWarning
+    status: internal
+    reason: 'Warn-once-per-session helper (SysBioChalmers/RAVEN#732) behind the deprecated/ convention, backing
+      canProduce/canConsume/makeSomething/consumeSomething. Session-scoped MATLAB warning state; Python has no
+      deprecated/ shim layer to back.'
   - matlab: loadDeltaGCSV
     python: raven_toolbox.annotation.load_delta_g_csv
     status: parity
@@ -795,7 +808,9 @@ entries:
       - homology_chain
   - matlab: makeSomething
     status: subsumed
-    reason: Production probe used inside the gap analysis; not a separate Python entry point.
+    reason: 'Deprecated wrapper (SysBioChalmers/RAVEN#732) forwarding to findLeakMetabolite(model,''produce'',...);
+      see that row (still python-pending, #44) for the Python side. Kept in deprecated/ so existing scripts keep
+      working, and will be removed at the next major release.'
   - matlab: mapCompartments
     status: matlab-only
     reason: 'No Python counterpart: mapCompartments post-processes a gene x compartment prediction-score
