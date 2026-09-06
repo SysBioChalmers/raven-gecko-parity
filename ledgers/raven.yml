@@ -236,16 +236,31 @@ entries:
       open fix switching to a structural rule instead (metabolites on only one side, matching RAVEN''s own
       getExchangeRxns) -- SysBioChalmers/RAVEN#734 and SysBioChalmers/raven-toolbox#136, not yet merged.'
   - matlab: compareFluxes
-    status: python-pending
-    issue: SysBioChalmers/raven-gecko-parity#40
-    notes: 'Diagnostic flux comparison across conditions; cobra_raven_comparison.md calls it a practical tool
-      COBRA lacks. No port decision is recorded either way. Left in the queue rather than declared a divergence,
-      so the choice stays visible. RAVEN removed followChanged in its favour (SysBioChalmers/RAVEN#737) and
-      moved that function''s metabolite-name filter here as metaboliteList, so this row now covers the
-      capability the followChanged row used to. raven_toolbox.analysis.follow_changed is the nearest Python
-      function but is NOT this port: it applies three independent cutoffs where compareFluxes applies one, and
-      does not classify reactions as turned on / off / reversed. A port should be written against
-      compareFluxes, not adapted from follow_changed.'
+    python: raven_toolbox.analysis.compare_fluxes
+    status: parity
+    scenarios:
+      - compare_fluxes_smallyeast
+    notes: 'Which reactions changed between two flux vectors, sorted by the size of the change and
+      classified as turned on / turned off / reversed / unlabelled. One cutoff governs both what
+      counts as active (|flux| > cutoff) and what counts as changed (|flux2 - flux1| > cutoff), both
+      strict. An optional metabolite-name filter (case-insensitive against metNames / Metabolite.name,
+      no whitespace stripping on either side) drops non-matching reactions from the comparison
+      entirely, so a filtered reaction appears in no output field rather than being reported as
+      unchanged; an empty list means no filter, matching MATLAB''s isempty test. rel_change is
+      (flux2-flux1)/|flux1| and NaN when the reference flux is below the cutoff. Ties in |delta| keep
+      model order on both sides (MATLAB''s sort is stable; the Python side asks numpy for a stable
+      sort explicitly). Replaces the earlier followChanged/follow_changed pairing: RAVEN removed
+      followChanged in favour of this and moved its metabolite filter here as metaboliteList
+      (SysBioChalmers/RAVEN#737), and raven-toolbox replaced follow_changed with this port
+      (SysBioChalmers/raven-toolbox#138). TWO DELIBERATE DIVERGENCES, both presentation rather than
+      computation: (1) compare_fluxes returns a DataFrame and no printed table, so RAVEN''s nMax and
+      verbose have no counterpart -- the same choice already recorded for compare_models and fseof.
+      (2) An unmatched metabolite name is a warning in MATLAB and a missing_metabolites list on the
+      Python result, so there is nothing to diff for that path; raven-toolbox covers it in its own
+      unit tests. The Python result also carries a name column and n_considered, both strict
+      additions. NOT YET RUN AGAINST MATLAB: the scenario''s Python side produces the expected
+      selection, order and labels, but no MATLAB was available to run the other half, so this row
+      is an intent-to-match rather than a verified MATCH.'
   - matlab: compareMultipleModels
     python: raven_toolbox.comparison.compare_models
     status: parity
@@ -1324,9 +1339,12 @@ entries:
       needs the key present. sort_ids=true previously diverged on compartments (write_yaml_model rebuilt it
       as a plain dict rather than an OrderedDict, dropping the !!omap tag readYAMLmodel.m keys its parsing
       on) --- fixed in SysBioChalmers/raven-toolbox#124.'
-  - python: raven_toolbox.analysis.ChangedReaction
+  - python: raven_toolbox.analysis.CompareFluxesResult
     status: python-only
-    reason: Result type. Structured record returned by follow_changed, no MATLAB counterpart by design.
+    reason: 'Result type. Wraps compare_fluxes'' changed-reaction DataFrame, the three id lists,
+      the metabolite names that matched nothing, and n_considered (how many reactions the
+      comparison looked at, which compareFluxes computes for its printed header but does not
+      return). No MATLAB counterpart by design.'
   - python: raven_toolbox.analysis.find_good_reactions
     status: python-only
     reason: The non-loop flux screen randomSampling performs inline when choosing random objectives.
@@ -1339,22 +1357,6 @@ entries:
     reason: 'Steppable, inspectable object (.groups/.step()/.back()) underlying walk_fluxes -- the
       Pythonic non-blocking form of the same navigation for a script or notebook. No MATLAB
       counterpart by design.'
-  - python: raven_toolbox.analysis.follow_changed
-    status: python-only
-    reason: 'Reactions whose flux changed between two solutions, past three independent cutoffs
-      (absolute flux floor, absolute difference floor, percent change -- all three must pass; a
-      reaction with zero flux in the test case is judged solely by the flux floor, since a percent
-      change from zero is undefined) and an optional metabolite-name filter, matched by metabolite
-      *name* case-insensitively rather than by id. Began as a port of RAVEN''s followChanged, which
-      RAVEN removed in favour of compareFluxes (SysBioChalmers/RAVEN#737); kept here because it is
-      a working entry point with its own tests, and because compareFluxes is a different
-      computation rather than a rename -- see the compareFluxes row. It reached MATCH against a
-      reimplementation of followChanged.m''s selection logic before that removal; the scenario went
-      with the MATLAB function.'
-  - python: raven_toolbox.analysis.FollowChangedResult
-    status: python-only
-    reason: Result type. Wraps follow_changed's changed-reaction list plus any metabolite names
-      that matched nothing, no MATLAB counterpart by design.
   - python: raven_toolbox.analysis.FSEOFResult
     status: python-only
     reason: Result type. RAVEN returns several parallel outputs; raven-toolbox returns one dataclass, so this
@@ -1369,12 +1371,6 @@ entries:
   - python: raven_toolbox.analysis.NeighborReaction
     status: python-only
     reason: Result type. Structured neighbour record returned by FluxWalker, no MATLAB counterpart by design.
-  - python: raven_toolbox.analysis.print_changed_fluxes
-    status: python-only
-    reason: 'Console rendering of follow_changed''s result, kept as its own entry point so the
-      structured result stays free of presentation concerns. Its MATLAB ancestor''s printed text
-      was never reproduced literally and the function it rendered is gone; see the follow_changed
-      row.'
   - python: raven_toolbox.analysis.RandomSamplingResult
     status: python-only
     reason: Result type. RAVEN returns several parallel outputs; raven-toolbox returns one dataclass, so this
