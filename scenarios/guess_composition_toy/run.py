@@ -9,14 +9,17 @@ def _chain_model() -> cobra.Model:
     a = cobra.Metabolite("A", name="A", formula="CH4", compartment="c")
     b = cobra.Metabolite("B", name="B", compartment="c")
     c = cobra.Metabolite("C", name="C", compartment="c")
+    d = cobra.Metabolite("D", name="D", compartment="c")
     orphan = cobra.Metabolite("Orphan", name="Orphan", compartment="c")
-    m.add_metabolites([a, b, c, orphan])
+    m.add_metabolites([a, b, c, d, orphan])
 
     r1 = cobra.Reaction("R1", lower_bound=0, upper_bound=1000)
     r1.add_metabolites({a: -1, b: 1})
     r2 = cobra.Reaction("R2", lower_bound=0, upper_bound=1000)
     r2.add_metabolites({b: -1, c: 1})
-    m.add_reactions([r1, r2])
+    r3 = cobra.Reaction("R3", lower_bound=0, upper_bound=1000)
+    r3.add_metabolites({a: -1, d: 2})
+    m.add_reactions([r1, r2, r3])
     return m
 
 
@@ -29,4 +32,5 @@ def run(ctx):
         "could_not_guess": sorted(result.could_not_guess),
         "b_formula": model.metabolites.get_by_id("B").formula,
         "c_formula": model.metabolites.get_by_id("C").formula,
+        "d_formula": model.metabolites.get_by_id("D").formula,
     }

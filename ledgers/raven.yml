@@ -719,9 +719,6 @@ entries:
   - matlab: getExchangeRxns
     status: via-dependency
     reason: 'cobrapy covers this: model.exchanges.'
-  - matlab: getExprForRxnScore
-    status: subsumed
-    reason: Inverse of the reaction-scoring step, folded into the init scoring functions.
   - matlab: getFluxZ
     python: raven_toolbox.analysis.get_flux_z
     status: parity
@@ -899,18 +896,17 @@ entries:
     status: via-dependency
     reason: 'cobrapy covers this: GPR.to_string().'
   - matlab: guessComposition
-    status: python-pending
-    issue: SysBioChalmers/raven-gecko-parity#37
+    python: raven_toolbox.utils.guess_composition
+    status: parity
+    scenarios:
+      - guess_composition_toy
     notes: 'Infers missing metabolite formulas from elemental mass balance within the model''s own
       reactions (not, as previously recorded here, from a related organism -- that description was
-      wrong). Real RAVEN never divides by the resolving reaction''s own coefficient for the metabolite
-      being solved for, so any reaction where that coefficient is not +-1 gets an incorrectly scaled
-      formula (SysBioChalmers/RAVEN#743, opened to fix this upstream, not yet merged). Port open at
-      SysBioChalmers/raven-toolbox#145: applies that division and is correct in general; the
-      cross-language scenario (guess_composition_toy) is restricted to coefficient +-1 cases, where
-      current develop3 is also correct, and the coefficient-aware correction itself is covered only by
-      Python-only unit tests, since real MATLAB has no correct answer to compare against there. Move to
-      parity once #145 merges; re-verify against develop3 once #743 also lands.'
+      wrong). Before SysBioChalmers/RAVEN#743 (merged), RAVEN never divided by the resolving
+      reaction''s own coefficient for the metabolite being solved for, so any reaction where that
+      coefficient was not +-1 got an incorrectly scaled formula; found while porting, fixed upstream and
+      in raven_toolbox (SysBioChalmers/raven-toolbox#145, merged). The scenario''s A -> 2 D reaction
+      exercises exactly that case and MATCHes on both sides post-fix.'
   - matlab: haveFlux
     status: via-dependency
     reason: 'cobrapy covers this: cobra.flux_analysis.find_blocked_reactions. Tolerance semantics differ
@@ -1981,6 +1977,10 @@ entries:
     reason: Result type. RAVEN returns several parallel outputs; raven-toolbox returns one dataclass, so this
       has no MATLAB counterpart by design.
   - python: raven_toolbox.utils.GPRIssue
+    status: python-only
+    reason: Result type. RAVEN returns several parallel outputs; raven-toolbox returns one dataclass, so this
+      has no MATLAB counterpart by design.
+  - python: raven_toolbox.utils.GuessCompositionResult
     status: python-only
     reason: Result type. RAVEN returns several parallel outputs; raven-toolbox returns one dataclass, so this
       has no MATLAB counterpart by design.
