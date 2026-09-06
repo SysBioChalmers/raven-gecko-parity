@@ -487,7 +487,12 @@ entries:
       within a set form a clique, so recovering groups from them loses nothing.'
   - matlab: findGeneDeletions
     status: via-dependency
-    reason: 'cobrapy covers this: cobra.flux_analysis.single_gene_deletion / double_gene_deletion.'
+    reason: 'cobrapy covers this: cobra.flux_analysis.single_gene_deletion / double_gene_deletion.
+      As of SysBioChalmers/RAVEN#741, this is an exact claim rather than a partial one: the
+      function''s MOMA-backed analysisType/refModel/oeFactor arguments and its sgo/dgo
+      over-expression test types (only ever reachable via MOMA -- there was no FBA equivalent
+      here) are gone along with qMOMA, so the only thing left is FBA-based single/double gene
+      deletion, exactly what the two cobrapy functions do.'
   - matlab: findLeakMetabolite
     python: raven_toolbox.gapfilling.find_leak_metabolite
     status: parity
@@ -1003,9 +1008,6 @@ entries:
   - matlab: progressReport
     status: internal
     reason: Console progress display. Python uses logging / tqdm.
-  - matlab: qMOMA
-    status: via-dependency
-    reason: 'cobrapy covers this: cobra.flux_analysis.moma(linear=False).'
   - matlab: randomSampling
     python: raven_toolbox.analysis.random_sampling
     status: parity
