@@ -238,9 +238,14 @@ entries:
   - matlab: compareFluxes
     status: python-pending
     issue: SysBioChalmers/raven-gecko-parity#40
-    notes: Diagnostic flux comparison across conditions; cobra_raven_comparison.md calls it a practical tool
+    notes: 'Diagnostic flux comparison across conditions; cobra_raven_comparison.md calls it a practical tool
       COBRA lacks. No port decision is recorded either way. Left in the queue rather than declared a divergence,
-      so the choice stays visible.
+      so the choice stays visible. RAVEN removed followChanged in its favour (SysBioChalmers/RAVEN#737) and
+      moved that function''s metabolite-name filter here as metaboliteList, so this row now covers the
+      capability the followChanged row used to. raven_toolbox.analysis.follow_changed is the nearest Python
+      function but is NOT this port: it applies three independent cutoffs where compareFluxes applies one, and
+      does not classify reactions as turned on / off / reversed. A port should be written against
+      compareFluxes, not adapted from follow_changed.'
   - matlab: compareMultipleModels
     python: raven_toolbox.comparison.compare_models
     status: parity
@@ -390,15 +395,6 @@ entries:
     status: matlab-only
     reason: 'cobra''s .annotation is already a {namespace: id(s)} dict — read/write it directly.'
     notes: no obvious Python counterpart; decide whether one is needed
-  - matlab: emptyOrLogicalScalar
-    status: internal
-    reason: MATLAB argument-validation glue. Python uses ordinary keyword arguments and type hints.
-  - matlab: emptyOrTextOrCellOfText
-    status: internal
-    reason: MATLAB argument-validation glue. Python uses ordinary keyword arguments and type hints.
-  - matlab: emptyOrTextScalar
-    status: internal
-    reason: MATLAB argument-validation glue. Python uses ordinary keyword arguments and type hints.
   - matlab: expandModel
     python: raven_toolbox.manipulation.expand_model
     status: parity
@@ -503,28 +499,6 @@ entries:
       candidate pool) that would need checking before treating fitTasks itself as covered too.'
     notes: 'Not a case of "no plausible match" --- fill_tasks is a real candidate, just already claimed by
       ftINITFillGapsForAllTasks in this ledger''s one-python-function-per-row model.'
-  - matlab: followChanged
-    python: raven_toolbox.analysis.follow_changed
-    status: parity
-    scenarios:
-      - follow_changed_smallyeast
-    notes: 'Reactions whose flux changed between two solutions, past three independent cutoffs
-      (absolute flux floor, absolute difference floor, percent change -- all three must pass;
-      a reaction with zero flux in the test case is judged solely by the flux floor, since a
-      percent change from zero is undefined) and an optional metabolite-name filter.
-      follow_changed returns structured data (ChangedReaction records); print_changed_fluxes is
-      a simple Pythonic console rendering, not a literal reproduction of followChanged.m''s text
-      (which itself has a real quirk not worth preserving: a supplied-but-non-default cutOffDiff
-      is silently missing from the printed header whenever cutOffFlux was left at its default).
-      The metabolite filter matches by metabolite *name*, case-insensitively, not by id --
-      matching followChanged.m exactly, including a wart the MATLAB source flags on itself
-      ("Should use id maybe"); a name matching nothing is reported rather than raised, on both
-      sides. Verified against a reimplementation of followChanged.m''s own selection logic (the
-      real function only prints and returns nothing, so has nothing to call directly, the same
-      situation as walk_fluxes/walkFluxes.m) on smallYeast with a hand-picked (not solved, to
-      avoid alternate-optima non-determinism) flux-vector pair exercising each cutoff''s
-      independent veto, a zero-flux case, a sign flip, and the metabolite filter with one
-      deliberately-missing name. MATCH.'
   - matlab: FSEOF
     python: raven_toolbox.analysis.fseof
     status: parity
@@ -781,9 +755,6 @@ entries:
     python: raven_toolbox.localization.fetch_uniprot_localization
     status: parity
     notes: Fetches per-gene localisation evidence from UniProtKB.
-  - matlab: getWSLpath
-    status: internal
-    reason: Windows-to-WSL path translation for the external binaries. Python resolves binaries through raven_toolbox.binaries.
   - matlab: groupRxnScores
     python: raven_toolbox.init.group_rxn_scores
     status: parity
@@ -840,15 +811,6 @@ entries:
     reason: 'Deprecated wrapper (SysBioChalmers/RAVEN#732) forwarding to findLeakMetabolite(model,''produce'',...);
       see that row for the Python side (raven_toolbox.gapfilling.find_leak_metabolite). Kept in deprecated/ so
       existing scripts keep working, and will be removed at the next major release.'
-  - matlab: mapCompartments
-    status: matlab-only
-    reason: 'No Python counterpart: mapCompartments post-processes a gene x compartment prediction-score
-      table (merging/splitting/renaming columns per user rule, used as input to the old predictLocalization),
-      not a built model''s reaction set. raven-toolbox''s localization pipeline (predict.py) scores
-      compartments per gene directly instead of pre-merging predictor columns; mergeCompartments /
-      copy_to_compartment (tracked separately) cover the model-level compartment-merging use case.'
-    notes: 'no confident pairing; closest Python exports: load_compartments (also not a real match --- a
-      COMPARTMENTS-database loader, not a score-table post-processor)'
   - matlab: mergeCompartments
     python: raven_toolbox.manipulation.merge_compartments
     status: parity
@@ -951,9 +913,6 @@ entries:
     status: matlab-only
     reason: Console formatting of a flux vector. Python users print a pandas Series or DataFrame; listed as
       MATLAB-only in todo.md.
-  - matlab: printModel
-    status: matlab-only
-    reason: Console model summary. Not ported; cobra's repr and DataFrames cover it.
   - matlab: printModelStats
     status: matlab-only
     reason: Console model statistics. Not ported; compare_models and cobra's repr cover it.
@@ -975,7 +934,7 @@ entries:
       _read_fasta/_write_fasta helpers) rather than adding a dependency (e.g. Biopython) for
       something this simple, matching readFasta.m/writeFasta.m''s own reasoning for being
       hand-rolled. Verified against real RAVEN output (processProteinFastaFile.m itself, which
-      transforms and writes a file, unlike walkFluxes/followChanged) on a hand-built FASTA
+      transforms and writes a file, unlike walkFluxes) on a hand-built FASTA
       fixture exercising normal renaming plus the empty-target-value quirk; an unmatched
       sequence (kept as-is) is covered by raven-toolbox''s own unit tests instead. MATCH.'
   - matlab: progressReport
@@ -1110,7 +1069,7 @@ entries:
       parity-breaking divergence, since it is strictly more correct. cobra also keeps GPR syntax
       normalised on assignment, so removeUnnecessaryParentheses/standardizeGrRules have nothing
       to do here either. Verified against real RAVEN output (renameModelGenes.m itself, which
-      does transform and return the model, unlike walkFluxes/followChanged) on smallYeast''s 61
+      does transform and return the model, unlike walkFluxes) on smallYeast''s 61
       real genes, renaming five (including one of HXK''s three isozyme genes, exercising a
       partial rename within a multi-gene rule) and leaving the rest unmapped. Compared as gene
       *sets* per reaction (rxnGeneMat vs reaction.genes), not raw grRule strings, since cobra''s
@@ -1145,7 +1104,7 @@ entries:
       overwritten by the old metabolite''s). Not replicated. In the name-based path the same copy
       is real (a renamed-but-not-colliding metabolite survives with it), and is applied.
       Verified against real RAVEN output (replaceMets.m itself, which transforms and returns the
-      model, unlike walkFluxes/followChanged) on two hand-built models: a name-based merge that
+      model, unlike walkFluxes) on two hand-built models: a name-based merge that
       creates a genuine reaction duplicate (correctly cleaned up) while leaving an unrelated
       pre-existing duplicate alone, and a separate identifiers-based merge. A real bug was found
       and fixed while building this scenario: the first implementation passed the pre-merge
@@ -1380,6 +1339,18 @@ entries:
     reason: 'Steppable, inspectable object (.groups/.step()/.back()) underlying walk_fluxes -- the
       Pythonic non-blocking form of the same navigation for a script or notebook. No MATLAB
       counterpart by design.'
+  - python: raven_toolbox.analysis.follow_changed
+    status: python-only
+    reason: 'Reactions whose flux changed between two solutions, past three independent cutoffs
+      (absolute flux floor, absolute difference floor, percent change -- all three must pass; a
+      reaction with zero flux in the test case is judged solely by the flux floor, since a percent
+      change from zero is undefined) and an optional metabolite-name filter, matched by metabolite
+      *name* case-insensitively rather than by id. Began as a port of RAVEN''s followChanged, which
+      RAVEN removed in favour of compareFluxes (SysBioChalmers/RAVEN#737); kept here because it is
+      a working entry point with its own tests, and because compareFluxes is a different
+      computation rather than a rename -- see the compareFluxes row. It reached MATCH against a
+      reimplementation of followChanged.m''s selection logic before that removal; the scenario went
+      with the MATLAB function.'
   - python: raven_toolbox.analysis.FollowChangedResult
     status: python-only
     reason: Result type. Wraps follow_changed's changed-reaction list plus any metabolite names
@@ -1400,9 +1371,10 @@ entries:
     reason: Result type. Structured neighbour record returned by FluxWalker, no MATLAB counterpart by design.
   - python: raven_toolbox.analysis.print_changed_fluxes
     status: python-only
-    reason: 'Simple console rendering of follow_changed''s result -- not a literal reproduction of
-      followChanged.m''s own text (see the followChanged row''s notes on why), so kept as its own
-      additive entry point rather than folded into the parity row itself.'
+    reason: 'Console rendering of follow_changed''s result, kept as its own entry point so the
+      structured result stays free of presentation concerns. Its MATLAB ancestor''s printed text
+      was never reproduced literally and the function it rendered is gone; see the follow_changed
+      row.'
   - python: raven_toolbox.analysis.RandomSamplingResult
     status: python-only
     reason: Result type. RAVEN returns several parallel outputs; raven-toolbox returns one dataclass, so this
