@@ -1,0 +1,29 @@
+id: gap_report_toy
+pair: raven
+description: >-
+  gapReport/gap_report on a minimal hand-built model (no shared fixture file
+  needed: eight metabolites, seven reactions in four independent pieces): a
+  working chain, a reaction blocked for lack of an upstream source, an
+  isolated orphan metabolite, and the same unbalanced-cycle leak used
+  elsewhere in this ledger. Exercises the two pieces of gapReport.m this
+  port had to reimplement itself (getAllSubGraphs and checkProduction have
+  no other real caller in RAVEN to justify their own ledger row) rather than
+  the parts cobrapy already covers directly.
+
+entries:
+  - gapReport
+
+inputs: {}
+
+# gapReport.m's own canProduceWithoutInput/canConsumeWithoutOutput
+# (calculateINOUT) only run for a legacy v2 model carrying RAVEN's
+# 'unconstrained' metabolite marker -- this port always computes that
+# section instead (see gap_report's module docstring), so it is not
+# comparable here and is covered by raven_toolbox's own unit tests
+# (tests/test_gapfilling_report.py) instead. templateModels is not exercised
+# either: connect_blocked_reactions/fillGaps already has its own scenario
+# (gapfill_connect_smallyeast); this only needs to confirm gap_report wires
+# it in, which a Python-only unit test already does.
+tolerance:
+  rel: 0.0
+  abs: 0.0

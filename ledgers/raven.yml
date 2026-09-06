@@ -123,7 +123,11 @@ entries:
     status: via-dependency
     reason: 'cobrapy covers this: analyse_topology plus cobra.flux_analysis.find_blocked_reactions. Merges the
       former canProduce/canConsume (SysBioChalmers/RAVEN#732), which differed only in exchange direction, into one
-      function taking a ''produce''/''consume'' direction argument.'
+      function taking a ''produce''/''consume'' direction argument. Its own probe-reaction technique (add a
+      throwaway exchange, check find_blocked_reactions) is reused directly by two later ports that needed
+      the exact same mechanism for their own single real caller rather than as a standalone entry point:
+      find_leak_metabolite (SysBioChalmers/RAVEN#44) and gap_report''s own private canExchange
+      reimplementation (SysBioChalmers/raven-gecko-parity#36).'
   - matlab: canProduce
     status: via-dependency
     reason: 'Deprecated wrapper (SysBioChalmers/RAVEN#732) forwarding to canExchange(model,''produce'',...); see
@@ -185,8 +189,12 @@ entries:
       reaction), where check_model reports one issue for the whole group with the entity list folded into free
       text and object_id left None.'
   - matlab: checkProduction
-    status: via-dependency
-    reason: 'cobrapy covers this: analyse_topology plus cobra.flux_analysis.find_blocked_reactions.'
+    status: subsumed
+    reason: 'Corrected from an earlier via-dependency row: closer reading (while porting gapReport,
+      SysBioChalmers/raven-gecko-parity#36) found it actually computes a greedy minimal-connection
+      set-cover over metabolite producibility --- not something analyse_topology/find_blocked_reactions
+      already does. Its only real caller in RAVEN is gapReport, so it is reimplemented as a private helper
+      inside raven_toolbox.gapfilling.gap_report rather than given a standalone Python entry point.'
   - matlab: checkSolution
     status: via-dependency
     reason: 'cobrapy covers this: the Solution object carries status, objective_value and fluxes.'
@@ -210,8 +218,8 @@ entries:
     status: parity
     scenarios:
       - close_model_smallyeast
-    notes: 'Both sides detect the same "unit exchange" reactions by the same rule (sum(|coefficient|) == 1, a
-      single-metabolite exchange/sink/demand with unit coefficient) --- eight reactions on smallYeast (acOUT,
+    notes: 'Both sides detect the same boundary reactions by the same rule --- metabolites on only one side (no
+      substrates or no products), matching RAVEN''s own getExchangeRxns --- eight reactions on smallYeast (acOUT,
       biomassOUT, co2OUT, ethIN, ethOUT, glcIN, glyOUT, o2IN). What each side does to those eight afterwards
       shares no structure at all. closeModel appends a boundary metabolite --- in a new ''b'' compartment --- to
       each one and never writes to lb/ub anywhere in its own source. close_model leaves every metabolite and
@@ -226,15 +234,17 @@ entries:
       boundary metabolite with model.b = 0 pins its slack to 0, which forces the one reaction touching it to zero
       flux despite that reaction''s own lb/ub being left exactly as they were. NOT COMPARABLE: raw model shape
       after closure --- closeModel adds a metabolite and compartment per closed reaction; close_model does
-      not. KNOWN BUG, shared: the sum(|coeff|) == 1 rule is coefficient-magnitude-based, not structural, so a
-      single-metabolite reaction with |coeff| != 1 (e.g. a scaled sink/demand) is left open on both sides, and a
-      multi-metabolite one-sided reaction (e.g. 2 A + 3 B =>) is closed on neither side unless its magnitudes
-      happen to sum to exactly 1 by coincidence -- and even then, both sides'' construction of the closed state
-      only accounts for the first of its several metabolites. close_model''s own docstring calls this out
-      explicitly as intentionally mirroring RAVEN''s rule rather than cobra''s own Reaction.boundary (any
-      single-metabolite reaction, any coefficient). Tracked as SysBioChalmers/RAVEN#735; both sides now have an
-      open fix switching to a structural rule instead (metabolites on only one side, matching RAVEN''s own
-      getExchangeRxns) -- SysBioChalmers/RAVEN#734 and SysBioChalmers/raven-toolbox#136, not yet merged.'
+      not. FIXED (was a shared bug, SysBioChalmers/RAVEN#735): both sides used to detect via
+      sum(|coefficient|) == 1 instead, which is coefficient-magnitude-based rather than structural, so a
+      single-metabolite reaction with |coeff| != 1 (e.g. a scaled sink/demand) was left open, and a
+      multi-metabolite one-sided reaction (e.g. 2 A + 3 B =>) was closed only when its magnitudes happened to sum
+      to exactly 1 by coincidence --- and even then, both sides'' construction of the closed state accounted for
+      only the first of its several metabolites. Fixed together in SysBioChalmers/RAVEN#734 and
+      SysBioChalmers/raven-toolbox#136. smallYeast''s own eight reactions are unaffected by the rule change ---
+      verified directly against smallYeast.yml on both sides, same eight reactions, same growth-drop numbers ---
+      since every one of them was already a plain single-metabolite, unit-coefficient exchange with nothing for
+      the old rule to miss or mishandle; the scenario''s two independently-restated rule checks were updated to
+      match regardless, so they keep testing current behaviour rather than the retired rule.'
   - matlab: compareFluxes
     python: raven_toolbox.analysis.compare_fluxes
     status: parity
@@ -575,11 +585,43 @@ entries:
       and targets the substrates of the objective reaction, while the Python side seeds from one-metabolite
       reactions with lower_bound < 0 and targets every metabolite in the model.'
   - matlab: gapReport
-    status: python-pending
-    issue: SysBioChalmers/raven-gecko-parity#36
-    notes: Summary report over a gap analysis. analyse_topology returns the data; the reporting layer is not
-      ported. No port decision is recorded either way. Left in the queue rather than declared a divergence,
-      so the choice stays visible.
+    python: raven_toolbox.gapfilling.gap_report
+    status: parity
+    scenarios:
+      - gap_report_toy
+    notes: 'Runs a battery of connectivity checks: no-flux reactions (plain and relaxed to allow net
+      production of everything), isolated sub-networks, not-produced metabolites and the minimal set to
+      connect them, mass balancing (producible/consumable with every boundary reaction closed), and
+      optional template gap-filling. checkProduction and getAllSubGraphs, previously (incorrectly) marked
+      via-dependency here on the assumption that analyse_topology/find_blocked_reactions already covered
+      their job, turned out on closer reading to compute something neither one does (checkProduction''s
+      greedy minimal-connection set-cover; getAllSubGraphs'' plain connected-components over the metabolite
+      graph) --- but since gapReport is genuinely their only real caller in RAVEN, both are reimplemented
+      as private, non-exported helpers inside gap_report rather than given ledger rows of their own.
+      canExchange is reimplemented the same way, reusing find_leak_metabolite''s own probe-reaction
+      technique, for the same single-caller reason. gapReport.m''s own canProduceWithoutInput/
+      canConsumeWithoutOutput only run for a legacy v2 model carrying RAVEN''s ''unconstrained'' metabolite
+      marker (simplify_model''s own docstring already notes cobra has no equivalent for
+      deleteUnconstrained); this port always computes that section instead by temporarily closing every
+      boundary reaction first, strictly more informative and well-defined regardless of how the model was
+      built. gapReport.m''s own notProducedMets output is also worth flagging on its own terms: despite its
+      name and its own docstring ("cell" of metabolite names), it is assigned directly from
+      checkProduction''s first output, which is a plain array of indices, not names --- gap_report returns
+      actual metabolite ids instead. Verified against real RAVEN output (gapReport.m itself, glpk --- this
+      is LP-only) on a hand-built model with four independent pieces (a working chain, a reaction blocked
+      for lack of an upstream source, an isolated orphan metabolite, and the same unbalanced-cycle leak
+      used elsewhere in this ledger): no-flux reactions (plain and relaxed), sub-network sizes,
+      not-produced metabolites, the needed-for-production adjacency, and the minimal connecting set all
+      MATCH --- including a genuine surprise the real RAVEN run caught: giving a metabolite with no other
+      reaction at all a free source does NOT make even that metabolite itself producible (an earlier draft
+      of this port assumed it always would, by analogy with a trivial uptake-then-excrete loop; RAVEN
+      flips the metabolite''s own exchange reaction in place rather than adding a second one alongside it,
+      so there is no such loop unless something else in the network can actually drain the metabolite once
+      it has a source). NOT COMPARED: canProduceWithoutInput/canConsumeWithoutOutput (gapReport.m never
+      computes them for a plain model, see above; covered by raven_toolbox''s own unit tests instead,
+      tests/test_gapfilling_report.py) and templateModels (connect_blocked_reactions/fillGaps already has
+      its own scenario, gapfill_connect_smallyeast; a Python-only unit test here just confirms gap_report
+      wires the result through).'
   - matlab: generateNewIds
     python: raven_toolbox.utils.generate_new_ids
     status: parity
@@ -600,8 +642,13 @@ entries:
     status: via-dependency
     reason: 'cobrapy covers this: gene.reactions.'
   - matlab: getAllSubGraphs
-    status: via-dependency
-    reason: 'cobrapy covers this: analyse_topology plus cobra.flux_analysis.find_blocked_reactions.'
+    status: subsumed
+    reason: 'Corrected from an earlier via-dependency row: closer reading (while porting gapReport,
+      SysBioChalmers/raven-gecko-parity#36) found it is plain connected-components over the metabolite
+      graph (two metabolites connected if they share a reaction) --- unrelated to analyse_topology''s BFS
+      producibility reachability or find_blocked_reactions. Its only real caller in RAVEN is gapReport, so
+      it is reimplemented as a private helper inside raven_toolbox.gapfilling.gap_report rather than given
+      a standalone Python entry point.'
   - matlab: getBiomassFractions
     python: raven_toolbox.biomass.sum_biomass
     status: parity
@@ -1463,6 +1510,10 @@ entries:
     status: python-only
     reason: Result type. RAVEN returns several parallel outputs; raven-toolbox returns one dataclass, so this
       has no MATLAB counterpart by design.
+  - python: raven_toolbox.gapfilling.GapReportResult
+    status: python-only
+    reason: Result type. RAVEN returns several parallel outputs; raven-toolbox returns one dataclass, so this
+      has no MATLAB counterpart by design.
   - python: raven_toolbox.gapfilling.KumarGapFillResult
     status: python-only
     reason: Result type. RAVEN returns several parallel outputs; raven-toolbox returns one dataclass, so this
@@ -1471,6 +1522,16 @@ entries:
     status: python-only
     reason: Result type. RAVEN returns two positional outputs; raven-toolbox returns one dataclass, so this
       has no MATLAB counterpart by design.
+  - python: raven_toolbox.gapfilling.MinToConnect
+    status: python-only
+    reason: Result type. RAVEN packs each entry into a formatted display string (a metabolite name[compartment]
+      plus a "(connects N metabolites)" suffix) inside its own minToConnect cell array; raven-toolbox returns
+      one dataclass per entry instead, so this has no MATLAB counterpart by design.
+  - python: raven_toolbox.gapfilling.print_gap_report
+    status: python-only
+    reason: 'Simple console rendering of gap_report''s result -- not a literal reproduction of
+      gapReport.m''s own fprintf text, so kept as its own additive entry point rather than folded into
+      the parity row itself (same reasoning as followChanged/print_changed_fluxes).'
   - python: raven_toolbox.gapfilling.TopologicalAnalysisResult
     status: python-only
     reason: Result type. RAVEN returns several parallel outputs; raven-toolbox returns one dataclass, so this
