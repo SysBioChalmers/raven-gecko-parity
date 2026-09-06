@@ -17,7 +17,6 @@ description: >-
 
 entries:
   - getGeneData
-  - downloadGenomeData
 
 inputs:
   gff: sample.gff
