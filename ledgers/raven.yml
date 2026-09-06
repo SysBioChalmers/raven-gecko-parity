@@ -227,12 +227,14 @@ entries:
       flux despite that reaction''s own lb/ub being left exactly as they were. NOT COMPARABLE: raw model shape
       after closure --- closeModel adds a metabolite and compartment per closed reaction; close_model does
       not. KNOWN BUG, shared: the sum(|coeff|) == 1 rule is coefficient-magnitude-based, not structural, so a
-      single-metabolite reaction with |coeff| != 1 (e.g. a scaled sink/demand) is left open on both sides, and
-      a multi-metabolite reaction whose coefficients happen to sum to 1 in absolute value is closed on both
-      sides even though it is not a boundary reaction. close_model''s own docstring calls this out explicitly
-      as intentionally mirroring RAVEN''s rule rather than cobra''s own Reaction.boundary (any single-metabolite
-      reaction, any coefficient) --- tracked as SysBioChalmers/RAVEN#735; a fix has to land on both sides
-      together or parity breaks.'
+      single-metabolite reaction with |coeff| != 1 (e.g. a scaled sink/demand) is left open on both sides, and a
+      multi-metabolite one-sided reaction (e.g. 2 A + 3 B =>) is closed on neither side unless its magnitudes
+      happen to sum to exactly 1 by coincidence -- and even then, both sides'' construction of the closed state
+      only accounts for the first of its several metabolites. close_model''s own docstring calls this out
+      explicitly as intentionally mirroring RAVEN''s rule rather than cobra''s own Reaction.boundary (any
+      single-metabolite reaction, any coefficient). Tracked as SysBioChalmers/RAVEN#735; both sides now have an
+      open fix switching to a structural rule instead (metabolites on only one side, matching RAVEN''s own
+      getExchangeRxns) -- SysBioChalmers/RAVEN#734 and SysBioChalmers/raven-toolbox#136, not yet merged.'
   - matlab: compareFluxes
     status: python-pending
     issue: SysBioChalmers/raven-gecko-parity#40
