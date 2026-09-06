@@ -296,18 +296,26 @@ entries:
     scenarios:
       - compare_multiple_models_smallyeast
     notes: 'from migration.md. Tidy DataFrames (reactions / mets / genes / subsystems presence + pairwise
-      Jaccard + optional check_tasks pass/fail). Plotting and tSNE/MDS are one-liners in seaborn/scikit-learn;
-      intentionally not in the function, and structCompMap (RAVEN''s own tSNE/MDS projection) needs the
-      Statistics and Machine Learning Toolbox and is skipped when absent --- neither is a fixture either side of
-      this parity claim. compareMultipleModels itself works in reaction-space only (its own docstring). THREE
-      SCOPE GAPS: (1) compareMultipleModels has no metabolite or gene presence matrix at all --- compare_models''s
-      is a strict addition, not a divergence in the shared part. (2) The similarity statistic is not the same
-      computation: compareMultipleModels'' structComp is (1 - Hamming distance) = (B''*B + (1-B)''*(1-B)) / nRows,
-      counting "both models lack this reaction" as agreement; compare_models'' similarity is Jaccard, counting
-      only shared presence. Two models that mostly agree by both lacking most of a big universal reaction set
-      score high on one and low on the other. (3) Subsystem handling: compareMultipleModels reads only a
-      reaction''s first subsystem ("additional subSystems will be ignored", its own comment) and skips the whole
-      subsystem comparison if any input model lacks the field; compare_models joins every subsystem with ";".'
+      Jaccard + optional check_tasks pass/fail), plus, as of SysBioChalmers/RAVEN#741 merging
+      compareRxnsGenesMetsComps into this function and SysBioChalmers/raven-toolbox#139 following on the
+      Python side, ec_codes / metabolite_names / equations / equations_no_compartments presence --- the
+      part of this comparison that still works when two models do not share an id convention. Plotting
+      and tSNE/MDS are one-liners in seaborn/scikit-learn; intentionally not in the function, and
+      structCompMap (RAVEN''s own tSNE/MDS projection) needs the Statistics and Machine Learning Toolbox
+      and is skipped when absent --- neither is a fixture either side of this parity claim.
+      compareMultipleModels'' own rxns/mets/genes overlap (from the former compareRxnsGenesMetsComps) is a
+      Venn-style combination count (one row per subset of models, nElements shared by exactly that
+      subset), not the union-indexed 0/1 presence matrix compare_models'' reactions/metabolites/genes
+      fields already used for the same three identifiers --- same information, different shape, not a
+      fixture either side of this claim. TWO SCOPE GAPS remain (the metabolite/gene-presence gap this row
+      used to list is closed by the merge): (1) The similarity statistic is not the same computation:
+      compareMultipleModels'' structComp is (1 - Hamming distance) = (B''*B + (1-B)''*(1-B)) / nRows,
+      counting "both models lack this reaction" as agreement; compare_models'' similarity is Jaccard,
+      counting only shared presence. Two models that mostly agree by both lacking most of a big universal
+      reaction set score high on one and low on the other. (2) Subsystem handling: compareMultipleModels
+      reads only a reaction''s first subsystem ("additional subSystems will be ignored", its own comment)
+      and skips the whole subsystem comparison if any input model lacks the field; compare_models joins
+      every subsystem with ";".'
   - matlab: constructEquations
     status: matlab-only
     reason: reaction.build_reaction_string(use_metabolite_names=...) already does both id and name equations.
@@ -501,7 +509,12 @@ entries:
       within a set form a clique, so recovering groups from them loses nothing.'
   - matlab: findGeneDeletions
     status: via-dependency
-    reason: 'cobrapy covers this: cobra.flux_analysis.single_gene_deletion / double_gene_deletion.'
+    reason: 'cobrapy covers this: cobra.flux_analysis.single_gene_deletion / double_gene_deletion.
+      As of SysBioChalmers/RAVEN#741, this is an exact claim rather than a partial one: the
+      function''s MOMA-backed analysisType/refModel/oeFactor arguments and its sgo/dgo
+      over-expression test types (only ever reachable via MOMA -- there was no FBA equivalent
+      here) are gone along with qMOMA, so the only thing left is FBA-based single/double gene
+      deletion, exactly what the two cobrapy functions do.'
   - matlab: findLeakMetabolite
     python: raven_toolbox.gapfilling.find_leak_metabolite
     status: parity

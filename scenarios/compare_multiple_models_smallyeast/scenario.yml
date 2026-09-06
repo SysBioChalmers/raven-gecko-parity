@@ -34,11 +34,16 @@ inputs:
 # considered choice, not a shortcut --- everything else compareMultipleModels
 # / compare_models can do turned out not to line up closely enough to assert:
 #
-#   metabolites / genes   compareMultipleModels works in "the reaction-space"
-#                         only, by its own docstring; it has no metabolite or
-#                         gene presence matrix at all. compare_models does.
-#                         Not a divergence so much as a capability the Python
-#                         side has and RAVEN does not.
+#   metabolites / genes   both sides now carry this (as of RAVEN#741 merging
+#                         compareRxnsGenesMetsComps into compareMultipleModels
+#                         and raven-toolbox#139 following), but in different
+#                         shapes: compareMultipleModels' mets/genes fields are
+#                         a Venn-style combination count (one row per subset
+#                         of models, nElements shared by exactly that
+#                         subset); compare_models' metabolites/genes are a
+#                         union-indexed 0/1 presence matrix, same shape as
+#                         its (and this scenario's) reactions field. Same
+#                         information, different shape --- not a fixture here.
 #   similarity             compareMultipleModels' structComp is (1 - Hamming
 #                         distance) --- (B'*B + (1-B)'*(1-B)) / nRows, which
 #                         counts "both models lack this reaction" as
