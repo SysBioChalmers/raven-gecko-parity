@@ -6,7 +6,7 @@ description: >-
   reaction's GPR into a reaction score.
 
 entries:
-  - scoreComplexModel
+  - scoreModel
 
 inputs:
   model: "{matlab_repo}/tutorial/smallYeast.yml"
@@ -40,7 +40,7 @@ inputs:
 #
 # What each side runs:
 #
-#   MATLAB  scoreComplexModel(model, [], arrayData, tissue) --- one call that
+#   MATLAB  scoreModel(model, [], arrayData, tissue) --- one call that
 #           does both stages and returns geneScores and rxnScores.
 #   Python  gene_scores_from_expression -> score_reactions_from_genes, the same
 #           two stages as two functions.

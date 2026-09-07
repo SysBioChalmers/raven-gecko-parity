@@ -1,7 +1,7 @@
 function results = init_scores_smallyeast(ctx)
 % MATLAB side of the ftINIT scoring stage.
 %
-% scoreComplexModel does both stages in one call and returns geneScores and
+% scoreModel does both stages in one call and returns geneScores and
 % rxnScores; run.py runs them as two functions. The result document splits them
 % the same way on both sides.
 %
@@ -21,10 +21,10 @@ arrayData.genes = genes;
 arrayData.tissues = {'tutorial'};
 arrayData.celltypes = {'tutorial'};
 arrayData.levels = levels;
-% A scalar threshold is expanded to one per gene inside scoreComplexModel.
+% A scalar threshold is expanded to one per gene inside scoreModel.
 arrayData.threshold = double(inputs.threshold);
 
-[rxnScores, geneScores] = scoreComplexModel(model, [], arrayData, 'tutorial', ...
+[rxnScores, geneScores] = scoreModel(model, [], arrayData, 'tutorial', ...
     'noGeneScore', double(inputs.no_gene_score), ...
     'isozymeScoring', char(inputs.isozyme_scoring), ...
     'complexScoring', char(inputs.complex_scoring));

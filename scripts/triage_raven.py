@@ -48,8 +48,8 @@ PAIR: dict[str, tuple[str, str | None]] = {
     # INIT / ftINIT.
     "INITStepDesc": (f"{P}.init.InitStep", "Describes one step of the ftINIT schedule."),
     "ftINITInternalAlg": (f"{P}.init.run_ftinit", "The single-step ftINIT MILP, beneath the full pipeline."),
-    "ftINITFillGapsForAllTasks": (f"{P}.init.fill_tasks", "Task-aware gap-filling within ftINIT."),
-    "scoreComplexModel": (f"{P}.init.score_reactions_from_genes", "Gene scores to reaction scores via the GPR."),
+    "fitTasks": (f"{P}.init.fill_tasks", "Task-aware gap-filling within ftINIT."),
+    "scoreModel": (f"{P}.init.score_reactions_from_genes", "Gene scores to reaction scores via the GPR."),
     # Sampling.
     "sampleMaxVolEllipse": (
         f"{P}.analysis.max_volume_ellipsoid",
@@ -72,7 +72,6 @@ PAIR: dict[str, tuple[str, str | None]] = {
     # Annotation, omics, localisation, biomass, curation.
     "assignSBOterms": (f"{P}.annotation.add_sbo_terms", "Confirmed by yaml_format.md, which names both."),
     "deltaGCSV": (f"{P}.annotation.load_delta_g_csv", "The read half; save_delta_g_csv is the write half."),
-    "scoreModel": (f"{P}.omics.hpa_gene_scores", "migration.md maps parseHPA/parseHPArna/scoreModel onto the omics module."),
     "getUniProtScores": (f"{P}.localization.fetch_uniprot_localization", "Fetches per-gene localisation evidence from UniProtKB."),
     "getBiomassFractions": (f"{P}.biomass.sum_biomass", "Mass fractions per biomass component class."),
     "scaleBiomassFraction": (f"{P}.biomass.scale_biomass", "Rescale one component class to a target fraction."),
@@ -190,8 +189,8 @@ SUBSUMED: dict[str, str] = {
     "ftINITFillGapsMILP": "The inner MILP of the ftINIT task gap-fill; inside init.fill_tasks.",
     "ftINITFillGaps": (
         "Single-task variant. migration.md paired it with fill_tasks, but ftINIT.m actually calls "
-        "ftINITFillGapsForAllTasks, and fill_tasks takes the whole task list --- so the ForAllTasks "
-        "row carries the pairing and this one is folded into it."
+        "fitTasks (gapFillMode 'preMerged'), and fill_tasks takes the whole task list --- so the "
+        "fitTasks row carries the pairing and this one is folded into it."
     ),
     "getExprForRxnScore": "Inverse of the reaction-scoring step, folded into the init scoring functions.",
     "rescaleModelForINIT": "Numerical preconditioning inside the ftINIT preparation, part of prep_init_model.",
