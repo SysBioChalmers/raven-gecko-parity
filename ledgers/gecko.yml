@@ -117,18 +117,16 @@ entries:
     scenarios:
       - ec_fseof_ectestgem
     notes: '[Py] thin wrapper over raven_toolbox.analysis.fseof; selection is regression-based.
-      DIVERGENCE on every axis: (1) the enforced-flux levels themselves differ before any target selection
-      happens --- MATLAB''s alpha runs from the biomass-optimal production flux to 90% of the theoretical max,
-      raven-toolbox''s levels run from target_max/n_steps to target_max with no reference to the
-      biomass-optimal point at all; (2) MATLAB restricts the target search space to gene-associated reactions
-      only, raven-toolbox''s classifier considers every reaction; (3) even on the same candidates the
-      selection criterion differs --- MATLAB requires strict monotonicity across every step plus a
-      top-quartile-by-slope cut, raven-toolbox uses a correlation+slope regression threshold (its own
-      IMPROVEMENTS notes FS1-FS4). On ecTestGEM: MATLAB finds 1 target, geckopy finds 6. This is the same
-      divergence recorded on the RAVEN pair for FSEOF vs raven_toolbox.analysis.fseof, carried through the
-      ecModel-specific wrappers on both sides too. Output shape differs further: MATLAB additionally computes
-      a per-gene essentiality column and splits rxnTargets from transportTargets; geckopy''s ec_fseof does
-      neither.'
+      The two ecModel-specific divergences from raven-gecko-parity#74 are fixed: ec_fseof anchors the
+      enforced-flux floor to the production target''s flux at biomass-optimum via fseof''s new min_target
+      (SysBioChalmers/raven-toolbox#147), matching ecFSEOF.m''s iniTarget, and restricts targets/scan to
+      gene-associated, non-"standard" reactions (SysBioChalmers/geckopy#50), matching ecFSEOF.m''s search
+      space. The selection criterion itself remains an accepted divergence --- MATLAB requires strict
+      monotonicity across every step plus a top-quartile-by-slope cut, raven-toolbox uses a
+      correlation+slope regression threshold (its own IMPROVEMENTS notes FS1-FS4) --- the same divergence
+      recorded on the RAVEN pair for FSEOF vs raven_toolbox.analysis.fseof. Output shape differs further:
+      MATLAB additionally computes a per-gene essentiality column and splits rxnTargets from
+      transportTargets; geckopy''s ec_fseof does neither.'
   - matlab: ecFVA
     python: geckopy.ec_fva
     status: parity
@@ -242,16 +240,15 @@ entries:
     status: parity
     scenarios:
       - kcat_chain_ectestgem
-    notes: 'DIVERGENCE, on the code path a subSystems-carrying model reaches, not exercised by the ecTestGEM
-      fixture (which has none): the per-subsystem kcat aggregation is the arithmetic mean in MATLAB and the
-      median in geckopy (deliberate on the Python side --- kcats span orders of magnitude and a mean is
-      dominated by the largest member), a >100x difference on a skewed sample. The reaction count used for
-      the subsystem''s own >=threshold eligibility check also differs: MATLAB counts every mapped ec.rxns row
-      including zero/NaN-kcat ones, geckopy counts only already-nonzero ones, so the two sides can take
-      different branches (subsystem-specific vs. global fallback) for the same input. Neither is flagged as a
-      MATLAB-COMPAT note upstream. Also: fillZeroKcat/fill_zero_kcat treats a NaN kcat as unset in MATLAB but
-      not in geckopy (geckopy only treats literal 0 as unset) --- undocumented, not exercised by ecTestGEM
-      either.'
+    notes: 'The three divergences from raven-gecko-parity#80, all on the code path a subSystems-carrying
+      model reaches (not exercised by the ecTestGEM fixture, which has none), are fixed: getStandardKcat.m
+      now aggregates a subsystem''s kcat as the median rather than the arithmetic mean, matching geckopy''s
+      deliberate choice (kcats span orders of magnitude, so a mean is dominated by the largest member)
+      (SysBioChalmers/GECKO#475); both sides now count only reactions with a real (nonzero, non-NaN) kcat
+      toward a subsystem''s >=threshold eligibility, so they can no longer take different branches
+      (subsystem-specific vs. global fallback) for the same input; and geckopy''s _fill_zero_kcats now
+      treats a NaN kcat as unset too, matching MATLAB''s isnan check in fillZeroKcat
+      (SysBioChalmers/geckopy#49).'
   - matlab: getSubsetEcModel
     python: geckopy.get_subset_ec_model
     status: parity
