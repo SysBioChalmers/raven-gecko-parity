@@ -21,7 +21,7 @@ The scenarios, in the order they were written:
 | `merge_models_smallyeast` | `mergeModels` | match |
 | `task_checking_smallyeast` | `checkTasks` | **differs** — task LP set-up, see below |
 | `gapfill_topology_smallyeast` | `gapFillTopological` | match |
-| `init_scores_smallyeast` | `scoreComplexModel` | match |
+| `init_scores_smallyeast` | `scoreModel` | match |
 | `init_merge_linear_smallyeast` | `mergeLinear`, `groupRxnScores` | match |
 | `model_simplification_smallyeast` | `simplifyModel` | match |
 | `merge_compartments_smallyeast` | `mergeCompartments` | match |
@@ -112,12 +112,12 @@ The five stages fail in different ways and need different fixes, so each is a ch
 
 | Checkpoint | Covers | Tier |
 |---|---|---|
-| ~~`scores`~~ | `scoreComplexModel` / `score_reactions_from_genes` | **done** — `init_scores_smallyeast` |
+| ~~`scores`~~ | `scoreModel` / `score_reactions_from_genes` | **done** — `init_scores_smallyeast` |
 | `prep` | `prepINITModel` / `prep_init_model` | exact (prepared sets, task-essential reactions) |
 | ~~`merge_linear`~~ | `mergeLinear` / `merge_linear` | **done** — `init_merge_linear_smallyeast` |
 | `steps` | `ftINITInternalAlg`, `getINITSteps` / `run_ftinit`, `get_init_steps` | set-level per step |
 | `model` | `ftINIT` / `ftinit` | set-level |
-| `taskfill` | `ftINITFillGapsForAllTasks` / `fill_tasks` | set-level |
+| `taskfill` | `fitTasks` (gapFillMode `preMerged`) / `fill_tasks` | set-level |
 
 A divergence in `scores` explains everything downstream; a divergence that appears only at
 `steps` is the MILP. Without the split the two are indistinguishable.
@@ -285,8 +285,8 @@ Python side closes the model's boundary reactions and works through exchange rea
 the model can already excrete through its own open exchange therefore stays available to a RAVEN task
 that does not list it. On smallYeast that flips one of six task verdicts. Tracked as
 raven-gecko-parity#7, asserted by `task_checking_smallyeast`, and the second scenario that is red on
-purpose. It matters beyond `checkTasks`: this is the task layer under ftINIT, `fitTasks` and
-`ftINITFillGapsForAllTasks`, so the ftINIT chain should not be written until it is settled.
+purpose. It matters beyond `checkTasks`: this is the task layer under ftINIT, `fitTasks` (gapFillMode
+`preMerged`), so the ftINIT chain should not be written until it is settled.
 
 **`ftinit`'s `resolve_ties` reproducibility pinning has no MATLAB counterpart at all
 (raven-gecko-parity#104).** Both of ftINIT's MILP stages are degenerate --- many reaction sets score
@@ -308,7 +308,7 @@ differing only in a duplicate-annotated metabolite; `MAR10033`/`MAR10036` are ge
 reactions), and running the changed code twice gave byte-identical results both times, so the tie is
 real and stable rather than ongoing noise --- but nothing in RAVEN would catch the same tie tipping
 after a solver upgrade or an unrelated change upstream of the MILP. Recorded on the
-`ftINITFillGapsForAllTasks` and `ftINITInternalAlg` ledger rows; not scenario-covered, and porting
+`fitTasks` and `ftINITInternalAlg` ledger rows; not scenario-covered, and porting
 the pinning phases into `getMinNrFluxes.m`/`ftINITFillGaps.m` is queued rather than started.
 
 **`gapFillTopological` and `analyse_topology` default their seeds and targets differently.** RAVEN

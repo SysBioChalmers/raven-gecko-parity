@@ -10,7 +10,7 @@ Two checkpoints:
     ``score_reactions_from_genes`` --- the GPR walk, isozymes combined with
     ``max`` and complexes with ``min``.
 
-RAVEN does both in one call (``scoreComplexModel`` returns ``geneScores`` and
+RAVEN does both in one call (``scoreModel`` returns ``geneScores`` and
 ``rxnScores``), so the split is on this side only; the two result documents
 still line up checkpoint for checkpoint.
 
