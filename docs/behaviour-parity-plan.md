@@ -175,7 +175,7 @@ A scenario should *assert* each difference, so a silent change to either side fa
 
 ### Divergences the scenarios found
 
-Eighteen so far. Five are asserted and currently red (`yaml_roundtrip_smallyeast`,
+Nineteen so far. Five are asserted and currently red (`yaml_roundtrip_smallyeast`,
 `task_checking_smallyeast`, `apply_condition_smallyeast`, `delta_g_csv_smallyeast`,
 `export_to_excel_smallyeast`); the rest are recorded on their ledger rows because no fixture here
 reaches them, or because the scenario that does exist works around the divergence rather than
@@ -287,6 +287,29 @@ that does not list it. On smallYeast that flips one of six task verdicts. Tracke
 raven-gecko-parity#7, asserted by `task_checking_smallyeast`, and the second scenario that is red on
 purpose. It matters beyond `checkTasks`: this is the task layer under ftINIT, `fitTasks` and
 `ftINITFillGapsForAllTasks`, so the ftINIT chain should not be written until it is settled.
+
+**`ftinit`'s `resolve_ties` reproducibility pinning has no MATLAB counterpart at all
+(raven-gecko-parity#104).** Both of ftINIT's MILP stages are degenerate --- many reaction sets score
+identically --- and both sides fix a solver `Seed` for that reason (RAVEN's `getMinNrFluxes.m`/
+`ftINITFillGaps.m` at `26`, matching raven-toolbox's own default). Only the Python side goes
+further: `run_ftinit`'s `_resolve_ties` (the main extraction) and `fill_tasks`'s
+`_resolve_ties_fill` (gap-filling), both added in raven-toolbox#114, spend two extra lexicographic
+solve phases pinning the arbitrary incumbent to a canonical answer --- fewest changed/added
+reactions, then lowest reaction id --- rather than trusting the seed to reproduce it. RAVEN has no
+equivalent secondary phase anywhere in the ftINIT chain, and its own test suite works around the
+consequence rather than closing it: `testing/function_tests/tINIT.m:448` accepts either of two tied
+outcomes, with a comment noting "which of the two is returned is a tie-break that differs between
+solvers." Demonstrated concretely while speeding up `_gap_fill_task` (raven-toolbox#148): with
+`resolve_ties` at its Python default (off) on both runs, changing only the gap-fill MILP's
+*construction path* (mutate the reference model in place instead of copying it per call) --- same
+seed, same problem, same solver --- flipped 2 of 9586 kept reactions on a genome-scale Human-GEM
+extraction. Both swaps are textbook ties (`MAR01557`/`MAR01558` share a gene and reaction name,
+differing only in a duplicate-annotated metabolite; `MAR10033`/`MAR10036` are gene-less bulk pooling
+reactions), and running the changed code twice gave byte-identical results both times, so the tie is
+real and stable rather than ongoing noise --- but nothing in RAVEN would catch the same tie tipping
+after a solver upgrade or an unrelated change upstream of the MILP. Recorded on the
+`ftINITFillGapsForAllTasks` and `ftINITInternalAlg` ledger rows; not scenario-covered, and porting
+the pinning phases into `getMinNrFluxes.m`/`ftINITFillGaps.m` is queued rather than started.
 
 **`gapFillTopological` and `analyse_topology` default their seeds and targets differently.** RAVEN
 seeds from every exchange reaction whose bounds allow uptake and targets the substrates of the
