@@ -574,15 +574,6 @@ entries:
       Verified against real RAVEN output (fitParameters.m itself, calling the real fminsearch, glpk
       --- this is LP-only): the fitted parameter, fitness score (zero, a perfect noiseless fit), and
       the resulting model coefficient all MATCH.'
-  - matlab: fitTasks
-    status: matlab-only
-    reason: 'No dedicated Python entry point: fill_tasks implements essentially the same algorithm (task by
-      task, add the minimum-cost reference-model reactions that restore an infeasible task) but is already
-      the tracked parity counterpart of the closely related ftINITFillGapsForAllTasks --- see that entry''s
-      notes for the two behavioral differences (MILP formulation; whether task equations extend the reference
-      candidate pool) that would need checking before treating fitTasks itself as covered too.'
-    notes: 'Not a case of "no plausible match" --- fill_tasks is a real candidate, just already claimed by
-      ftINITFillGapsForAllTasks in this ledger''s one-python-function-per-row model.'
   - matlab: FSEOF
     python: raven_toolbox.analysis.fseof
     status: parity
@@ -596,30 +587,31 @@ entries:
       as a group; pick the right counterpart
   - matlab: ftINITFillGaps
     status: subsumed
-    reason: Single-task variant. migration.md paired it with fill_tasks, but ftINIT.m actually calls ftINITFillGapsForAllTasks,
-      and fill_tasks takes the whole task list --- so the ForAllTasks row carries the pairing and this one
-      is folded into it.
-  - matlab: ftINITFillGapsForAllTasks
+    reason: Single-task variant. migration.md paired it with fill_tasks, but ftINIT.m actually calls fitTasks
+      (with gapFillMode 'preMerged', RAVEN#746 --- ftINITFillGapsForAllTasks, which used to make that call,
+      was inlined and removed), and fill_tasks takes the whole task list --- so the fitTasks row carries the
+      pairing and this one is folded into it.
+  - matlab: fitTasks
     python: raven_toolbox.init.fill_tasks
     status: parity
-    notes: 'Task-aware gap-filling within ftINIT. gapfilling/fitTasks.m (tracked separately as matlab-only,
-      since fill_tasks is already claimed here) implements closely related logic --- same task-by-task,
-      add-minimum-cost-reference-reactions shape --- but is not validated against this pairing. Two known
-      differences would need checking before treating it as covered too: fitTasks calls generic
-      fillGaps/getMinNrFluxes (a different MILP formulation than the ftINITFillGapsMILP-style one fill_tasks
-      uses, which can produce different degenerate optima), and fill_tasks extends the reference-model
-      candidate pool with each task''s own temporary equations while fitTasks does not (a real gap for tasks
-      with custom equations). fill_tasks also carries a resolve_ties option (_resolve_ties_fill,
-      raven-toolbox#114) that pins its degenerate MILP to a canonical answer instead of relying on Seed
-      alone; ftINITFillGaps/getMinNrFluxes have no equivalent pinning phase --- raven-gecko-parity#104,
-      demonstrated concretely by a 2-of-9586-reaction tie flip on a genome-scale Human-GEM extraction
-      caused only by changing the MILP''s construction path, same Seed.'
+    notes: 'Task-aware gap-filling within ftINIT: ftINIT.m calls fitTasks with gapFillMode ''preMerged''
+      (RAVEN#746 inlined and removed the former ftINITFillGapsForAllTasks wrapper that used to make this
+      call; the pairing carries over unchanged since fitTasks''s own behavior did not change). In preMerged
+      mode fitTasks calls ftINITFillGaps, the same MILP-style formulation fill_tasks uses --- unlike
+      fitTasks''s other mode (''merge'', tINIT-only, no Python counterpart), which calls generic
+      fillGaps/getMinNrFluxes instead. Two known gaps remain even on the paired preMerged path: fill_tasks
+      extends the reference-model candidate pool with each task''s own temporary equations, which
+      ftINITFillGaps does not (a real gap for tasks with custom equations); and fill_tasks carries a
+      resolve_ties option (_resolve_ties_fill, raven-toolbox#114) that pins its degenerate MILP to a
+      canonical answer instead of relying on Seed alone, which ftINITFillGaps has no equivalent for ---
+      raven-gecko-parity#104, demonstrated concretely by a 2-of-9586-reaction tie flip on a genome-scale
+      Human-GEM extraction caused only by changing the MILP''s construction path, same Seed.'
   - matlab: ftINITInternalAlg
     python: raven_toolbox.init.run_ftinit
     status: parity
     notes: 'The single-step ftINIT MILP, beneath the full pipeline. Also carries a resolve_ties option
-      (_resolve_ties, raven-toolbox#114) with no MATLAB counterpart, the same gap as
-      ftINITFillGapsForAllTasks''s --- see raven-gecko-parity#104.'
+      (_resolve_ties, raven-toolbox#114) with no MATLAB counterpart, the same gap as fitTasks''s --- see
+      raven-gecko-parity#104.'
   - matlab: gapFillFastCore
     status: subsumed
     reason: The L1-norm LP subroutine of gapFillFastLP; inside fill_gaps_fast_lp on the Python side.
@@ -796,11 +788,11 @@ entries:
       ported --- a 1-based index resolver is redundant in an object model. Only the name[comp] sliver was
       kept, as utils.parse_name_comp.'
   - matlab: getINITModel
-    python: raven_toolbox.init.get_init_model
-    status: parity
-    notes: migration.md maps {runINIT, scoreComplexModel, getINITModel} onto {raven_toolbox.init.run_init,
-      raven_toolbox.init.get_init_model, raven_toolbox.init.score_reactions_from_genes} as a group; pick the
-      right counterpart
+    status: matlab-only
+    reason: tINIT is MATLAB RAVEN's legacy pre-ftINIT algorithm, kept there for backwards compatibility.
+      raven-toolbox is a new implementation with no installed base to carry forward, so it implements only
+      ftINIT (migration.md). raven-toolbox#148 removed the get_init_model/run_init/InitModelResult/InitResult
+      port this row and runINIT used to claim.
   - matlab: getINITSteps
     python: raven_toolbox.init.get_init_steps
     status: parity
@@ -1275,11 +1267,10 @@ entries:
     reason: 'Not ported: maintained Python packages already cover dynamic FBA (dfba, reframed, mewpy).'
     notes: no obvious Python counterpart; decide whether one is needed
   - matlab: runINIT
-    python: raven_toolbox.init.run_init
-    status: parity
-    notes: migration.md maps {runINIT, scoreComplexModel, getINITModel} onto {raven_toolbox.init.run_init,
-      raven_toolbox.init.get_init_model, raven_toolbox.init.score_reactions_from_genes} as a group; pick the
-      right counterpart
+    status: matlab-only
+    reason: tINIT is MATLAB RAVEN's legacy pre-ftINIT algorithm, kept there for backwards compatibility.
+      raven-toolbox is a new implementation with no installed base to carry forward, so it implements only
+      ftINIT (migration.md) --- see getINITModel's row.
   - matlab: runPhenotypePhasePlane
     status: via-dependency
     reason: 'cobrapy covers this: cobra.flux_analysis.production_envelope over two varying reactions.'
@@ -1324,19 +1315,19 @@ entries:
     python: raven_toolbox.biomass.rescale_pseudoreaction
     status: parity
     notes: Rescale the pseudoreaction coefficients.
-  - matlab: scoreComplexModel
+  - matlab: scoreModel
     python: raven_toolbox.init.score_reactions_from_genes
     status: parity
     scenarios:
       - init_scores_smallyeast
-    notes: 'Gene scores to reaction scores via the GPR. Scope differs: scoreComplexModel also derives the gene
-      scores from HPA or array data and returns them, where the Python side splits that off into
-      gene_scores_from_expression. Only the arrayData path has a Python counterpart; the HPA path and the
-      median/average aggregators do not.'
-  - matlab: scoreModel
-    python: raven_toolbox.omics.hpa_gene_scores
-    status: parity
-    notes: migration.md maps parseHPA/parseHPArna/scoreModel onto the omics module.
+    notes: 'Gene scores to reaction scores via the GPR. RAVEN#746 folded the old thin scoreModel.m wrapper
+      into scoreComplexModel.m and renamed the result scoreModel; this row now names the renamed function
+      and its behavior is unchanged by the fold. Scope differs from score_reactions_from_genes: scoreModel
+      also derives the gene scores from HPA or array data and returns them, where the Python side splits
+      that off into gene_scores_from_expression (array data) and hpa_gene_scores/rna_gene_scores (HPA) ---
+      each tracked in its own row as subsumed here, since scoreModel absorbs the capability rather than
+      exposing it as a separate entry point. Only the arrayData path has a Python counterpart of its own;
+      the HPA path''s median/average aggregators do not.'
   - matlab: setExchangeBounds
     python: raven_toolbox.manipulation.set_exchange_bounds
     status: parity
@@ -1674,17 +1665,9 @@ entries:
     status: subsumed
     scenarios:
       - init_scores_smallyeast
-    reason: 'RAVEN has the same computation, but inside scoreComplexModel rather than as its own entry point:
+    reason: 'RAVEN has the same computation, but inside scoreModel rather than as its own entry point:
       aScores = 5*log(current./average), clamped to [-5, 10] with NaN mapped to -5. A packaging difference, not
       a divergence.'
-  - python: raven_toolbox.init.InitModelResult
-    status: python-only
-    reason: Result type. RAVEN returns several parallel outputs; raven-toolbox returns one dataclass, so this
-      has no MATLAB counterpart by design.
-  - python: raven_toolbox.init.InitResult
-    status: python-only
-    reason: Result type. RAVEN returns several parallel outputs; raven-toolbox returns one dataclass, so this
-      has no MATLAB counterpart by design.
   - python: raven_toolbox.init.PrepData
     status: python-only
     reason: RAVEN's prepData struct, as a type. The data exists in RAVEN; the class does not.
@@ -1845,14 +1828,18 @@ entries:
   - python: raven_toolbox.omics.HPARnaData
     status: python-only
     reason: Parsed-data type. RAVEN passes structs and parallel cell arrays instead.
+  - python: raven_toolbox.omics.hpa_gene_scores
+    status: subsumed
+    reason: RAVEN has the same computation, but inside scoreModel's HPA branch rather than as its own entry
+      point. A packaging difference, not a divergence.
   - python: raven_toolbox.omics.rna_gene_scores
     status: subsumed
-    reason: 'RAVEN has the same computation, but inside scoreModel/scoreComplexModel''s arrayData branch
-      rather than as its own entry point: mean-across-tissues reference, aScores = 5*log(current./average),
-      clamped to [-5, 10] with NaN mapped to -5 --- the same formula as gene_scores_from_expression, which
-      rna_gene_scores is a thin wrapper over. A packaging difference, not a divergence. The wrapper itself
-      (reference-threshold defaulting to a per-gene mean TPM, matching arrayData.threshold''s default) is not
-      directly covered by a scenario yet, only the computation it delegates to.'
+    reason: 'RAVEN has the same computation, but inside scoreModel''s arrayData branch rather than as its own
+      entry point: mean-across-tissues reference, aScores = 5*log(current./average), clamped to [-5, 10]
+      with NaN mapped to -5 --- the same formula as gene_scores_from_expression, which rna_gene_scores is a
+      thin wrapper over. A packaging difference, not a divergence. The wrapper itself (reference-threshold
+      defaulting to a per-gene mean TPM, matching arrayData.threshold''s default) is not directly covered by
+      a scenario yet, only the computation it delegates to.'
   - python: raven_toolbox.reconstruction.homology.blast_from_table
     status: python-only
     reason: Adapter for a pre-computed hit table; listed under 'new in raven-toolbox' in migration.md.
