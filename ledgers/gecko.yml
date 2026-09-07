@@ -22,18 +22,14 @@ matlab: SysBioChalmers/GECKO
 python: SysBioChalmers/geckopy
 
 entries:
-  - matlab: abc_max
-    status: internal
-    reason: Helper of bayesianSensitivityTuning, not a standalone entry point. It will be absorbed into the
-      Python port rather than getting a counterpart of its own.
   - matlab: adapterTemplate
     status: subsumed
     reason: Adapter skeleton generation lives in the `geckopy init` CLI and templates/model_adapter.toml rather
       than in a library function.
   - matlab: fillCarbonNum
     status: internal
-    reason: Helper of bayesianSensitivityTuning, not a standalone entry point. It will be absorbed into the
-      Python port rather than getting a counterpart of its own.
+    reason: Helper of evotuneScore (adds a per-reaction carbon weight for CMA-ES tuning's RMSE, clamping the
+      biomass reaction and zero-carbon exchanges to a nonzero weight), not a standalone entry point.
   - matlab: addCarbonNum
     status: subsumed
     reason: Deprecated alias for fillCarbonNum (src/deprecated/addCarbonNum.m); warns with GECKO:deprecatedName
@@ -70,12 +66,77 @@ entries:
       In the full formulation, two enzyme rows mapping to the same prot_<accession> metabolite (distinct genes
       sharing one UniProt entry) are summed on both sides. In the light formulation, an isozyme with no usable
       kcat is excluded before selecting the cheapest isozyme on both sides (GECKO#463).'
-  - matlab: bayesianSensitivityTuning
+  - matlab: bestParsimonious
     status: python-pending
-    issue: SysBioChalmers/raven-gecko-parity#21
-    notes: ABC-SMC kcat tuning (~1370 LOC with its helpers). The migration doc calls it 'not ported', but
-      geckopy/docs/internal/bayesian_tuning_plan.md has the design and says the work is paused, not abandoned
-      --- queued, not a divergence.
+    notes: 'Picks the sparsest CMA-ES kcat-tuning result within tolerance of the best RMSE on a parsimony
+      frontier. geckopy''s kcat_tuning.evotune.parsimony module (geckopy#51) implements the same frontier
+      sweep, but only on geckopy''s develop branch --- not yet on main, the ref this ledger tracks, and
+      best_parsimonious itself is an internal helper there, not re-exported as public API.'
+  - matlab: cmaesKcatTuning
+    status: python-pending
+    notes: 'Main CMA-ES kcat-tuning entry point, replacing the retired ABC-SMC bayesianSensitivityTuning
+      (GECKO#477, closes raven-gecko-parity#21). Its docstring says it was written to match "what geckopy''s
+      own port actually runs" --- that port is kcat_tuning.evotune.tuning.cmaes_kcat_tuning (geckopy#51), but
+      only on geckopy''s develop branch, not yet on main.'
+  - matlab: ecStatsFromBrenda
+    status: python-pending
+    notes: 'Summarises loadBRENDAdata''s output per EC number for reviewKcatAssignment. Its own docstring says
+      it is "ported from geckopy''s ec_stats_from_brenda" (gather_kcats/review.py), but that function is not
+      re-exported as geckopy public API, and the MATLAB port carries an unresolved TODO: loadBRENDAdata only
+      returns the BRENDA max aggregate, so kcatMedian here is always NaN until that''s extended.'
+  - matlab: evotuneScore
+    status: python-pending
+    notes: 'Scores one candidate kcat set (simulate + RMSE), successor to the old Bayesian abc_max.m''s
+      rmsecal helper. geckopy splits this across kcat_tuning.evotune.simulate.simulate_evotune_dataset and
+      kcat_tuning.evotune.distance.evotune_distance/dataset_rmse (geckopy#51), only on geckopy''s develop
+      branch, not yet on main.'
+  - matlab: isozymeTieMap
+    status: python-pending
+    notes: Groups isozyme-copy kcat rows sharing a base reaction/prior/source into one tied tuning parameter.
+      geckopy's kcat_tuning.evotune.tying.isozyme_tie_map (geckopy#51) does the same, but is an internal
+      helper there, not yet re-exported as public API.
+  - matlab: loadEvotuneData
+    status: python-pending
+    notes: 'Loads the optional flux/max-growth/zero-flux experimental TSVs for CMA-ES tuning, successor to
+      the old Bayesian loadBayesianData.m. Matches kcat_tuning.evotune.data.load_evotune_data (geckopy#51),
+      only on geckopy''s develop branch, not yet on main.'
+  - matlab: nChanged
+    status: python-pending
+    notes: Counts kcats moved from their prior beyond a relative tolerance. geckopy's
+      kcat_tuning.evotune.parsimony.n_changed (geckopy#51) does the same but is an internal helper there, not
+      yet re-exported as public API.
+  - matlab: parsimonyFrontier
+    status: python-pending
+    notes: Sweeps a revert threshold, reporting the RMSE-vs-sparsity trade-off. geckopy's
+      kcat_tuning.evotune.parsimony.parsimony_frontier (geckopy#51) does the same but is not yet re-exported
+      as public API.
+  - matlab: resolveTunableContext
+    status: subsumed
+    reason: Resolves the tunable kcat subset, source-group tiers, and tie groups shared by screenKcatLeverage
+      and cmaesKcatTuning. geckopy has the same capability (on its develop branch, not yet on main), but
+      split across kcat_tuning.evotune.priors.classify_kcat_source(s)/build_sigma0_log and
+      kcat_tuning.evotune.tying.isozyme_tie_map rather than one function of its own.
+  - matlab: reviewKcatAssignment
+    status: python-pending
+    notes: 'Flags kcat assignments (largest corrections, biggest outliers) that deserve curator review. Its
+      own docstring says it "ports geckopy''s gather_kcats/review.py" (review_assignment), citing the same two
+      design choices (rank by leverage, report a parameter once for tied isozymes) --- but review_assignment
+      is not yet re-exported as geckopy public API.'
+  - matlab: screenKcatLeverage
+    status: python-pending
+    notes: 'Pre-tuning report of which kcats the data can actually constrain, no optimization run. Matches
+      kcat_tuning.evotune.tuning.screen_kcat_leverage (geckopy#51), only on geckopy''s develop branch, not
+      yet on main.'
+  - matlab: selectTunableMask
+    status: python-pending
+    notes: 'Builds a boolean tunable mask from a leverage screen at a target impact share. Matches
+      kcat_tuning.evotune.tuning.select_tunable_mask (geckopy#51), only on geckopy''s develop branch, not yet
+      on main.'
+  - matlab: tunePriorPenaltyWeight
+    status: python-pending
+    notes: 'Sweeps priorPenaltyWeight across seeds, reporting fit vs. cross-seed reproducibility. Matches
+      kcat_tuning.evotune.tuning.tune_prior_penalty_weight (geckopy#51), only on geckopy''s develop branch,
+      not yet on main.'
   - matlab: calculateFfactor
     python: geckopy.calculate_f_factor
     status: parity
@@ -231,10 +292,6 @@ entries:
     notes: 'Both sides now match protein ids case-insensitively (raven-gecko-parity#70, GECKO#470,
       geckopy#43). Kept as a deliberate divergence: MATLAB returns empty outputs for an unmatched id, geckopy
       raises ValueError.'
-  - matlab: getrSample
-    status: internal
-    reason: Helper of bayesianSensitivityTuning, not a standalone entry point. It will be absorbed into the
-      Python port rather than getting a counterpart of its own.
   - matlab: getStandardKcat
     python: geckopy.assign_standard_kcat
     status: parity
@@ -255,10 +312,6 @@ entries:
     notes: '[Py] returns a new EcModel; the input is not mutated. MATLAB''s same-starting-GEM mismatch
       error path calls dispEM, a RAVEN utility RAVEN#659 deleted (already on develop3) --- crashes with
       "Undefined function ''dispEM''" instead of naming the mismatched reactions.'
-  - matlab: loadBayesianData
-    status: internal
-    reason: Helper of bayesianSensitivityTuning, not a standalone entry point. It will be absorbed into the
-      Python port rather than getting a counterpart of its own.
   - matlab: loadBRENDAdata
     python: geckopy.load_brenda_data
     status: parity
@@ -337,10 +390,6 @@ entries:
     status: matlab-only
     reason: 'Deliberate design divergence: geckopy has no global default adapter. Pass adapter= explicitly
       or set model.adapter, so there is no manager to port.'
-  - matlab: mse
-    status: internal
-    reason: Helper of bayesianSensitivityTuning, not a standalone entry point. It will be absorbed into the
-      Python port rather than getting a counterpart of its own.
   - matlab: parseGECKOargs
     status: internal
     reason: MATLAB varargin parsing glue. Python uses ordinary keyword arguments.
@@ -475,14 +524,6 @@ entries:
     status: subsumed
     reason: Deprecated alias for buildGECKOdoc (src/deprecated/updateGECKOdoc.m); warns with GECKO:deprecatedName
       and forwards to it. Not a separate function to track.
-  - matlab: updatePrior
-    status: internal
-    reason: Helper of bayesianSensitivityTuning, not a standalone entry point. It will be absorbed into the
-      Python port rather than getting a counterpart of its own.
-  - matlab: updateprior
-    status: subsumed
-    reason: Deprecated alias for updatePrior (src/deprecated/updateprior.m); warns with GECKO:deprecatedName and
-      forwards to it. Not a separate function to track.
   - matlab: updateProtPool
     status: matlab-only
     reason: Obsolete since GECKO 3.2.0 --- set_prot_pool_size supersedes it. A candidate for removal from
