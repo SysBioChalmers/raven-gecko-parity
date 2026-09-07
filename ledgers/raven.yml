@@ -609,11 +609,17 @@ entries:
       fillGaps/getMinNrFluxes (a different MILP formulation than the ftINITFillGapsMILP-style one fill_tasks
       uses, which can produce different degenerate optima), and fill_tasks extends the reference-model
       candidate pool with each task''s own temporary equations while fitTasks does not (a real gap for tasks
-      with custom equations).'
+      with custom equations). fill_tasks also carries a resolve_ties option (_resolve_ties_fill,
+      raven-toolbox#114) that pins its degenerate MILP to a canonical answer instead of relying on Seed
+      alone; ftINITFillGaps/getMinNrFluxes have no equivalent pinning phase --- raven-gecko-parity#104,
+      demonstrated concretely by a 2-of-9586-reaction tie flip on a genome-scale Human-GEM extraction
+      caused only by changing the MILP''s construction path, same Seed.'
   - matlab: ftINITInternalAlg
     python: raven_toolbox.init.run_ftinit
     status: parity
-    notes: The single-step ftINIT MILP, beneath the full pipeline.
+    notes: 'The single-step ftINIT MILP, beneath the full pipeline. Also carries a resolve_ties option
+      (_resolve_ties, raven-toolbox#114) with no MATLAB counterpart, the same gap as
+      ftINITFillGapsForAllTasks''s --- see raven-gecko-parity#104.'
   - matlab: gapFillFastCore
     status: subsumed
     reason: The L1-norm LP subroutine of gapFillFastLP; inside fill_gaps_fast_lp on the Python side.
