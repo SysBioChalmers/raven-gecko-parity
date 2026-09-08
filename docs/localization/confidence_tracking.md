@@ -1,9 +1,9 @@
-﻿# Per-reaction confidence tracking
+# Per-reaction confidence tracking
 
 **Status: the three facets are shipped.** The data model, the notes round-trip (YAML + SBML), and the
 `localization`, `equation` and `gene_association` scorers live in
 [`raven_toolbox/confidence.py`](https://github.com/SysBioChalmers/raven-toolbox/blob/develop/src/raven_toolbox/confidence.py) (tests in `tests/test_confidence.py`).
-The facet set is **closed** â€” see [Â§10](#10-what-is-left) for the remaining work.
+The facet set is **closed** — see [§10](#10-what-is-left) for the remaining work.
 
 Every reaction carries a small structured record scoring how well-supported each of its **facets** is,
 persisted in the model file, computed from evidence, updated by curation, and consumed by the raven-toolbox
@@ -17,7 +17,7 @@ well-supported is each facet of each reaction".
 no facet is left. Those two facts, taken together, force the design:
 
 1. **Abstain rather than guess.** A facet that *does not apply* to a reaction is **not written at all**. An
-   absent facet is neutral under `min` â€” exactly as neutral as `1.0` would be â€” but it claims nothing. An
+   absent facet is neutral under `min` — exactly as neutral as `1.0` would be — but it claims nothing. An
    exchange reaction is imbalanced by construction, so it gets *no* `equation` facet rather than a perfect
    one. Ask *why* with `equation_exempt()` / `gene_association_exempt()`, which return the reason string.
 
@@ -25,7 +25,7 @@ no facet is left. Those two facts, taken together, force the design:
    indistinguishable from the 3617 genuinely verified ones, and "the fraction of this model whose chemistry
    is verified balanced" would read 4086/4102 instead of the true 3617/3633.
 
-2. **A zero is a measurement, never ignorance.** `score == 0.0` means the evidence *contradicts* the model â€”
+2. **A zero is a measurement, never ignorance.** `score == 0.0` means the evidence *contradicts* the model —
    a proven mass imbalance, or zero localisation support at the assigned compartment. Where evidence is
    merely missing or uninterpretable, the score is low but positive. Hence the invariant the tests assert:
 
@@ -54,15 +54,15 @@ Grounded by direct checks against cobrapy:
 
 - **YAML / JSON models:** a value under `reaction.notes["raven_confidence"]` round-trips losslessly and is
   ignored by cobrapy's own logic. *Verified.*
-- **Arbitrary top-level reaction keys are dropped** by cobrapy's serialiser, so `notes` â€” not custom
-  top-level fields â€” is the channel. *Verified.*
+- **Arbitrary top-level reaction keys are dropped** by cobrapy's serialiser, so `notes` — not custom
+  top-level fields — is the channel. *Verified.*
 - **SBML models** store `<notes>` as strings only, and a JSON string picks up HTML entities (`&quot;`).
   *Verified.*
 
 So the record is stored as one **JSON string** under `reaction.notes["raven_confidence"]` (with a
-`schema_version`) â€” the same on write for every format. Reading does `json.loads(html.unescape(...))`, which
+`schema_version`) — the same on write for every format. Reading does `json.loads(html.unescape(...))`, which
 handles the clean YAML string and the HTML-escaped SBML string alike (and tolerates a raw dict from a
-hand-edited YAML model). A confidence-annotated model still loads and solves in **plain cobra unchanged** â€”
+hand-edited YAML model). A confidence-annotated model still loads and solves in **plain cobra unchanged** —
 this is a test invariant.
 
 ## 4. The `equation` facet
@@ -76,12 +76,12 @@ this is a test invariant.
 | `SBO:0000395` | encapsulating process | "an aggregation of interactions and entities into a single process" (SLIME, pool reactions) |
 
 `SBO:0000630` (ATP maintenance) is deliberately **not** exempt: `ATP + H2O -> ADP + Pi + H` is real chemistry
-and must balance. Detecting biomass by *name* is likewise refused â€” `\bgrowth\b` matches yeast-GEM's `r_4046`,
+and must balance. Detecting biomass by *name* is likewise refused — `\bgrowth\b` matches yeast-GEM's `r_4046`,
 "non-growth associated maintenance reaction", and a name regex must never silence a chemistry check. When a
 model carries **no** reaction SBO terms at all, the scorers warn: they then cannot tell a pseudo-reaction from
 a defect.
 
-Note also that `reaction.boundary` is `len(metabolites) == 1`, independent of id and of bounds â€” so it
+Note also that `reaction.boundary` is `len(metabolites) == 1`, independent of id and of bounds — so it
 catches an exchange reaction that is not named `EX_`, and a blocked `(0, 0)` one.
 
 ### Bands
@@ -97,7 +97,7 @@ catches an exchange reaction that is not named `EX_`, and a blocked `(0, 0)` one
 Three cobra behaviours the bands exist to survive, each verified by running it:
 
 - **`check_mass_balance() == {}` is ambiguous.** A metabolite with no formula contributes zero atoms
-  *silently*, so a reaction can read "balanced" when the truth is that the data is missing â€” or read
+  *silently*, so a reaction can read "balanced" when the truth is that the data is missing — or read
   "imbalanced" purely because a formula is absent. `get_elemental_balance` checks formula coverage first and
   returns `unknown`.
 - **`check_mass_balance()` raises on a parenthesised polymer** such as `(C5H8)n` (glycogen, starch), because
@@ -108,12 +108,12 @@ Three cobra behaviours the bands exist to survive, each verified by running it:
   charge verdict is therefore recomputed behind an all-charges-present guard.
 
 Generic symbols (`R` groups) get two different treatments, because they mean two different things. A residual
-that *lands in* an R group is uninterpretable â†’ `formula-generic`, 0.3. An R group that merely *appears* and
+that *lands in* an R group is uninterpretable → `formula-generic`, 0.3. An R group that merely *appears* and
 then cancels is recorded in `note` and does not move the score.
 
 Yeast-GEM shows why the distinction has to be drawn that way rather than by demoting every reaction that
 touches an R group: 131 of its metabolites carry one, 107 scored reactions touch such a metabolite, and in
-**every one of the 107 the R cancels** â€” not a single residual lands in an R group. 102 balance outright; the
+**every one of the 107 the R cancels** — not a single residual lands in an R group. 102 balance outright; the
 other five fail for reasons that have nothing to do with the R group (two H imbalances, two charge
 imbalances, one missing formula). Demoting all 107 would have dragged 2.9% of the model down for a symbol
 that never affected a verdict. Cobra's own 114-symbol element table is used for the test, since it contains
@@ -121,8 +121,8 @@ that never affected a verdict. Cobra's own 114-symbol element table is used for 
 
 ## 5. The `gene_association` facet
 
-Exempt: everything `equation_exempt` excludes, plus the reactions that legitimately have no catalyst â€”
-`SBO:0000630` (ATP maintenance) and `SBO:0000672` (spontaneous reaction, "no catalyst â€¦ is needed to
+Exempt: everything `equation_exempt` excludes, plus the reactions that legitimately have no catalyst —
+`SBO:0000630` (ATP maintenance) and `SBO:0000672` (spontaneous reaction, "no catalyst … is needed to
 proceed"). Note the deliberate **asymmetry**: ATP maintenance is `equation`-scored and `gene`-exempt. Real
 chemistry, no catalyst.
 
@@ -130,19 +130,19 @@ Transport (`SBO:0000655`) is **not** exempt: the term is defined as movement "me
 protein", so a transport reaction with no transporter gene is a genuine curation gap. (816 of yeast-GEM's 950
 gene-less scored reactions are transporters.)
 
-| score | `basis` | â‰ˆ Thiele-Palsson |
+| score | `basis` | ≈ Thiele-Palsson |
 |---:|---|---|
-| 0.2 | `no-gpr` | 0â€“1 |
+| 0.2 | `no-gpr` | 0–1 |
 | 0.6 | `gpr` | 2 |
 | 0.9 | `gpr+literature` (a `pubmed` annotation) | 3 |
 
-`1.0` is reserved for `mark_curated()`, so an inferred score never ties a curator's call. GPR *shape* â€”
-isozyme count, complex size â€” is recorded in `note` and never scored from: nothing justifies a number there.
+`1.0` is reserved for `mark_curated()`, so an inferred score never ties a curator's call. GPR *shape* —
+isozyme count, complex size — is recorded in `note` and never scored from: nothing justifies a number there.
 
 ## 6. Measured on yeast-GEM (4102 reactions)
 
 Every number below is the output of `scripts/measure_confidence_facets.py`, which runs the shipped scorers
-over the model â€” not prose arithmetic:
+over the model — not prose arithmetic:
 
 ```
            facet             basis  score    level     n
@@ -157,13 +157,13 @@ gene_association    gpr+literature    0.9   strong  1933
 
 469 reactions are `equation`-exempt (273 boundary + 195 encapsulating + 1 biomass) and 470 are
 `gene_association`-exempt (those plus 1 ATP maintenance), so 3633 and 3632 are scored. **`overall == 0.0`
-selects exactly two reactions** â€” `r_0438` and `r_0439`, the model's only proven mass imbalances â€” followed by
+selects exactly two reactions** — `r_0438` and `r_0439`, the model's only proven mass imbalances — followed by
 the eight charge defects. The review queue's top ten is ten real chemistry problems.
 
 ### An independent check of the gene rubric
 
 The rubric reads only the GPR and the `pubmed` annotation. It never reads yeast-GEM's own curator-assigned
-`Confidence Level` note â€” which leaves that note free to serve as an *independent* check rather than as an
+`Confidence Level` note — which leaves that note free to serve as an *independent* check rather than as an
 input. Cross-tabulated over the scored reactions:
 
 | our `basis` | recorded Thiele-Palsson | agreement |
@@ -181,8 +181,8 @@ disagreements are informative rather than embarrassing: 43 gene-less reactions c
 
 Three bands never fire on it: `formula-unparseable` (no parenthesised formulas), `formula-generic` (no
 residual lands in an R group), and `charge-unknown` (all 2748 metabolites carry a charge). This is stated
-rather than hidden â€” a distribution measured on one model is not a guarantee about another. The cross-model
-sweep in [Â§10.2](#102-validate-beyond-one-model) resolves it: `formula-generic` and `formula-unparseable`
+rather than hidden — a distribution measured on one model is not a guarantee about another. The cross-model
+sweep in [§10.2](#102-validate-beyond-one-model) resolves it: `formula-generic` and `formula-unparseable`
 both fire on other real models; only `charge-unknown` stays exercised solely by synthetic fixtures.
 
 ## 7. Integration with the existing tools
@@ -191,13 +191,13 @@ both fire on other real models; only `charge-unknown` stays exercised solely by 
   `localization` confidence per placement from DeepLoc support (+ FBA certification). A reaction whose genes
   are absent from the score table is **not scored**: no measurement was possible, and a `0.0` there would veto
   the reaction's `overall` on the strength of a missing input rather than of evidence. Such reactions still
-  surface â€” through their `gene_association` facet and through `curation_priority`'s `no_evidence` signal.
+  surface — through their `gene_association` facet and through `curation_priority`'s `no_evidence` signal.
 - **After a curator relocation** (`relocate_reactions`), `mark_curated(reaction)` stamps
   `{score: 1, level: "curated", source: "curator"}` so the decision persists in the model file and the next
   automated pass leaves it untouched. `mark_curated(reaction, facet=...)` pins any facet.
 - **`curation_priority`** is the inverse view: high localisation confidence here == low review priority there.
   `confidence_report(model)` is the lowest-confidence-first review queue; `facet_summary(model)` groups by
-  `facet` Ã— `basis` and is the audit trail abstention leaves behind.
+  `facet` × `basis` and is the audit trail abstention leaves behind.
 
 ## 8. API
 
@@ -205,31 +205,31 @@ both fire on other real models; only `charge-unknown` stays exercised solely by 
 `clear_confidence`, `read_confidence`, `mark_curated`, `equation_exempt`, `gene_association_exempt`,
 `score_localization_confidence`, `score_equation_confidence`, `score_gene_association_confidence`,
 `annotate_confidence`, `confidence_report`, `facet_summary`. Storage lives in
-`reaction.notes["raven_confidence"]`; there is no separate save step â€” the record serialises with the model.
+`reaction.notes["raven_confidence"]`; there is no separate save step — the record serialises with the model.
 
 ## 9. Standards alignment (for the paper)
 
-The **Thiele & Palsson reconstruction confidence score (0â€“4)** classifies a reaction by the *type* of
-evidence for including it. It therefore maps from the `gene_association` facet â€” the one that measures
-reaction-inclusion evidence â€” via its `basis`, **not** from a facet's `level` (a support-strength band) or
+The **Thiele & Palsson reconstruction confidence score (0–4)** classifies a reaction by the *type* of
+evidence for including it. It therefore maps from the `gene_association` facet — the one that measures
+reaction-inclusion evidence — via its `basis`, **not** from a facet's `level` (a support-strength band) or
 the `overall` score. `raven_toolbox.confidence.thiele_palsson_score(reaction)` returns it:
 
 | `gene_association` basis | Thiele-Palsson | ECO evidence class |
 |---|---|---|
-| `gpr+literature` | 3 â€” experimental / genetic | assign from the cited evidence, e.g. `ECO:0000015` (mutant phenotype) or `ECO:0000002` (direct assay); not inferable from the presence of a citation alone |
-| `gpr` | 2 â€” sequence data | `ECO:0000044` sequence similarity evidence |
-| `no-gpr` | 1 â€” modelling inference | â€” |
+| `gpr+literature` | 3 — experimental / genetic | assign from the cited evidence, e.g. `ECO:0000015` (mutant phenotype) or `ECO:0000002` (direct assay); not inferable from the presence of a citation alone |
+| `gpr` | 2 — sequence data | `ECO:0000044` sequence similarity evidence |
+| `no-gpr` | 1 — modelling inference | — |
 | `curated` | set by the curator's own evidence | set by the curator's own evidence |
 
 Two cautions govern the mapping:
 
 - Thiele & Palsson's table assigns score **2 to two different evidence classes** (physiological data *and*
-  sequence data), so the mapping only runs *forward* (basis â†’ score); a recorded 2 does not determine an
-  evidence class and must not be mapped back to one. `curated` is likewise left unmapped â€” a curator's
+  sequence data), so the mapping only runs *forward* (basis → score); a recorded 2 does not determine an
+  evidence class and must not be mapped back to one. `curated` is likewise left unmapped — a curator's
   assertion does not, on its own, name the evidence class it rests on.
 - Assertion-method ECO terms are **not** evidence classes and must not be used as such: `ECO:0000305`
   "curator inference used in manual assertion" describes *how* a call was made, not the evidence for it. Any
-  ECO id must be checked against the ontology before it reaches the paper â€” a wrong ontology id is worse than
+  ECO id must be checked against the ontology before it reaches the paper — a wrong ontology id is worse than
   an omitted one. Every ECO id above was verified against EBI's ECO (OLS): `ECO:0000044` sequence similarity
   evidence, `ECO:0000015` mutant phenotype evidence, `ECO:0000002` direct assay evidence. The SBO ids used
   earlier were likewise verified: `SBO:0000629` biomass production, `SBO:0000395` encapsulating process,
@@ -238,24 +238,24 @@ Two cautions govern the mapping:
 ## 10. What is left
 
 The **facet set is closed**: `localization`, `equation` and `gene_association` are shipped, and no further
-facet is planned. The wiring (Â§10.1), the standards mapping (Â§10.3) and the cross-model validation (Â§10.2)
+facet is planned. The wiring (§10.1), the standards mapping (§10.3) and the cross-model validation (§10.2)
 are done; what remains is the paper write-up.
 
-### 10.1 Wire the facets together â€” done
+### 10.1 Wire the facets together — done
 
 - **`annotate_confidence(model, *, proposal=None, scores=None, facets=None)`** runs every applicable scorer
   in one call and skips a facet whose inputs are absent (`localization` needs a proposal and a score table;
-  the other two need only the model) rather than failing â€” the same abstain-rather-than-guess rule the
+  the other two need only the model) rather than failing — the same abstain-rather-than-guess rule the
   scores themselves follow.
 - **`curation_priority` now skips curated placements.** A reaction whose `localization` facet is
   `mark_curated` is dropped from the review queue (pass `include_curated=True` to keep it), closing the
-  score â†’ review â†’ curate loop so a settled reaction stops resurfacing.
-- **The SBO-precondition warning now names its remedy** â€” `raven_toolbox.annotation.add_sbo_terms(model)`.
+  score → review → curate loop so a settled reaction stops resurfacing.
+- **The SBO-precondition warning now names its remedy** — `raven_toolbox.annotation.add_sbo_terms(model)`.
 
 ### 10.2 Validate beyond one model
 
-Done. `scripts/measure_confidence_facets.py` (now reads SBML or YAML/JSON) was run on three more models â€”
-**Human-GEM** (12 877 rxns), **iYali** (1924) and **panAsp/pAo** (1917) â€” vs yeast-GEM's Â§6 baseline:
+Done. `scripts/measure_confidence_facets.py` (now reads SBML or YAML/JSON) was run on three more models —
+**Human-GEM** (12 877 rxns), **iYali** (1924) and **panAsp/pAo** (1917) — vs yeast-GEM's §6 baseline:
 
 | equation band | yeast-GEM | Human-GEM | iYali | pAo |
 |---|---|---|---|---|
@@ -264,16 +264,16 @@ Done. `scripts/measure_confidence_facets.py` (now reads SBML or YAML/JSON) was r
 | `charge-unknown` (0.6) | 0 | 0 | 0 | 0 |
 
 Two of the three bands yeast-GEM could not exercise fire on other real models, so they are calibrated, not
-yeast artefacts. Only `charge-unknown` stays fixture-only â€” a mass-balanced reaction with a charge-less
+yeast artefacts. Only `charge-unknown` stays fixture-only — a mass-balanced reaction with a charge-less
 metabolite is rare (curated models charge everything; drafts fail mass balance first).
 
 `gpr+literature` (0.9) fires only where reactions carry a `pubmed` annotation (iYali 749; the others 0). The
 gene-rubric-vs-`Confidence Level` check needs a per-reaction-curated model: iYali and pAo record a blanket
 value (all 2, all 0), so only yeast-GEM's varied notes are usable ground truth.
 
-### 10.3 Standards alignment for the paper â€” mapping shipped
+### 10.3 Standards alignment for the paper — mapping shipped
 
-Â§9 above. The Thiele-Palsson mapping is shipped as `raven_toolbox.confidence.thiele_palsson_score`
-(`gene_association` basis â†’ 0â€“4), and its ECO evidence-class ids are verified against OLS. What remains is
+§9 above. The Thiele-Palsson mapping is shipped as `raven_toolbox.confidence.thiele_palsson_score`
+(`gene_association` basis → 0–4), and its ECO evidence-class ids are verified against OLS. What remains is
 paper-side, not code: assigning the specific ECO class for `gpr+literature` and `curated` reactions from the
 actual cited/curator evidence (which the facet cannot infer), and the write-up itself.
