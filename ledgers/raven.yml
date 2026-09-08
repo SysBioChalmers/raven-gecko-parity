@@ -175,7 +175,9 @@ entries:
     reason: File-existence glue with MATLAB dialog prompts.
   - matlab: checkInstallation
     status: internal
-    reason: Installation check. Python installs with pip.
+    reason: 'Deprecated wrapper (SysBioChalmers/RAVEN#748) forwarding to checkRaven; see that row. Kept at
+      the repository root, ahead of the path being set up, so existing scripts keep working, and will be
+      removed at the next major release.'
   - matlab: checkModelStruct
     python: raven_toolbox.utils.check_model
     status: parity
@@ -211,6 +213,10 @@ entries:
       set-cover over metabolite producibility --- not something analyse_topology/find_blocked_reactions
       already does. Its only real caller in RAVEN is gapReport, so it is reimplemented as a private helper
       inside raven_toolbox.gapfilling.gap_report rather than given a standalone Python entry point.'
+  - matlab: checkRaven
+    status: internal
+    reason: Installation check. Python installs with pip.
+    notes: Named checkInstallation until SysBioChalmers/RAVEN#748; that name survives as a deprecated wrapper.
   - matlab: checkSolution
     status: via-dependency
     reason: 'cobrapy covers this: the Solution object carries status, objective_value and fluxes.'
