@@ -73,11 +73,11 @@ entries:
       sweep, but only on geckopy''s develop branch --- not yet on main, the ref this ledger tracks, and
       best_parsimonious itself is an internal helper there, not re-exported as public API.'
   - matlab: cmaesKcatTuning
-    status: python-pending
+    python: geckopy.kcat_tuning.evotune.cmaes_kcat_tuning
+    status: parity
     notes: 'Main CMA-ES kcat-tuning entry point, replacing the retired ABC-SMC bayesianSensitivityTuning
       (GECKO#477, closes raven-gecko-parity#21). Its docstring says it was written to match "what geckopy''s
-      own port actually runs" --- that port is kcat_tuning.evotune.tuning.cmaes_kcat_tuning (geckopy#51), but
-      only on geckopy''s develop branch, not yet on main.'
+      own port actually runs" --- that port is kcat_tuning.evotune.tuning.cmaes_kcat_tuning (geckopy#51).'
   - matlab: ecStatsFromBrenda
     status: python-pending
     notes: 'Summarises loadBRENDAdata''s output per EC number for reviewKcatAssignment. Its own docstring says
@@ -85,21 +85,22 @@ entries:
       re-exported as geckopy public API, and the MATLAB port carries an unresolved TODO: loadBRENDAdata only
       returns the BRENDA max aggregate, so kcatMedian here is always NaN until that''s extended.'
   - matlab: evotuneScore
-    status: python-pending
+    python: geckopy.kcat_tuning.evotune.evotune_distance
+    status: parity
     notes: 'Scores one candidate kcat set (simulate + RMSE), successor to the old Bayesian abc_max.m''s
-      rmsecal helper. geckopy splits this across kcat_tuning.evotune.simulate.simulate_evotune_dataset and
-      kcat_tuning.evotune.distance.evotune_distance/dataset_rmse (geckopy#51), only on geckopy''s develop
-      branch, not yet on main.'
+      rmsecal helper. geckopy splits this across kcat_tuning.evotune.simulate.simulate_evotune_dataset (the
+      simulate half, internal there) and kcat_tuning.evotune.distance.evotune_distance/dataset_rmse (geckopy#51,
+      the RMSE half --- evotune_distance is the top-level entry point, dataset_rmse its per-dataset helper).'
   - matlab: isozymeTieMap
     status: python-pending
     notes: Groups isozyme-copy kcat rows sharing a base reaction/prior/source into one tied tuning parameter.
       geckopy's kcat_tuning.evotune.tying.isozyme_tie_map (geckopy#51) does the same, but is an internal
       helper there, not yet re-exported as public API.
   - matlab: loadEvotuneData
-    status: python-pending
+    python: geckopy.kcat_tuning.evotune.load_evotune_data
+    status: parity
     notes: 'Loads the optional flux/max-growth/zero-flux experimental TSVs for CMA-ES tuning, successor to
-      the old Bayesian loadBayesianData.m. Matches kcat_tuning.evotune.data.load_evotune_data (geckopy#51),
-      only on geckopy''s develop branch, not yet on main.'
+      the old Bayesian loadBayesianData.m. Matches kcat_tuning.evotune.data.load_evotune_data (geckopy#51).'
   - matlab: nChanged
     status: python-pending
     notes: Counts kcats moved from their prior beyond a relative tolerance. geckopy's
@@ -123,20 +124,76 @@ entries:
       design choices (rank by leverage, report a parameter once for tied isozymes) --- but review_assignment
       is not yet re-exported as geckopy public API.'
   - matlab: screenKcatLeverage
-    status: python-pending
+    python: geckopy.kcat_tuning.evotune.screen_kcat_leverage
+    status: parity
     notes: 'Pre-tuning report of which kcats the data can actually constrain, no optimization run. Matches
-      kcat_tuning.evotune.tuning.screen_kcat_leverage (geckopy#51), only on geckopy''s develop branch, not
-      yet on main.'
+      kcat_tuning.evotune.tuning.screen_kcat_leverage (geckopy#51).'
   - matlab: selectTunableMask
-    status: python-pending
+    python: geckopy.kcat_tuning.evotune.select_tunable_mask
+    status: parity
     notes: 'Builds a boolean tunable mask from a leverage screen at a target impact share. Matches
-      kcat_tuning.evotune.tuning.select_tunable_mask (geckopy#51), only on geckopy''s develop branch, not yet
-      on main.'
+      kcat_tuning.evotune.tuning.select_tunable_mask (geckopy#51).'
   - matlab: tunePriorPenaltyWeight
-    status: python-pending
+    python: geckopy.kcat_tuning.evotune.tune_prior_penalty_weight
+    status: parity
     notes: 'Sweeps priorPenaltyWeight across seeds, reporting fit vs. cross-seed reproducibility. Matches
-      kcat_tuning.evotune.tuning.tune_prior_penalty_weight (geckopy#51), only on geckopy''s develop branch,
-      not yet on main.'
+      kcat_tuning.evotune.tuning.tune_prior_penalty_weight (geckopy#51).'
+  - python: geckopy.kcat_tuning.evotune
+    status: internal
+    reason: Re-exports the evotune subpackage as a namespace on kcat_tuning; not a function of its own.
+  - python: geckopy.kcat_tuning.corrections
+    status: python-only
+    reason: 'Reports a completed cmaes_kcat_tuning run as a ranked list of changed kcats with provenance
+      (EvotuneResult.corrections() calls it) --- no tracked MATLAB equivalent report.'
+  - python: geckopy.kcat_tuning.Correction
+    status: internal
+    reason: Return type of corrections()/EvotuneResult.corrections(), not a standalone entry point.
+  - python: geckopy.kcat_tuning.corrections_tsv
+    status: internal
+    reason: TSV serializer for corrections()'s output, not a standalone entry point.
+  - python: geckopy.kcat_tuning.annotate_from_model
+    status: internal
+    reason: Looks up names/EC codes/sources for corrections(), not a standalone entry point.
+  - python: geckopy.kcat_tuning.evotune.EvotuneData
+    status: internal
+    reason: Return type of load_evotune_data, not a standalone entry point.
+  - python: geckopy.kcat_tuning.evotune.EvotuneResult
+    status: internal
+    reason: Return type of cmaes_kcat_tuning, not a standalone entry point.
+  - python: geckopy.kcat_tuning.evotune.ConditionSimResult
+    status: internal
+    reason: Return type of simulate_evotune_dataset, not a standalone entry point.
+  - python: geckopy.kcat_tuning.evotune.simulate_evotune_dataset
+    status: internal
+    reason: 'FBA simulation half shared by evotuneScore''s Python port (evotune_distance/dataset_rmse score
+      the result) and the tuning/screening loop''s per-candidate scoring; not a standalone entry point.'
+  - python: geckopy.kcat_tuning.evotune.dataset_rmse
+    status: internal
+    reason: Per-dataset RMSE helper of evotune_distance, evotuneScore's Python port; not a standalone entry point.
+  - python: geckopy.kcat_tuning.evotune.compute_excarbon
+    status: internal
+    reason: 'Per-reaction carbon-weight helper for evotune''s RMSE, the Python counterpart of MATLAB''s
+      fillCarbonNum (itself internal); not a standalone entry point.'
+  - python: geckopy.kcat_tuning.evotune.BIOMASS_CARBON_EQUIV
+    status: internal
+    reason: Tuning constant, not an entry point.
+  - python: geckopy.kcat_tuning.evotune.INFEASIBLE_PENALTY
+    status: internal
+    reason: Tuning constant, not an entry point.
+  - python: geckopy.kcat_tuning.evotune.UNLABELLED_GROUP
+    status: internal
+    reason: Sentinel group name for an unmatched kcat source, not an entry point.
+  - python: geckopy.kcat_tuning.evotune.classify_kcat_source
+    status: subsumed
+    reason: 'Part of MATLAB''s resolveTunableContext capability (see that row, status: subsumed), which folds
+      this classification and build_sigma0_log into one function rather than exposing them separately.'
+  - python: geckopy.kcat_tuning.evotune.build_sigma0_log
+    status: subsumed
+    reason: 'Part of MATLAB''s resolveTunableContext capability (see that row, status: subsumed), which folds
+      this and classify_kcat_source(s) into one function rather than exposing them separately.'
+  - python: geckopy.kcat_tuning.evotune.classify_kcat_sources
+    status: internal
+    reason: Vectorised wrapper of classify_kcat_source, not a distinct capability.
   - matlab: calculateFfactor
     python: geckopy.calculate_f_factor
     status: parity
