@@ -268,7 +268,7 @@ The convention for hosting, versioning and publishing them is
 [docs/publishing_artefacts.md](docs/publishing_artefacts.md), kept here because more
 than one toolbox reads the same files. The other two halves live where the work does:
 what an end user downloads and how to control it is on
-[raven-docs](https://github.com/edkerk/raven-docs/blob/main/docs/installation/data-and-binaries.md),
+[raven-docs](https://raven-docs.readthedocs.io/en/latest/installation/data-and-binaries/),
 and building the KEGG artefacts and binary bundles is in
 [raven-toolbox's contributing guide](https://github.com/SysBioChalmers/raven-toolbox/blob/develop/CONTRIBUTING.md),
 since that repository implements the pipeline.
