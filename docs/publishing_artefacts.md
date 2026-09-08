@@ -2,9 +2,9 @@
 
 The convention the gecko/raven repositories use for anything too large to commit:
 where it is hosted, how it is versioned, how a consumer finds it, and how a new
-one is published. It exists as a shared standard because more than one toolbox
-reads the same files, and because the alternative, each repository inventing its
-own scheme, produces artefacts nobody can reproduce a result from.
+one is published. It is a shared standard because more than one toolbox reads the
+same files, and a per-repository scheme would make a published result impossible
+to reproduce against a stated version.
 
 Two other halves of this material live where the work does:
 
@@ -34,8 +34,8 @@ Three reasons the assets live in their own repository:
   the limit does not apply.
 - It keeps the code repositories' licences clean. KEGG's terms and the GPL-3.0
   DIAMOND binary stay with the data.
-- One versioned source of truth serves every consumer, which is the whole point
-  when two toolboxes have to agree on what they read.
+- One versioned source of truth serves every consumer, which is required when two
+  toolboxes have to agree on what they read.
 
 ## Versioning: per-artefact, immutable tags
 
@@ -76,13 +76,13 @@ The schema is
 [`data/manifest.schema.json`](https://github.com/SysBioChalmers/raven-toolbox/blob/develop/data/manifest.schema.json),
 with a worked example alongside it.
 
-Because the entries are just URLs, where a given file is hosted is a per-file
-decision the consumer never sees. GitHub Releases is the default: free,
+The entries are URLs, so where a given file is hosted is a per-file decision the
+consumer never sees. GitHub Releases is the default: free,
 language-agnostic, and good to about 2 GB per file. Zenodo is the alternative
 where a citable DOI or a file over 2 GB is needed; point that one file's `url` at
 the Zenodo record and record the DOI in the entry.
 
-**Do not re-host somebody else's model.** Template models such as Human-GEM and
+**Do not re-host another project's model.** Template models such as Human-GEM and
 yeast-GEM are fetched from their own repositories at a pinned release tag, which
 respects their licences and avoids a stale copy.
 
