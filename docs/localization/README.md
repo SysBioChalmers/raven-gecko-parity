@@ -16,6 +16,13 @@ describes it.
 Nothing here is superseded. The numbers were measured as reported, and the
 designs are the designs the code implements.
 
+## Using it today
+
+[usage.md](usage.md) is the user-facing description of `predict_localization` and
+`assign_compartments`: loading predictor scores, fusing several sources, and what the
+options do. It moved here with the rest when raven-toolbox retired its documentation
+tree, and returns to the site when the feature settles.
+
 ## Method design
 
 | Document | What it covers |
