@@ -269,6 +269,15 @@ by one manifest both sides read: how that's hosted, versioned and published is i
 decision behind them in [docs/kegg_data_format.md](docs/kegg_data_format.md); building the
 binary bundles is [docs/maintaining_binaries.md](docs/maintaining_binaries.md).
 
+## Work in progress, documented here rather than on the site
+
+raven-toolbox's compartment assignment and per-reaction confidence tracking are
+still in development and not at parity with MATLAB RAVEN. Their design documents,
+predictor benchmarks and validation runs are in
+[docs/localization/](docs/localization/) --- sixteen documents that would read as
+claims about current behaviour if they sat on the user-facing site. They move back
+to [raven-docs](https://github.com/edkerk/raven-docs) when the features settle.
+
 ## CI
 
 `ci.yml` checks out all four repos and runs `parity check` on every push and nightly.
