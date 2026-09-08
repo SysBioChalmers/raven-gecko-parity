@@ -270,7 +270,12 @@ PYTHON_PENDING: dict[str, str] = {
 ARG_GLUE = "MATLAB argument-validation glue. Python uses ordinary keyword arguments and type hints."
 
 INTERNAL: dict[str, str] = {
-    "checkInstallation": "Installation check. Python installs with pip.",
+    "checkRaven": "Installation check. Python installs with pip.",
+    "checkInstallation": (
+        "Deprecated wrapper (SysBioChalmers/RAVEN#748) forwarding to checkRaven; see that row. "
+        "Kept at the repository root, ahead of the path being set up, so existing scripts keep "
+        "working, and will be removed at the next major release."
+    ),
     "runRAVENtests": "Test-suite runner. Python uses pytest.",
     "setRavenSolver_placeholder": "",
     "convertCharArray": ARG_GLUE,
