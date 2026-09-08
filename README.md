@@ -262,12 +262,16 @@ that avoid false differences.
 Large downloadable data --- KEGG reference tables and HMM libraries, and the
 BLAST+/DIAMOND/HMMER binaries both toolboxes shell out to --- lives outside either code
 repo, in [`raven-data`](https://github.com/SysBioChalmers/raven-data) releases, described
-by one manifest both sides read: how that's hosted, versioned and published is in
-[docs/artefact_hosting.md](docs/artefact_hosting.md), and the manifest format itself in
-[docs/data_manifest.md](docs/data_manifest.md). Building the KEGG artefacts is
-[docs/maintaining_kegg_data.md](docs/maintaining_kegg_data.md), with the storage-format
-decision behind them in [docs/kegg_data_format.md](docs/kegg_data_format.md); building the
-binary bundles is [docs/maintaining_binaries.md](docs/maintaining_binaries.md).
+by one manifest both sides read.
+
+The convention for hosting, versioning and publishing them is
+[docs/publishing_artefacts.md](docs/publishing_artefacts.md), kept here because more
+than one toolbox reads the same files. The other two halves live where the work does:
+what an end user downloads and how to control it is on
+[raven-docs](https://sysbiochalmers.github.io/raven-docs/installation/data-and-binaries/),
+and building the KEGG artefacts and binary bundles is in
+[raven-toolbox's contributing guide](https://github.com/SysBioChalmers/raven-toolbox/blob/develop/CONTRIBUTING.md),
+since that repository implements the pipeline.
 
 ## Work in progress, documented here rather than on the site
 
