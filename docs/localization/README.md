@@ -21,6 +21,8 @@ designs are the designs the code implements.
 | Document | What it covers |
 |---|---|
 | [localization_redesign.md](localization_redesign.md) | The flux-free placement MILP plus materialised-FBA certification that `assign_compartments` is built on, and why placement and certification are separated |
+| [multi_localization_design.md](multi_localization_design.md) | Reaction-level multi-localisation, and the flux-activity coupling that makes the opt-in `multi_localization` flag sound |
+| [transport_evidence_scoring.md](transport_evidence_scoring.md) | Replacing the blanket inter-compartment transport penalty with a per-transport, evidence-aware cost — planned for both RAVEN and raven-toolbox, which is why it sits here rather than in either |
 | [confidence_tracking.md](confidence_tracking.md) | Per-reaction, multi-facet confidence scoring: the data model, the YAML and SBML round-trip, and what each facet measures |
 | [curation_priority_signals.md](curation_priority_signals.md) | A catalogue of signals for ranking which assignments need manual review. Generated from a brainstorm and, by its own note, never verified against the implementation — read it as a design menu, not a result |
 

@@ -166,7 +166,7 @@ that the transport penalty is a blanket prior applied **without transporter-leve
 **Shipped.** This section is kept as the original design rationale; the scoring it proposes is
 now implemented as `localization.evidence_aware_transport_cost`, with the Pfam/hmmsearch and
 TCDB/diamond evidence back-ends (`annotate_proteome`) and DeepLoc-compartment matching all
-live â€” see [transport_evidence_scoring.md](https://github.com/SysBioChalmers/raven-toolbox/blob/develop/docs/reference/transport_evidence_scoring.md) for the
+live â€” see [transport_evidence_scoring.md](transport_evidence_scoring.md) for the
 current status and [yeast_validation.md](yeast_validation.md) for it in production use. Only
 the orthology consensus/refinement step below remains open.
 
