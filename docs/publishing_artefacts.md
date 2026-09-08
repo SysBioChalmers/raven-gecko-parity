@@ -9,7 +9,7 @@ own scheme, produces artefacts nobody can reproduce a result from.
 Two other halves of this material live where the work does:
 
 - What an end user downloads, where it is cached and how to control it is on
-  [raven-docs](https://sysbiochalmers.github.io/raven-docs/installation/data-and-binaries/).
+  [raven-docs](https://github.com/edkerk/raven-docs/blob/main/docs/installation/data-and-binaries.md).
 - Building the KEGG artefacts and the binary bundles is in
   [raven-toolbox's contributing guide](https://github.com/SysBioChalmers/raven-toolbox/blob/develop/CONTRIBUTING.md),
   since raven-toolbox implements that pipeline.
