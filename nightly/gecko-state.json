@@ -1,7 +1,7 @@
 {
   "revisions": {
     "gecko.matlab": "afb827d01737b08c2aec3d2d44022116b30a846e",
-    "gecko.python": "5810eeed0abec56817e5a72f8d9121746fdf9f0e"
+    "gecko.python": "277b74a3cbdf6f15bf92a5429f3a208ce4d18162"
   },
   "verdicts": {
     "ec_fseof_ectestgem": "DIFFER",
