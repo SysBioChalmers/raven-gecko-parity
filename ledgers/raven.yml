@@ -1012,12 +1012,12 @@ entries:
     status: via-dependency
     reason: 'cobrapy covers this: the GPR parser; assigning gene_reaction_rule parses it.'
   - matlab: parseHPA
-    python: raven_toolbox.omics.parse_hpa
+    python: raven_toolbox.init.parse_hpa
     status: parity
     notes: from migration.md. Pandas-tidy DataFrames; scoring adapters reuse score_reactions_from_genes (single
       source of truth for the GPR walk).
   - matlab: parseHPArna
-    python: raven_toolbox.omics.parse_hpa_rna
+    python: raven_toolbox.init.parse_hpa_rna
     status: parity
     notes: 'migration.md says ported, but no matching export found: raven_toolbox.omics.parse_hpa, raven_toolbox.parse_hpa_rna,
       raven_toolbox.hpa_gene_scores, raven_toolbox.rna_gene_scores'
@@ -1824,21 +1824,21 @@ entries:
       capability, inside simplifyModel rather than as its own entry point. Covered by
       model_simplification_smallyeast as part of the composed simplification; see the simplifyModel row for the
       difference that shows up when it is run alone.'
-  - python: raven_toolbox.omics.HPA_LEVEL_SCORES
+  - python: raven_toolbox.init.HPA_LEVEL_SCORES
     status: python-only
     reason: Default-value constant, exported so callers can inspect and override it. RAVEN hard-codes the
       equivalent.
-  - python: raven_toolbox.omics.HPAData
+  - python: raven_toolbox.init.HPAData
     status: python-only
     reason: Parsed-data type. RAVEN passes structs and parallel cell arrays instead.
-  - python: raven_toolbox.omics.HPARnaData
+  - python: raven_toolbox.init.HPARnaData
     status: python-only
     reason: Parsed-data type. RAVEN passes structs and parallel cell arrays instead.
-  - python: raven_toolbox.omics.hpa_gene_scores
+  - python: raven_toolbox.init.hpa_gene_scores
     status: subsumed
     reason: RAVEN has the same computation, but inside scoreModel's HPA branch rather than as its own entry
       point. A packaging difference, not a divergence.
-  - python: raven_toolbox.omics.rna_gene_scores
+  - python: raven_toolbox.init.rna_gene_scores
     status: subsumed
     reason: 'RAVEN has the same computation, but inside scoreModel''s arrayData branch rather than as its own
       entry point: mean-across-tissues reference, aScores = 5*log(current./average), clamped to [-5, 10]
