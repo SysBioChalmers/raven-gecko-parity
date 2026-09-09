@@ -98,3 +98,25 @@ Run `parity mirror --since <base>..HEAD` from the repo root to see what a change
 
 The intent is the same as the git hooks: make the cross-check something that happens without
 anyone having to remember it.
+
+## Writing documentation
+
+The same four checks apply to prose in every markdown file across these four repositories,
+not only to code the ledger tracks:
+
+1. **Subject and verb.** A file, field, option, table or toolbox can be, contain, return,
+   raise, or take precedence. It cannot win, know, want, or do something quietly, silently,
+   loudly or conveniently. A manner adverb on an inanimate subject is the most common fault.
+2. **No advice about worth.** State the behavior and the condition it holds under, not
+   "worth using," "worth having," or "the usual way." The reader decides what is worth
+   doing.
+3. **Describe the software, not the document.** No "this page is about," "that is the
+   point of the example," or "as mentioned above."
+4. **Cut minimizers.** "just," "simply," "only," "of course," "not a bug." Delete the word
+   and check the sentence still holds.
+
+A sentence that would stay true regardless of how the software behaves is not
+documentation, and belongs in a comment or an issue instead.
+
+No em dashes in any file under this convention. Use a comma, a semicolon, a colon, or
+parentheses, whichever the sentence actually calls for.
