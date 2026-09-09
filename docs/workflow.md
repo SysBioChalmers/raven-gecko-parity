@@ -13,14 +13,14 @@ Where the ledger fits into the work you were doing anyway.
 
    The `pre-push` hook does this for you.
 3. If the touched function is `parity`, check whether raven-toolbox has the same bug. It
-   usually does --- the port followed the original closely. Open the sibling issue with the
+   usually does; the port followed the original closely. Open the sibling issue with the
    RAVEN issue linked, and record it on the ledger row while it is open:
 
    ```yaml
    - matlab: fillGaps
      python: raven_toolbox.gapfilling.connect_blocked_reactions
      status: parity
-     notes: RAVEN#456 / raven-toolbox#789 --- same off-by-one in the weight vector.
+     notes: RAVEN#456 / raven-toolbox#789: same off-by-one in the weight vector.
    ```
 4. If the touched function is `matlab-only` or `via-dependency`, there is nothing to mirror.
    The ledger already answered the question.
@@ -36,13 +36,13 @@ Where the ledger fits into the work you were doing anyway.
    - python: raven_toolbox.localization.assign_compartments
      status: matlab-pending
      issue: SysBioChalmers/RAVEN#123
-     notes: Port plan --- MILP via optimizeProb/getMILPParams, reusing parseScores.
+     notes: Port plan: MILP via optimizeProb/getMILPParams, reusing parseScores.
    ```
 
    `matlab-pending` without an `issue` is a warning, not an error: it is fine to defer the
    decision, not fine to lose it.
 3. When the back-port lands, flip the row to `parity` and add the MATLAB name. `parity check`
-   enforces this --- a `matlab-pending` row that names a MATLAB function is an error, because
+   enforces this: a `matlab-pending` row that names a MATLAB function is an error, because
    the status is now a lie.
 4. Consider a scenario. Anything with a solver in it earns one.
 
@@ -61,7 +61,7 @@ decision instead of in a pull request comment from two years ago.
 
 ## Releases
 
-Do not force version lockstep --- it produces empty releases. State the baseline instead, one
+Do not force version lockstep; it produces empty releases. State the baseline instead, one
 line in each CHANGELOG:
 
 ```
@@ -98,3 +98,25 @@ Run `parity mirror --since <base>..HEAD` from the repo root to see what a change
 
 The intent is the same as the git hooks: make the cross-check something that happens without
 anyone having to remember it.
+
+## Writing documentation
+
+The same four checks apply to prose in every markdown file across these four repositories,
+not only to code the ledger tracks:
+
+1. **Subject and verb.** A file, field, option, table or toolbox can be, contain, return,
+   raise, or take precedence. It cannot win, know, want, or do something quietly, silently,
+   loudly or conveniently. A manner adverb on an inanimate subject is the most common fault.
+2. **No advice about worth.** State the behavior and the condition it holds under, not
+   "worth using," "worth having," or "the usual way." The reader decides what is worth
+   doing.
+3. **Describe the software, not the document.** No "this page is about," "that is the
+   point of the example," or "as mentioned above."
+4. **Cut minimizers.** "just," "simply," "only," "of course," "not a bug." Delete the word
+   and check the sentence still holds.
+
+A sentence that would stay true regardless of how the software behaves is not
+documentation, and belongs in a comment or an issue instead.
+
+No em dashes in any file under this convention. Use a comma, a semicolon, a colon, or
+parentheses, whichever the sentence actually calls for.
