@@ -1,0 +1,35 @@
+{
+  "name": "raven-gecko",
+  "owner": {
+    "name": "SysBioChalmers",
+    "url": "https://github.com/SysBioChalmers"
+  },
+  "description": "Development conventions for RAVEN, GECKO, raven-toolbox, geckopy and raven-gecko-parity.",
+  "plugins": [
+    {
+      "name": "common",
+      "source": "./ai/common",
+      "description": "Conventions shared by all five repositories: parity ledger duties, pull request text, documentation prose, comments and links."
+    },
+    {
+      "name": "raven",
+      "source": "./ai/raven",
+      "description": "RAVEN (MATLAB, develop3): code conventions and running the test suite."
+    },
+    {
+      "name": "gecko",
+      "source": "./ai/gecko",
+      "description": "GECKO (MATLAB, develop4): code conventions and running the test suite with RAVEN on the path."
+    },
+    {
+      "name": "raven-toolbox",
+      "source": "./ai/raven-toolbox",
+      "description": "raven-toolbox (Python, develop): code conventions, lint, type checks and tests."
+    },
+    {
+      "name": "geckopy",
+      "source": "./ai/geckopy",
+      "description": "geckopy (Python, main): code conventions, lint and tests, including work across geckopy and raven-toolbox."
+    }
+  ]
+}

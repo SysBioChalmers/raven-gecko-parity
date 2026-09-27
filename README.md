@@ -295,6 +295,13 @@ predictor benchmarks and validation runs are in
 claims about current behaviour if they sat on the user-facing site. They move back
 to [raven-docs](https://github.com/edkerk/raven-docs) when the features settle.
 
+## Coding agent plugins
+
+[`ai/`](ai/) holds one plugin per code repository plus a `common` plugin for all of them,
+published as the Claude Code plugin marketplace `raven-gecko`. Each code repository enables
+its own plugin through a committed `.claude/settings.json`. See
+[docs/agent-plugins.md](docs/agent-plugins.md).
+
 ## CI
 
 `ci.yml` checks out all four repos and runs `parity check` on every push and nightly.

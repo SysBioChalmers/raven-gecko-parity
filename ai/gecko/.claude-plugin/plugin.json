@@ -1,0 +1,9 @@
+{
+  "name": "gecko",
+  "version": "0.1.0",
+  "description": "GECKO (MATLAB, develop4): code conventions and running the test suite with RAVEN on the path.",
+  "author": {
+    "name": "SysBioChalmers"
+  },
+  "repository": "https://github.com/SysBioChalmers/raven-gecko-parity"
+}

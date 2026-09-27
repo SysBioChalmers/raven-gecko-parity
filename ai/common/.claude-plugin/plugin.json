@@ -1,0 +1,9 @@
+{
+  "name": "common",
+  "version": "0.1.0",
+  "description": "Conventions shared by RAVEN, GECKO, raven-toolbox, geckopy and raven-gecko-parity.",
+  "author": {
+    "name": "SysBioChalmers"
+  },
+  "repository": "https://github.com/SysBioChalmers/raven-gecko-parity"
+}

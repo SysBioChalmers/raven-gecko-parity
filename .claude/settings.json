@@ -1,0 +1,13 @@
+{
+  "extraKnownMarketplaces": {
+    "raven-gecko": {
+      "source": {
+        "source": "github",
+        "repo": "SysBioChalmers/raven-gecko-parity"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "common@raven-gecko": true
+  }
+}

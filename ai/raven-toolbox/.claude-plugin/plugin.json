@@ -1,0 +1,9 @@
+{
+  "name": "raven-toolbox",
+  "version": "0.1.0",
+  "description": "raven-toolbox (Python, develop): code conventions, lint, type checks and tests.",
+  "author": {
+    "name": "SysBioChalmers"
+  },
+  "repository": "https://github.com/SysBioChalmers/raven-gecko-parity"
+}
