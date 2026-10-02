@@ -1,0 +1,9 @@
+{
+  "name": "geckopy",
+  "version": "0.1.0",
+  "description": "geckopy (Python, main): code conventions, lint and tests, including work across geckopy and raven-toolbox.",
+  "author": {
+    "name": "SysBioChalmers"
+  },
+  "repository": "https://github.com/SysBioChalmers/raven-gecko-parity"
+}
