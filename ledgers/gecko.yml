@@ -299,7 +299,10 @@ entries:
     scenarios:
       - kcat_chain_ectestgem
       - ec_model_full_yeastgem
-    notes: 'The search-order/origin-numbering question is settled, not a divergence --- see
+      - fuzzy_kcat_coefficient_ectestgem
+    notes: 'A BRENDA kcat is divided by the stoichiometric coefficient of the substrate it was measured
+      on, not the smallest coefficient in the reaction (geckopy#57, GECKO#484). Until GECKO#484 is merged,
+      fuzzy_kcat_coefficient_ectestgem differs on develop4. The search-order/origin-numbering question is settled, not a divergence --- see
       docs/brenda-search-order.md. The wildcard EC search matches by prefix (not substring) on both sides.
       An EC class with zero BRENDA coverage even at full wildcard (''-.-.-.-'') is handled cleanly on both
       sides, returning a "no match" sentinel rather than crashing.'
@@ -374,6 +377,7 @@ entries:
     status: parity
     scenarios:
       - kcat_chain_ectestgem
+      - fuzzy_kcat_coefficient_ectestgem
     notes: 'MATLAB uses kcat.tsv/mw.tsv/sa.tsv, the same filenames and format geckopy''s own brenda-refresh
       CLI produces and ships in geckopy''s src/geckopy/data/brenda/, so pointing both toolboxes'' BRENDA
       folder at the same directory works. Not ported: the opt-in median aggregation geckopy''s

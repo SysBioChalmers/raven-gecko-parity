@@ -1,0 +1,36 @@
+id: fuzzy_kcat_coefficient_ectestgem
+pair: gecko
+description: >-
+  A BRENDA kcat is a turnover per molecule of the substrate it was measured on, so
+  fuzzy matching must divide it by that substrate's stoichiometric coefficient. The
+  scenario adds R7 to ecTestGEM, written 2 m1 + 0.5 m2 => e1, with EC 1.1.2.1. The
+  BRENDA fixture holds one row for that EC, measured on m1 (80 per second). Dividing
+  by m1's coefficient gives 40; dividing by the smallest coefficient in the reaction
+  (m2's 0.5, the behaviour before GECKO#484 and geckopy#57) gives 160. R2 and R3 carry
+  unit coefficients and are matched as in kcat_chain_ectestgem, so any difference
+  between the two implementations on them would show up here too.
+
+entries:
+  - fuzzyKcatMatching
+  - loadBRENDAdata
+
+inputs:
+  adapter_matlab: "{matlab_repo}/test/unit_tests/ecTestGEM/TestGEMAdapter.m"
+  adapter_python: "{python_repo}/examples/ecTestGEM"
+  fixture_dir: "{matlab_repo}/test/unit_tests/ecTestGEM"
+
+  # Hand-built BRENDA fixture in both formats, as in kcat_chain_ectestgem. EC 1.1.1.1
+  # (R2) has rows on m1 and m2, EC 1.1.2.1 (R3, R7) one row on m1. The mw.tsv and
+  # max_MW.txt files keep their one inert row each, because MATLAB's loadBRENDAdata
+  # builds a containers.Map from max_MW.txt and refuses an empty key list.
+  brenda_dir: "{scenario_dir}/data"
+  phyl_dist_path: "{matlab_repo}/test/unit_tests/ecTestGEM/data/PhylDist.mat"
+
+  # MATLAB's loadBRENDAdata resolves its files through the adapter's params.path, so
+  # the MATLAB side points a copy of the adapter at this folder.
+  scenario_root: "{scenario_dir}"
+
+# A pure division of two fixture numbers: 80 / 2 against 80 / 0.5.
+tolerance:
+  rel: 1.0e-9
+  abs: 1.0e-12
