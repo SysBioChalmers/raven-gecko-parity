@@ -301,8 +301,8 @@ entries:
       - ec_model_full_yeastgem
       - fuzzy_kcat_coefficient_ectestgem
     notes: 'A BRENDA kcat is divided by the stoichiometric coefficient of the substrate it was measured
-      on, not the smallest coefficient in the reaction (geckopy#57, GECKO#484). Until GECKO#484 is merged,
-      fuzzy_kcat_coefficient_ectestgem differs on develop4. The search-order/origin-numbering question is settled, not a divergence --- see
+      on, not the smallest coefficient in the reaction (geckopy#57, GECKO#484);
+      fuzzy_kcat_coefficient_ectestgem matches on develop4. The search-order/origin-numbering question is settled, not a divergence --- see
       docs/brenda-search-order.md. The wildcard EC search matches by prefix (not substring) on both sides.
       An EC class with zero BRENDA coverage even at full wildcard (''-.-.-.-'') is handled cleanly on both
       sides, returning a "no match" sentinel rather than crashing.'
