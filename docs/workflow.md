@@ -79,25 +79,11 @@ and run the scenarios for anything that changed since the last tag.
 
 ## Working with a coding agent
 
-Add this to `CLAUDE.md` (or the equivalent) in all four repos:
-
-```markdown
-## Cross-implementation parity
-
-This repo is one half of a MATLAB/Python pair. Before closing a bug or finishing a feature,
-check `raven-gecko-parity/ledgers/<pair>.yml` for the functions you touched:
-
-- `parity` -> the same bug or feature probably applies to the other implementation. Say so
-  explicitly in your summary, and open or reference a sibling issue.
-- `matlab-only` / `python-only` / `via-dependency` -> deliberate; do not mirror.
-- `unreviewed` -> triage it as part of this change.
-
-New public functions need a ledger row in the same PR; `parity check` fails without one.
-Run `parity mirror --since <base>..HEAD` from the repo root to see what a change implies.
-```
-
-The intent is the same as the git hooks: make the cross-check something that happens without
-anyone having to remember it.
+The `common` plugin in this repository gives a coding agent the ledger duties above in
+every session in the four code repositories, and its `parity-ledger` skill has the statuses
+and commands. See [agent-plugins.md](agent-plugins.md) for the plugins and how a repository
+enables them. The purpose is the same as that of the git hooks: the cross-check happens
+without anyone having to remember it.
 
 ## Writing documentation
 
