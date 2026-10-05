@@ -1,13 +1,13 @@
 {
   "revisions": {
-    "gecko.matlab": "cbc4ca3311df8ca44c28792f40008b9cbef692bd",
+    "gecko.matlab": "4e631c08b59435602978a36221de0e27bbd57964",
     "gecko.python": "277b74a3cbdf6f15bf92a5429f3a208ce4d18162"
   },
   "verdicts": {
     "ec_fseof_ectestgem": "DIFFER",
     "ec_fva_ectestgem": "MATCH",
     "ec_model_expansion_ectestgem": "MATCH",
-    "ec_model_full_yeastgem": "MATCH",
+    "ec_model_full_yeastgem": "DIFFER",
     "ec_model_io_ectestgem": "DIFFER",
     "enzyme_annotation_ectestgem": "MATCH",
     "enzyme_usage_ectestgem": "MATCH",
