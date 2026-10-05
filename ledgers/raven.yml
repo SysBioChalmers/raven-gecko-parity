@@ -467,6 +467,8 @@ entries:
     python: raven_toolbox.io.export_for_git
     status: parity
     notes: from migration.md. Standard-GEM repo layout (model/<fmt>/…).
+      Python also takes version= and date=, stamped into the exported copy; MATLAB models carry
+      model.version / model.date as fields, so there it is set before the call.
   - matlab: exportModel
     status: via-dependency
     reason: 'cobrapy covers this: cobra.io.write_sbml_model.'
@@ -855,6 +857,12 @@ entries:
       - homology_chain
     notes: from migration.md. Core homology reconstruction with structured improvements (bidirectional / best-hits-only,
       AST GPR rewrite, complex policy, bitscore best-hits, DataFrame ortholog map).
+      Python-only options added for template models that are curated references (Human-GEM animal GEMs,
+      Human-GEM#421), where keep_gene_free keeps template reactions with no GPR (MATLAB removes them, line ~222), and
+      preserve_notes keeps the template's reaction notes (MATLAB overwrites rxnNotes, line ~606). Rewritten GPRs
+      no longer repeat a gene when several template genes map to one ortholog, and the draft drops the
+      template's version/date metadata. Whether MATLAB repeats genes or inherits the template metadata is
+      unchecked; the two options are a back-port candidate if curated templates are used from MATLAB too.
   - matlab: getModelFromKEGG
     status: subsumed
     reason: Building the model from KO assignments is a stage inside reconstruction.kegg.get_kegg_model_for_organism.
@@ -1480,6 +1488,14 @@ entries:
     status: python-only
     reason: 'No MATLAB counterpart to this specific shape: writeFasta.m (see above) is a plain
       struct-array writer with no batching or id validation.'
+  - python: raven_toolbox.io.get_model_metadata
+    status: python-only
+    reason: 'MATLAB models carry version and date as struct fields (model.version, model.date), so there is
+      nothing to wrap. cobra models have no such attributes; raven-toolbox keeps them in model.notes.'
+  - python: raven_toolbox.io.set_model_metadata
+    status: python-only
+    reason: 'Same as get_model_metadata: sets notes["version"] and notes["metaData"] together, which
+      write_yaml_model reads from two places. MATLAB assigns model.version and model.date directly.'
   - matlab: writeYAMLmodel
     python: raven_toolbox.io.write_yaml_model
     status: parity
