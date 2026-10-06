@@ -32,6 +32,8 @@ entries:
     status: via-dependency
     reason: 'Its only caller is io/exportModel.m, itself via-dependency (cobra.io.write_sbml_model);
       cobrapy''s own SBML writer owns id-safety handling, so there''s no standalone Python use case.'
+    notes: 'RAVEN fix/prefix-whole-gene-ids: gene ids with a dash, dot or colon (5-HT1A) got a prefix at every
+      word start in grRules, so exportModel failed on such models (Fruitfly-GEM). cobrapy has no such issue.'
   - matlab: addMets
     status: via-dependency
     reason: 'cobrapy covers this: model.add_metabolites([cobra.Metabolite(...)]).'
@@ -857,12 +859,12 @@ entries:
       - homology_chain
     notes: from migration.md. Core homology reconstruction with structured improvements (bidirectional / best-hits-only,
       AST GPR rewrite, complex policy, bitscore best-hits, DataFrame ortholog map).
-      Python-only options added for template models that are curated references (Human-GEM animal GEMs,
-      Human-GEM#421), where keep_gene_free keeps template reactions with no GPR (MATLAB removes them, line ~222), and
-      preserve_notes keeps the template's reaction notes (MATLAB overwrites rxnNotes, line ~606). Rewritten GPRs
-      no longer repeat a gene when several template genes map to one ortholog, and the draft drops the
-      template's version/date metadata. Whether MATLAB repeats genes or inherits the template metadata is
-      unchecked; the two options are a back-port candidate if curated templates are used from MATLAB too.
+      Options for curated templates (Human-GEM animal GEMs, Human-GEM#421) on both sides, namely complexPolicy /
+      complex_policy (flag, keep, drop), keepGeneFree / keep_gene_free (keep template reactions without a
+      grRule) and preserveNotes / preserve_notes (keep the template's reaction notes). Both write a gene that
+      several template genes map to once, and neither copies the template's version, date or description into
+      the draft. MATLAB side in RAVEN (develop3) feat/homology-keep-template; Human-GEM's generateAnimalGEM.m
+      and generateAnimalGEM.py give the same models with these options.
   - matlab: getModelFromKEGG
     status: subsumed
     reason: Building the model from KO assignments is a stage inside reconstruction.kegg.get_kegg_model_for_organism.
