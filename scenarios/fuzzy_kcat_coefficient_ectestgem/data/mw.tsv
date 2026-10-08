@@ -1,0 +1,3 @@
+# kcat-chain scenario fixture --- one inert row so the loader has something non-empty to index; see scenario.yml
+ec_code	substrate	organism	mw	n	references
+9.9.9.9	*	nonexistent organism	1.0	1	*
