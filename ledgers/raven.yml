@@ -32,6 +32,8 @@ entries:
     status: via-dependency
     reason: 'Its only caller is io/exportModel.m, itself via-dependency (cobra.io.write_sbml_model);
       cobrapy''s own SBML writer owns id-safety handling, so there''s no standalone Python use case.'
+    notes: 'RAVEN fix/prefix-whole-gene-ids: gene ids with a dash, dot or colon (5-HT1A) got a prefix at every
+      word start in grRules, so exportModel failed on such models (Fruitfly-GEM). cobrapy has no such issue.'
   - matlab: addMets
     status: via-dependency
     reason: 'cobrapy covers this: model.add_metabolites([cobra.Metabolite(...)]).'
@@ -467,6 +469,8 @@ entries:
     python: raven_toolbox.io.export_for_git
     status: parity
     notes: from migration.md. Standard-GEM repo layout (model/<fmt>/…).
+      Python also takes version= and date=, stamped into the exported copy; MATLAB models carry
+      model.version / model.date as fields, so there it is set before the call.
   - matlab: exportModel
     status: via-dependency
     reason: 'cobrapy covers this: cobra.io.write_sbml_model.'
@@ -855,6 +859,12 @@ entries:
       - homology_chain
     notes: from migration.md. Core homology reconstruction with structured improvements (bidirectional / best-hits-only,
       AST GPR rewrite, complex policy, bitscore best-hits, DataFrame ortholog map).
+      Options for curated templates (Human-GEM animal GEMs, Human-GEM#421) on both sides, namely complexPolicy /
+      complex_policy (flag, keep, drop), keepGeneFree / keep_gene_free (keep template reactions without a
+      grRule) and preserveNotes / preserve_notes (keep the template's reaction notes). Both write a gene that
+      several template genes map to once, and neither copies the template's version, date or description into
+      the draft. MATLAB side in RAVEN (develop3) feat/homology-keep-template; Human-GEM's generateAnimalGEM.m
+      and generateAnimalGEM.py give the same models with these options.
   - matlab: getModelFromKEGG
     status: subsumed
     reason: Building the model from KO assignments is a stage inside reconstruction.kegg.get_kegg_model_for_organism.
@@ -1480,6 +1490,14 @@ entries:
     status: python-only
     reason: 'No MATLAB counterpart to this specific shape: writeFasta.m (see above) is a plain
       struct-array writer with no batching or id validation.'
+  - python: raven_toolbox.io.get_model_metadata
+    status: python-only
+    reason: 'MATLAB models carry version and date as struct fields (model.version, model.date), so there is
+      nothing to wrap. cobra models have no such attributes; raven-toolbox keeps them in model.notes.'
+  - python: raven_toolbox.io.set_model_metadata
+    status: python-only
+    reason: 'Same as get_model_metadata: sets notes["version"] and notes["metaData"] together, which
+      write_yaml_model reads from two places. MATLAB assigns model.version and model.date directly.'
   - matlab: writeYAMLmodel
     python: raven_toolbox.io.write_yaml_model
     status: parity
